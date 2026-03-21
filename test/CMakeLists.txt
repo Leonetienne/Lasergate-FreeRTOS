@@ -28,7 +28,6 @@ target_link_libraries(lasergate_tests PRIVATE Catch2::Catch2WithMain)
 
 target_include_directories(lasergate_tests PRIVATE
         ../main/include
-        stubs
 )
 
 target_compile_definitions(lasergate_tests PRIVATE HOST_BUILD=1)
