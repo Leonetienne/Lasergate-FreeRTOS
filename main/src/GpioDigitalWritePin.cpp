@@ -35,6 +35,11 @@ GpioDigitalWritePin::~GpioDigitalWritePin() {
 }
 
 bool GpioDigitalWritePin::initialize() noexcept {
+    // Fail if pin is already ready
+    if (ready) {
+        return false;
+    }
+
     // Attempt to bind the pin
     if (!pinRegister.bindPin(pinNum)) {
         return false;
