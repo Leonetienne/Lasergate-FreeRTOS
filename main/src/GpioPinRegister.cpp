@@ -5,7 +5,7 @@
 #include "GpioPinRegister.h"
 
 bool GpioPinRegister::isPinBound(gpio_num_t pin) const noexcept {
-    return used_pins.find(pin) != used_pins.end();
+    return usedPins.find(pin) != usedPins.end();
 }
 
 bool GpioPinRegister::bindPin(gpio_num_t pin) noexcept {
@@ -13,7 +13,7 @@ bool GpioPinRegister::bindPin(gpio_num_t pin) noexcept {
         return false;
     }
 
-    used_pins.insert(pin);
+    usedPins.insert(pin);
     return true;
 }
 
@@ -22,11 +22,7 @@ bool GpioPinRegister::freePin(gpio_num_t pin) noexcept {
         return false;
     }
 
-    used_pins.erase(pin);
+    usedPins.erase(pin);
     return true;
 }
 
-GpioPinRegister& GpioPinRegister::getInstance() noexcept {
-    static GpioPinRegister instance;
-    return instance;
-}

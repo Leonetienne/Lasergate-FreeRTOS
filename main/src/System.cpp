@@ -5,7 +5,6 @@
 #include "System.h"
 
 System::System() noexcept :
-    stateMachine(),
-    gpioPinRegister()
+    stateMachine()
 {
 }

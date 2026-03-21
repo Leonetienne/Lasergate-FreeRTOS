@@ -5,14 +5,22 @@
 #include "GpioDigitalWritePin.h"
 #include "GpioPinRegister.h"
 
-GpioDigitalWritePin::GpioDigitalWritePin(gpio_num_t pin) :
-    pin { pin },
+GpioDigitalWritePin::GpioDigitalWritePin(
+    GpioPinRegister& pinRegister,
+    IGpio& gpio,
+    gpio_num_t pinNum
+    ) :
+    pinRegister(pinRegister),
+    gpio(gpio),
+    pinNum { pinNum },
     ready { false },
     currentState { false }
 { }
 
 GpioDigitalWritePin::GpioDigitalWritePin(GpioDigitalWritePin&& other) noexcept :
-    pin { other.pin },
+    pinRegister { other.pinRegister },
+    gpio { other.gpio },
+    pinNum { other.pinNum },
     ready { other.ready },
     currentState { other.currentState }
 {
@@ -28,17 +36,17 @@ GpioDigitalWritePin::~GpioDigitalWritePin() {
 
 bool GpioDigitalWritePin::initialize() noexcept {
     // Attempt to bind the pin
-    if (!GpioPinRegister::getInstance().bindPin(pin)) {
+    if (!pinRegister.bindPin(pinNum)) {
         return false;
     }
 
     // If success, book it/
-    if (gpio_reset_pin(pin) != ESP_OK) {
-        GpioPinRegister::getInstance().freePin(pin);
+    if (gpio.gpioResetPin(pinNum) != ESP_OK) {
+        pinRegister.freePin(pinNum);
         return false;
     }
-    if (gpio_set_direction(pin, GPIO_MODE_OUTPUT) != ESP_OK) {
-        GpioPinRegister::getInstance().freePin(pin);
+    if (gpio.gpioSetDirection(pinNum, GPIO_MODE_OUTPUT) != ESP_OK) {
+        pinRegister.freePin(pinNum);
         return false;
     }
 
@@ -54,7 +62,7 @@ bool GpioDigitalWritePin::free() noexcept {
     // Reset the pin state to LOW
     setState(PIN_STATE_DIGITAL::LOW);
 
-    GpioPinRegister::getInstance().freePin(pin);
+    pinRegister.freePin(pinNum);
 
     ready = false;
     return true;
@@ -65,7 +73,7 @@ bool GpioDigitalWritePin::setState(PIN_STATE_DIGITAL state) noexcept {
         return false;
     }
 
-    if (gpio_set_level(pin, static_cast<int>(state)) != ESP_OK) {
+    if (gpio.gpioSetlevel(pinNum, static_cast<uint32_t>(state)) != ESP_OK) {
         return false;
     }
 

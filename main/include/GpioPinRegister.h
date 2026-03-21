@@ -6,14 +6,16 @@
 #define LASERGATE_V2_GPIOPINREGISTER_H
 
 #include <unordered_set>
-#include "driver/gpio.h"
+#include "compat/gpio_num_t.h"
 
 /**
- * Singleton class, only initializable by class System.
  * Keeps track of which gpio pins are bound.
  */
 class GpioPinRegister {
 public:
+    GpioPinRegister() = default;
+    ~GpioPinRegister() = default;
+
     /**
      * Will return whether a given gpio pin is already bound
      *
@@ -41,17 +43,11 @@ public:
      * */
     bool freePin(gpio_num_t pin) noexcept;
 
-    static GpioPinRegister& getInstance() noexcept;
-
     GpioPinRegister(const GpioPinRegister&) = delete;
     GpioPinRegister& operator=(const GpioPinRegister&) = delete;
 
 protected:
-    std::unordered_set<gpio_num_t> used_pins;
-
-private:
-    GpioPinRegister() = default;
-    ~GpioPinRegister() = default;
+    std::unordered_set<gpio_num_t> usedPins;
 };
 
 

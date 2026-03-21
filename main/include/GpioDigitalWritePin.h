@@ -4,15 +4,18 @@
 
 #ifndef LASERGATE_V2_GPIOWRITEPIN_H
 #define LASERGATE_V2_GPIOWRITEPIN_H
-#include "driver/gpio.h"
-#include "PinState.h"
+
+#include "compat/gpio_num_t.h"
+#include "enum/PinState.h"
+#include "GpioPinRegister.h"
+#include "hal/IGpio.h"
 
 /**
  * Class to write or read to a gpio pin
  */
 class GpioDigitalWritePin {
 public:
-    GpioDigitalWritePin(gpio_num_t pin);
+    GpioDigitalWritePin(GpioPinRegister& pinRegister, IGpio& gpio, gpio_num_t pinNum);
     GpioDigitalWritePin(const GpioDigitalWritePin&) = delete;
     GpioDigitalWritePin(GpioDigitalWritePin&& other) noexcept;
     ~GpioDigitalWritePin();
@@ -39,7 +42,7 @@ public:
     /**
      * @return The gpio pin number
      */
-    [[nodiscard]] gpio_num_t getGpioNum() const noexcept { return pin; };
+    [[nodiscard]] gpio_num_t getGpioNum() const noexcept { return pinNum; };
 
     /**
      * @return Whether the pin is currently emitting LOW or HIGH
@@ -55,7 +58,9 @@ public:
     bool setState(PIN_STATE_DIGITAL state) noexcept;
 
 protected:
-    const gpio_num_t pin;
+    GpioPinRegister& pinRegister;
+    IGpio& gpio;
+    const gpio_num_t pinNum;
     bool ready;
     PIN_STATE_DIGITAL currentState;
 };
