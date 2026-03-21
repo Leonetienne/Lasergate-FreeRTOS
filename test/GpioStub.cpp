@@ -5,46 +5,36 @@
 #include <catch2/catch_test_macros.hpp>
 #include "test/stubs/GpioStub.h"
 
-TEST_CASE("GpioStub: All pins are disabled at start") {
-    // Prepare
+TEST_CASE("GpioStub", "[GpioStub]") {
+    constexpr gpio_num_t testPin = 19;
     GpioStub gpStub;
 
-    // Validate
-    for (std::size_t i = 0; i < 64; i++) {
-        REQUIRE(gpStub.test_gpioGetMode(i) == GPIO_MODE_DISABLE);
-    }
-}
-
-TEST_CASE("GpioStub: Setting pin direction stores direction") {
-    // Prepare
-    GpioStub gpStub;
-    gpStub.gpioSetDirection(19, GPIO_MODE_OUTPUT);
-
-    // Validate
-    REQUIRE(gpStub.test_gpioGetMode(19) == GPIO_MODE_OUTPUT);
-}
-
-TEST_CASE("GpioStub: All pins are at level 0 at start") {
-    // Prepare
-    GpioStub gpStub;
-
-    // Validate
-    for (gpio_num_t i = 0; i < 64; i++) {
-        REQUIRE(gpStub.test_gpioGetMode(i) == 0);
-    }
-}
-
-TEST_CASE("GpioStub: Setting a pin level stores level") {
-    // Prepare
-    GpioStub gpStub;
-    for (gpio_num_t i = 0; i < 64; i++) {
-        const uint32_t level = i * i;
-        gpStub.gpioSetlevel(i, level);
+    SECTION("all pins are disabled at start") {
+        for (gpio_num_t pin = 0; pin < 64; ++pin) {
+            CHECK(gpStub.test_gpioGetMode(pin) == GPIO_MODE_DISABLE);
+        }
     }
 
-    // Validate
-    for (gpio_num_t i = 0; i < 64; i++) {
-        const uint32_t level = i * i;
-        REQUIRE(gpStub.test_gpioGetLevel(i) == level);
+    SECTION("setting pin direction stores direction") {
+        REQUIRE(gpStub.gpioSetDirection(testPin, GPIO_MODE_OUTPUT) == ESP_OK);
+        REQUIRE(gpStub.test_gpioGetMode(testPin) == GPIO_MODE_OUTPUT);
+    }
+
+    SECTION("all pins are at level 0 at start") {
+        for (gpio_num_t pin = 0; pin < 64; ++pin) {
+            CHECK(gpStub.test_gpioGetLevel(pin) == 0);
+        }
+    }
+
+    SECTION("setting a pin level stores level") {
+        for (gpio_num_t pin = 0; pin < 64; ++pin) {
+            const uint32_t level = pin * pin;
+            REQUIRE(gpStub.gpioSetlevel(pin, level) == ESP_OK);
+        }
+
+        for (gpio_num_t pin = 0; pin < 64; ++pin) {
+            const uint32_t level = pin * pin;
+            CHECK(gpStub.test_gpioGetLevel(pin) == level);
+        }
     }
 }

@@ -5,78 +5,52 @@
 #include <catch2/catch_test_macros.hpp>
 #include "GpioPinRegister.h"
 
-TEST_CASE("GpioPinRegister: All pins are free at start") {
-    // Prepare
+TEST_CASE("GpioPinRegister", "[GpioPinRegister]") {
+    constexpr gpio_num_t testPin = 16;
     GpioPinRegister pr;
 
-    // Validate
-    for (gpio_num_t i = 0; i < 64; i++) {
-        REQUIRE_FALSE(pr.isPinBound(i));
-    }
-}
-
-TEST_CASE("GpioPinRegister: Can bind unbound pin") {
-    // Prepare
-    GpioPinRegister pr;
-
-    // Validate
-    REQUIRE(pr.bindPin(16));
-}
-
-TEST_CASE("GpioPinRegister: Pin is used after being assigned") {
-    // Prepare
-    GpioPinRegister pr;
-    pr.bindPin(16);
-
-    // Validate
-    REQUIRE(pr.isPinBound(16));
-}
-
-TEST_CASE("GpioPinRegister: Other pins remain free after assigning a pin") {
-    // Prepare
-    GpioPinRegister pr;
-    pr.bindPin(16);
-
-    // Validate
-    for (gpio_num_t i = 0; i < 64; i++) {
-        if (i != 16) {
-            REQUIRE_FALSE(pr.isPinBound(i));
+    SECTION("all pins are free at start") {
+        for (gpio_num_t pin = 0; pin < 64; ++pin) {
+            CHECK_FALSE(pr.isPinBound(pin));
         }
     }
-}
 
-TEST_CASE("GpioPinRegister: Can't free unbound pin") {
-    // Prepare
-    GpioPinRegister pr;
+    SECTION("can bind an unbound pin") {
+        REQUIRE(pr.bindPin(testPin));
+    }
 
-    // Validate
-    REQUIRE_FALSE(pr.freePin(16));
-}
+    SECTION("pin is used after being assigned") {
+        REQUIRE(pr.bindPin(testPin));
+        REQUIRE(pr.isPinBound(testPin));
+    }
 
-TEST_CASE("GpioPinRegister: Can free bound pin") {
-    // Prepare
-    GpioPinRegister pr;
-    pr.bindPin(16);
+    SECTION("other pins remain free after assigning a pin") {
+        REQUIRE(pr.bindPin(testPin));
 
-    // Validate
-    REQUIRE(pr.freePin(16));
-}
+        for (gpio_num_t pin = 0; pin < 64; ++pin) {
+            if (pin != testPin) {
+                CHECK_FALSE(pr.isPinBound(pin));
+            }
+        }
+    }
 
-TEST_CASE("GpioPinRegister: Can't bind pin twice") {
-    // Prepare
-    GpioPinRegister pr;
-    pr.bindPin(16);
+    SECTION("can't free unbound pin") {
+        REQUIRE_FALSE(pr.freePin(testPin));
+    }
 
-    // Validate
-    REQUIRE_FALSE(pr.bindPin(16));
-}
+    SECTION("can free bound pin") {
+        REQUIRE(pr.bindPin(testPin));
+        REQUIRE(pr.freePin(testPin));
+    }
 
-TEST_CASE("GpioPinRegister: Can bind pin twice if it is freed first") {
-    // Prepare
-    GpioPinRegister pr;
-    pr.bindPin(16);
-    pr.freePin(16);
+    SECTION("can't bind pin twice") {
+        REQUIRE(pr.bindPin(testPin));
+        REQUIRE_FALSE(pr.bindPin(testPin));
+    }
 
-    // Validate
-    REQUIRE(pr.bindPin(16));
+    SECTION("can bind pin twice if it is freed first") {
+        REQUIRE(pr.bindPin(testPin));
+        REQUIRE(pr.freePin(testPin));
+        REQUIRE(pr.bindPin(testPin));
+    }
 }
