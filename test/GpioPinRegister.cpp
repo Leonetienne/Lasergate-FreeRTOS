@@ -5,7 +5,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include "GpioPinRegister.h"
 
-TEST_CASE("GpioPinRegister: all pins are free at start") {
+TEST_CASE("GpioPinRegister: All pins are free at start") {
     // Prepare
     GpioPinRegister pr;
 
@@ -15,7 +15,7 @@ TEST_CASE("GpioPinRegister: all pins are free at start") {
     }
 }
 
-TEST_CASE("GpioPinRegister: can bind unbound pin") {
+TEST_CASE("GpioPinRegister: Can bind unbound pin") {
     // Prepare
     GpioPinRegister pr;
 
@@ -23,7 +23,7 @@ TEST_CASE("GpioPinRegister: can bind unbound pin") {
     REQUIRE(pr.bindPin(16));
 }
 
-TEST_CASE("GpioPinRegister: pin is used after being assigned") {
+TEST_CASE("GpioPinRegister: Pin is used after being assigned") {
     // Prepare
     GpioPinRegister pr;
     pr.bindPin(16);
@@ -32,7 +32,7 @@ TEST_CASE("GpioPinRegister: pin is used after being assigned") {
     REQUIRE(pr.isPinBound(16));
 }
 
-TEST_CASE("GpioPinRegister: other pins remain free after assigning a pin") {
+TEST_CASE("GpioPinRegister: Other pins remain free after assigning a pin") {
     // Prepare
     GpioPinRegister pr;
     pr.bindPin(16);
@@ -45,7 +45,7 @@ TEST_CASE("GpioPinRegister: other pins remain free after assigning a pin") {
     }
 }
 
-TEST_CASE("GpioPinRegister: can't free unbound pin") {
+TEST_CASE("GpioPinRegister: Can't free unbound pin") {
     // Prepare
     GpioPinRegister pr;
 
@@ -53,7 +53,7 @@ TEST_CASE("GpioPinRegister: can't free unbound pin") {
     REQUIRE_FALSE(pr.freePin(16));
 }
 
-TEST_CASE("GpioPinRegister: can free bound pin") {
+TEST_CASE("GpioPinRegister: Can free bound pin") {
     // Prepare
     GpioPinRegister pr;
     pr.bindPin(16);
@@ -62,7 +62,7 @@ TEST_CASE("GpioPinRegister: can free bound pin") {
     REQUIRE(pr.freePin(16));
 }
 
-TEST_CASE("GpioPinRegister: can't bind pin twice") {
+TEST_CASE("GpioPinRegister: Can't bind pin twice") {
     // Prepare
     GpioPinRegister pr;
     pr.bindPin(16);
@@ -71,7 +71,7 @@ TEST_CASE("GpioPinRegister: can't bind pin twice") {
     REQUIRE_FALSE(pr.bindPin(16));
 }
 
-TEST_CASE("GpioPinRegister: can bind pin twice if it is freed first") {
+TEST_CASE("GpioPinRegister: Can bind pin twice if it is freed first") {
     // Prepare
     GpioPinRegister pr;
     pr.bindPin(16);
