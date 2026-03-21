@@ -10,7 +10,7 @@ TEST_CASE("GpioPinRegister: All pins are free at start") {
     GpioPinRegister pr;
 
     // Validate
-    for (std::size_t i = 0; i < 64; i++) {
+    for (gpio_num_t i = 0; i < 64; i++) {
         REQUIRE_FALSE(pr.isPinBound(i));
     }
 }
@@ -38,7 +38,7 @@ TEST_CASE("GpioPinRegister: Other pins remain free after assigning a pin") {
     pr.bindPin(16);
 
     // Validate
-    for (std::size_t i = 0; i < 64; i++) {
+    for (gpio_num_t i = 0; i < 64; i++) {
         if (i != 16) {
             REQUIRE_FALSE(pr.isPinBound(i));
         }
