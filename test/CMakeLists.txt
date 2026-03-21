@@ -12,6 +12,7 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(lasergate_tests
         GpioPinRegister.cpp
+        GpioStub.cpp
 
         ../main/src/StateMachine.cpp
         ../main/src/System.cpp
