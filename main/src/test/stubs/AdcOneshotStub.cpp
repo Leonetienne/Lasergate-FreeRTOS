@@ -4,29 +4,37 @@
 
 #include "test/stubs/AdcOneshotStub.h"
 
-AdcOneshotStub::AdcOneshotStub(adc_unit_t adcUnit) noexcept :
-    adcUnit { adcUnit },
-    ready { true }
-{}
+AdcOneshotStub::AdcOneshotStub(const adc_unit_t adcUnit) noexcept :
+    IAdcOneshot(adcUnit)
+{
+    this->ready = true;
+}
 
 AdcOneshotStub::AdcOneshotStub(AdcOneshotStub&& other) noexcept :
-    adcUnit( other.adcUnit )
+    IAdcOneshot(std::move(other))
 {
     this->registeredChannels = std::move(other.registeredChannels);
     this->inputValueMap = std::move(other.inputValueMap);
-    this->ready = other.ready;
-    other.ready = false;
 }
 
-esp_err_t AdcOneshotStub::registerChannel(adc_channel_t adcChannel) noexcept {
+esp_err_t AdcOneshotStub::registerChannel(const adc_channel_t adcChannel) noexcept {
+    if (!isAdcChannelOnCurrentUnit(adcChannel)) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
     if (registeredChannels.contains(adcChannel)) {
         return ESP_ERR_INVALID_STATE;
     }
+
     registeredChannels.insert(adcChannel);
     return ESP_OK;
 }
 
-esp_err_t AdcOneshotStub::readChannel(adc_channel_t adcChannel, int& buffer) const noexcept {
+esp_err_t AdcOneshotStub::readChannel(const adc_channel_t adcChannel, int& buffer) const noexcept {
+    if (!isAdcChannelOnCurrentUnit(adcChannel)) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
     if (!registeredChannels.contains(adcChannel)) {
         return ESP_ERR_INVALID_STATE;
     }
@@ -40,6 +48,6 @@ esp_err_t AdcOneshotStub::readChannel(adc_channel_t adcChannel, int& buffer) con
     return ESP_OK;
 }
 
-void AdcOneshotStub::test_setChannelValue(adc_channel_t adc_channel, int value) noexcept {
+void AdcOneshotStub::test_setChannelValue(const adc_channel_t adc_channel, int value) noexcept {
     inputValueMap[adc_channel] = value;
 }
