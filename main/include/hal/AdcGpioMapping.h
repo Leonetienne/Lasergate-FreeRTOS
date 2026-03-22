@@ -12,11 +12,13 @@
 
 struct AdcGpioMapping
 {
-    [[ nodiscard ]] static esp_err_t channelToGpio(const adc_unit_t unit,
-       const adc_channel_t channel,
-       gpio_num_t& outGpio) noexcept;
+    static esp_err_t channelToGpio(
+        const adc_unit_t unit,
+        const adc_channel_t channel,
+        gpio_num_t& outGpio) noexcept;
 
-    [[ nodiscard ]] static esp_err_t gpioToChannel(const gpio_num_t gpio,
+    static esp_err_t gpioToChannel(
+        const gpio_num_t gpio,
         adc_unit_t& outUnit,
         adc_channel_t& outChannel) noexcept;
 };
