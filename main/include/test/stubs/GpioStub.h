@@ -2,8 +2,8 @@
 // Created by Leon Etienne on 21.03.26.
 //
 
-#ifndef LASERGATE_V2_GPIOMOCK_H
-#define LASERGATE_V2_GPIOMOCK_H
+#ifndef LASERGATE_V2_GPIOSTUB_H
+#define LASERGATE_V2_GPIOSTUB_H
 
 #include "hal/IGpio.h"
 #include <unordered_map>
@@ -25,4 +25,4 @@ private:
 };
 
 
-#endif //LASERGATE_V2_GPIOMOCK_H
+#endif //LASERGATE_V2_GPIOSTUB_H
