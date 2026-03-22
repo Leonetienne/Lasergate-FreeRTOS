@@ -78,7 +78,7 @@ bool GpioDigitalWritePin::setState(PIN_STATE_DIGITAL state) noexcept {
         return false;
     }
 
-    if (gpio.gpioSetlevel(pinNum, static_cast<uint32_t>(state)) != ESP_OK) {
+    if (gpio.gpioSetLevel(pinNum, static_cast<uint32_t>(state)) != ESP_OK) {
         return false;
     }
 

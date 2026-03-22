@@ -29,7 +29,7 @@ TEST_CASE("GpioStub", "[GpioStub]") {
     SECTION("setting a pin level stores level") {
         for (gpio_num_t pin = 0; pin < 64; ++pin) {
             const uint32_t level = pin * pin;
-            REQUIRE(gpStub.gpioSetlevel(pin, level) == ESP_OK);
+            REQUIRE(gpStub.gpioSetLevel(pin, level) == ESP_OK);
         }
 
         for (gpio_num_t pin = 0; pin < 64; ++pin) {

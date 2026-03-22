@@ -8,7 +8,7 @@
 
 class GpioAnalogReadPin {
 public:
-    GpioAnalogReadPin(GpioPinRegister& pinRegister, IGpio& gpio, gpio_num_t pinNum);
+    GpioAnalogReadPin(GpioAnalogReadPin& pinRegister, IGpio& gpio, gpio_num_t pinNum);
     GpioAnalogReadPin(const GpioAnalogReadPin&) = delete;
     GpioAnalogReadPin(GpioAnalogReadPin&& other) noexcept;
     ~GpioAnalogReadPin();
