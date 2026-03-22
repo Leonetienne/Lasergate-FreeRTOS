@@ -18,7 +18,7 @@ public:
     virtual ~IGpio() = default;
     virtual esp_err_t gpioResetPin(gpio_num_t pinNum) noexcept = 0;
     virtual esp_err_t gpioSetDirection(gpio_num_t pinNum, gpio_mode_t pinMode) noexcept = 0;
-    virtual esp_err_t gpioSetlevel(gpio_num_t pinNum, uint32_t level) noexcept = 0;
+    virtual esp_err_t gpioSetLevel(gpio_num_t pinNum, uint32_t level) noexcept = 0;
 };
 
 

@@ -13,6 +13,7 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(lasergate_tests
         GpioPinRegister.cpp
         GpioStub.cpp
+        AdcOneshotStub.cpp
         GpioDigitalWritePin.cpp
 
         ../main/src/StateMachine.cpp
@@ -21,6 +22,7 @@ add_executable(lasergate_tests
         ../main/src/GpioPinRegister.cpp
 
         ../main/src/test/stubs/GpioStub.cpp
+        ../main/src/test/stubs/AdcOneshotStub.cpp
 )
 
 
