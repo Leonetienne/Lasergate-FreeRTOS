@@ -23,6 +23,7 @@ public:
     virtual esp_err_t registerChannel(const adc_channel_t adcChannel) noexcept = 0;
     [[ nodiscard ]] virtual esp_err_t readChannel(const adc_channel_t adcChannel, int& buffer) const noexcept = 0;
     [[ nodiscard ]] virtual bool isReady() const noexcept = 0;
+    [[ nodiscard ]] adc_unit_t getAdcUnit() const noexcept { return adcUnit; };
 
 protected:
     const adc_unit_t adcUnit;

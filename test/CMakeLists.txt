@@ -15,12 +15,15 @@ add_executable(lasergate_tests
         GpioStub.cpp
         AdcOneshotStub.cpp
         GpioDigitalWritePin.cpp
+        AdcAnalogReadPin.cpp
 
         ../main/src/StateMachine.cpp
         ../main/src/System.cpp
         ../main/src/platform/GpioDigitalWritePin.cpp
+        ../main/src/platform/AdcAnalogReadPin.cpp
         ../main/src/GpioPinRegister.cpp
         ../main/src/hal/IAdcOneshot.cpp
+        ../main/src/hal/AdcGpioMapping.cpp
         ../main/src/test/stubs/GpioStub.cpp
         ../main/src/test/stubs/AdcOneshotStub.cpp
 )
