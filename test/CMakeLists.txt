@@ -20,7 +20,7 @@ add_executable(lasergate_tests
         ../main/src/System.cpp
         ../main/src/platform/GpioDigitalWritePin.cpp
         ../main/src/GpioPinRegister.cpp
-
+        ../main/src/hal/IAdcOneshot.cpp
         ../main/src/test/stubs/GpioStub.cpp
         ../main/src/test/stubs/AdcOneshotStub.cpp
 )

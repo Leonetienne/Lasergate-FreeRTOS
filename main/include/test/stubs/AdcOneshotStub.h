@@ -26,10 +26,8 @@ public:
     void test_setChannelValue(adc_channel_t adc_channel, int value) noexcept;
 
 private:
-    const adc_unit_t adcUnit;
     std::unordered_set<adc_channel_t> registeredChannels;
     std::unordered_map<adc_channel_t, int> inputValueMap;
-    bool ready = false;
 };
 
 
