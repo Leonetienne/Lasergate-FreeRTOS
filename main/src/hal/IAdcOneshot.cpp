@@ -5,7 +5,7 @@
 #include "hal/IAdcOneshot.h"
 #include "hal/AdcGpioMapping.h"
 
-IAdcOneshot::IAdcOneshot(adc_unit_t adcUnit) noexcept :
+IAdcOneshot::IAdcOneshot(const adc_unit_t adcUnit) noexcept :
     adcUnit { adcUnit }
 {
 }
@@ -17,7 +17,7 @@ IAdcOneshot::IAdcOneshot(IAdcOneshot &&other) noexcept :
     other.ready = false;
 }
 
-bool IAdcOneshot::isAdcChannelOnCurrentUnit(adc_channel_t adcChannel) const noexcept {
+bool IAdcOneshot::isAdcChannelOnCurrentUnit(const adc_channel_t adcChannel) const noexcept {
     switch (adcUnit) {
         case ADC_UNIT_1:
            return adcChannel <= ADC_CHANNEL_7;

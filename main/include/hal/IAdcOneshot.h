@@ -16,18 +16,18 @@
  */
 class IAdcOneshot {
 public:
-    IAdcOneshot(adc_unit_t adcUnit) noexcept;
+    IAdcOneshot(const adc_unit_t adcUnit) noexcept;
     IAdcOneshot(const IAdcOneshot&) = delete;
     IAdcOneshot(IAdcOneshot&& other) noexcept;
     virtual ~IAdcOneshot() = default;
-    virtual esp_err_t registerChannel(adc_channel_t adcChannel) noexcept = 0;
-    [[ nodiscard ]] virtual esp_err_t readChannel(adc_channel_t adcChannel, int& buffer) const noexcept = 0;
+    virtual esp_err_t registerChannel(const adc_channel_t adcChannel) noexcept = 0;
+    [[ nodiscard ]] virtual esp_err_t readChannel(const adc_channel_t adcChannel, int& buffer) const noexcept = 0;
     [[ nodiscard ]] virtual bool isReady() const noexcept = 0;
 
 protected:
     const adc_unit_t adcUnit;
     bool ready = false;
-    bool isAdcChannelOnCurrentUnit(adc_channel_t adcChannel) const noexcept;
+    [[nodiscard]] bool isAdcChannelOnCurrentUnit(const adc_channel_t adcChannel) const noexcept;
 };
 
 

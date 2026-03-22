@@ -4,11 +4,11 @@
 
 #include "../include/GpioPinRegister.h"
 
-bool GpioPinRegister::isPinBound(gpio_num_t pin) const noexcept {
-    return usedPins.find(pin) != usedPins.end();
+bool GpioPinRegister::isPinBound(const gpio_num_t pin) const noexcept {
+    return usedPins.contains(pin);
 }
 
-bool GpioPinRegister::bindPin(gpio_num_t pin) noexcept {
+bool GpioPinRegister::bindPin(const gpio_num_t pin) noexcept {
     if (isPinBound(pin)) {
         return false;
     }
@@ -17,7 +17,7 @@ bool GpioPinRegister::bindPin(gpio_num_t pin) noexcept {
     return true;
 }
 
-bool GpioPinRegister::freePin(gpio_num_t pin) noexcept {
+bool GpioPinRegister::freePin(const gpio_num_t pin) noexcept {
     if (!isPinBound(pin)) {
         return false;
     }

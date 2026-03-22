@@ -8,7 +8,7 @@
 GpioDigitalWritePin::GpioDigitalWritePin(
     GpioPinRegister& pinRegister,
     IGpio& gpio,
-    gpio_num_t pinNum
+    const gpio_num_t pinNum
     ) :
     pinRegister(pinRegister),
     gpio(gpio),
@@ -73,7 +73,7 @@ bool GpioDigitalWritePin::free() noexcept {
     return true;
 }
 
-bool GpioDigitalWritePin::setState(PIN_STATE_DIGITAL state) noexcept {
+bool GpioDigitalWritePin::setState(const PIN_STATE_DIGITAL state) noexcept {
     if (!ready) {
         return false;
     }
