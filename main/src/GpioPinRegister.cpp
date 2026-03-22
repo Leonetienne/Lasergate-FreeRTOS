@@ -2,7 +2,7 @@
 // Created by Leon Etienne on 18.03.26.
 //
 
-#include "GpioPinRegister.h"
+#include "../include/GpioPinRegister.h"
 
 bool GpioPinRegister::isPinBound(gpio_num_t pin) const noexcept {
     return usedPins.find(pin) != usedPins.end();

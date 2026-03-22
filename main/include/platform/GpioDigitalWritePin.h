@@ -5,10 +5,10 @@
 #ifndef LASERGATE_V2_GPIOWRITEPIN_H
 #define LASERGATE_V2_GPIOWRITEPIN_H
 
-#include "compat/gpio_num_t.h"
-#include "enum/PinState.h"
-#include "GpioPinRegister.h"
-#include "hal/IGpio.h"
+#include "../compat/gpio_num_t.h"
+#include "../enum/PinState.h"
+#include "../GpioPinRegister.h"
+#include "../hal/IGpio.h"
 
 /**
  * Class to write or read to a gpio pin

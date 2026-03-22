@@ -2,8 +2,8 @@
 // Created by Leon Etienne on 18.03.26.
 //
 
-#include "GpioDigitalWritePin.h"
-#include "GpioPinRegister.h"
+#include "../../include/platform/GpioDigitalWritePin.h"
+#include "../../include/GpioPinRegister.h"
 
 GpioDigitalWritePin::GpioDigitalWritePin(
     GpioPinRegister& pinRegister,

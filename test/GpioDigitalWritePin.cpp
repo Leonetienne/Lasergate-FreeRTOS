@@ -3,9 +3,9 @@
 //
 
 #include <catch2/catch_test_macros.hpp>
-#include "GpioPinRegister.h"
+#include "../main/include/GpioPinRegister.h"
 #include "test/stubs/GpioStub.h"
-#include "GpioDigitalWritePin.h"
+#include "../main/include/platform/GpioDigitalWritePin.h"
 
 TEST_CASE("GpioDigitalWritePin: lifecycle", "[GpioDigitalWritePin]") {
     GpioPinRegister pr{};
