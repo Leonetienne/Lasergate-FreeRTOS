@@ -7,6 +7,9 @@
 
 #include "hal/IGpio.h"
 
+/**
+ * Prod impl of IGpio
+ */
 class GpioEsp32 : public IGpio {
 public:
     esp_err_t gpioResetPin(gpio_num_t pinNum) noexcept override;

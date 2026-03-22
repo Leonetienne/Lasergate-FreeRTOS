@@ -6,6 +6,7 @@ idf_component_register(SRCS
                        "src/hal/IGpio.cpp"
                        "src/platform/GpioEsp32.cpp"
                        "src/platform/GpioDigitalWritePin.cpp"
+                       "src/platform/GpioAnalogReadPin.cpp"
                        PRIV_REQUIRES spi_flash
                        REQUIRES esp_driver_gpio esp_adc
                        INCLUDE_DIRS "include")
