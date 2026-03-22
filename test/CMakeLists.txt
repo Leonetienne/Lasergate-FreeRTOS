@@ -17,7 +17,7 @@ add_executable(lasergate_tests
 
         ../main/src/StateMachine.cpp
         ../main/src/System.cpp
-        ../main/src/GpioDigitalWritePin.cpp
+        ../main/src/platform/GpioDigitalWritePin.cpp
         ../main/src/GpioPinRegister.cpp
 
         ../main/src/test/stubs/GpioStub.cpp
