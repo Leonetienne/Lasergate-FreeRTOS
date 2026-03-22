@@ -5,7 +5,8 @@
 #ifndef LASERGATE_V2_GPIO_MODE_T_H
 #define LASERGATE_V2_GPIO_MODE_T_H
 
-// If compiling for host, define gpio_mode_t as int, otherwise include idf header
+// If compiling for host, define gpio_mode_t, otherwise include idf header
+// This data type is just meant as a shim for the native idf datatype
 #ifdef HOST_BUILD
 typedef enum {
     GPIO_MODE_DISABLE,
