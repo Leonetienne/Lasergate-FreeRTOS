@@ -9,28 +9,28 @@ GpioStub::GpioStub(GpioStub&& other) noexcept {
     this->pinDirectionMap = std::move(other.pinDirectionMap);
 }
 
-esp_err_t GpioStub::gpioResetPin(gpio_num_t pinNum) noexcept {
+esp_err_t GpioStub::gpioResetPin(const gpio_num_t pinNum) noexcept {
     return ESP_OK;
 }
 
-esp_err_t GpioStub::gpioSetDirection(gpio_num_t pinNum, gpio_mode_t pinMode) noexcept {
+esp_err_t GpioStub::gpioSetDirection(const gpio_num_t pinNum, const gpio_mode_t pinMode) noexcept {
     pinDirectionMap[pinNum] = pinMode;
     return ESP_OK;
 }
 
-esp_err_t GpioStub::gpioSetLevel(gpio_num_t pinNum, uint32_t level) noexcept {
+esp_err_t GpioStub::gpioSetLevel(const gpio_num_t pinNum, const uint32_t level) noexcept {
     pinLevelMap[pinNum] = level;
     return ESP_OK;
 }
 
-gpio_num_t GpioStub::test_gpioGetMode(gpio_num_t pinNum) noexcept {
+gpio_num_t GpioStub::test_gpioGetMode(const gpio_num_t pinNum) noexcept {
     if (!pinDirectionMap.contains(pinNum)) {
         return GPIO_MODE_DISABLE;
     }
     return pinDirectionMap[pinNum];
 }
 
-uint32_t GpioStub::test_gpioGetLevel(gpio_num_t pinNum) noexcept {
+uint32_t GpioStub::test_gpioGetLevel(const gpio_num_t pinNum) noexcept {
     if (!pinLevelMap.contains(pinNum)) {
         return 0;
     }

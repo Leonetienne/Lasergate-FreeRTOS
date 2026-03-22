@@ -15,7 +15,7 @@
  */
 class GpioDigitalWritePin {
 public:
-    GpioDigitalWritePin(GpioPinRegister& pinRegister, IGpio& gpio, gpio_num_t pinNum);
+    GpioDigitalWritePin(GpioPinRegister& pinRegister, IGpio& gpio, const gpio_num_t pinNum);
     GpioDigitalWritePin(const GpioDigitalWritePin&) = delete;
     GpioDigitalWritePin(GpioDigitalWritePin&& other) noexcept;
     ~GpioDigitalWritePin();
@@ -55,7 +55,7 @@ public:
      * @param state The new pin state
      * @return Success status
      */
-    bool setState(PIN_STATE_DIGITAL state) noexcept;
+    bool setState(const PIN_STATE_DIGITAL state) noexcept;
 
 protected:
     GpioPinRegister& pinRegister;

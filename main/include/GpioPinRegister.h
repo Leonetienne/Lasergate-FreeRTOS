@@ -23,7 +23,7 @@ public:
      *
      * @returns the pin status
      */
-    [[nodiscard]] bool isPinBound(gpio_num_t pin) const noexcept;
+    [[nodiscard]] bool isPinBound(const gpio_num_t pin) const noexcept;
 
     /**
      * Will bind a pin if it is not already bound
@@ -32,7 +32,7 @@ public:
      *
      * @returns success state
      * */
-    bool bindPin(gpio_num_t pin) noexcept;
+    bool bindPin(const gpio_num_t pin) noexcept;
 
     /**
      * Will free a pin if it bound
@@ -41,7 +41,7 @@ public:
      *
      * @returns success state
      * */
-    bool freePin(gpio_num_t pin) noexcept;
+    bool freePin(const gpio_num_t pin) noexcept;
 
     GpioPinRegister(const GpioPinRegister&) = delete;
     GpioPinRegister& operator=(const GpioPinRegister&) = delete;
