@@ -5,6 +5,9 @@
 #ifndef LASERGATE_V2_PINSTATE_H
 #define LASERGATE_V2_PINSTATE_H
 
+/**
+ * Application-level digital pin state
+ */
 enum class PIN_STATE_DIGITAL : bool {
     LOW = false,
     HIGH = true

@@ -20,6 +20,10 @@ TEST_CASE("GpioStub", "[GpioStub]") {
         REQUIRE(gpStub.test_gpioGetMode(testPin) == GPIO_MODE_OUTPUT);
     }
 
+    SECTION("setting pin direction to anything but output fails") {
+        REQUIRE(gpStub.gpioSetDirection(testPin, GPIO_MODE_INPUT) == ESP_ERR_NOT_SUPPORTED);
+    }
+
     SECTION("all pins are at level 0 at start") {
         for (gpio_num_t pin = 0; pin < 64; ++pin) {
             CHECK(gpStub.test_gpioGetLevel(pin) == 0);

@@ -15,8 +15,20 @@ public:
     GpioStub(GpioStub&& other) noexcept;
     GpioStub& operator=(const GpioStub&) = delete;
     ~GpioStub() override = default;
+
+    /**
+     * Will reset a pins state
+     */
     esp_err_t gpioResetPin(const gpio_num_t pinNum) noexcept override;
+
+    /**
+     * Will set a pins direction (in/out) (in currently not supported)
+     */
     esp_err_t gpioSetDirection(const gpio_num_t pinNum, const gpio_mode_t pinMode) noexcept override;
+
+    /**
+     * Will set a pins output level
+     */
     esp_err_t gpioSetLevel(const gpio_num_t pinNum, const uint32_t level) noexcept override;
 
     /* Unit test interrogoters */

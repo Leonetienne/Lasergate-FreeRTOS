@@ -14,15 +14,33 @@
 
 class AdcOneshotStub : public IAdcOneshot {
 public:
-    AdcOneshotStub(adc_unit_t adcUnit) noexcept;
+    /**
+     * @param adcUnit The adc unit this ADC driver wrapper should manage
+     */
+    AdcOneshotStub(const adc_unit_t adcUnit) noexcept;
     AdcOneshotStub(const AdcOneshotStub&) = delete;
     AdcOneshotStub(AdcOneshotStub&& other) noexcept;
     AdcOneshotStub& operator=(const AdcOneshotStub&) = delete;
     ~AdcOneshotStub() override = default;
+
+    /**
+     * Will prepare an adc channel to be used by this ADC driver wrapper
+     */
     esp_err_t registerChannel(adc_channel_t adcChannel) noexcept override;
+
+    /**
+    * Will read the value at an ADC channel
+    */
     [[ nodiscard ]] esp_err_t readChannel(adc_channel_t adcChannel, int& buffer) const noexcept override;
+
+    /**
+     * @returns whether this ADC driver wrapper is fully initialized and ready
+     */
     [[ nodiscard ]] bool isReady() const noexcept override { return ready; };
 
+    /**
+     * Will set a specific value to be present at a specific channel for testing purposes
+     */
     void test_setChannelValue(adc_channel_t adc_channel, int value) noexcept;
 
 private:
