@@ -1,0 +1,1 @@
+This directory houses shims used for compatibility between test-builds compiled for the host system and cross compiling for the esp32.

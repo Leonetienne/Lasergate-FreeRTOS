@@ -10,6 +10,9 @@ esp_err_t GpioEsp32::gpioResetPin(const gpio_num_t pinNum) noexcept {
 }
 
 esp_err_t GpioEsp32::gpioSetDirection(const gpio_num_t pinNum, const gpio_mode_t pinMode) noexcept {
+    if (pinMode != GPIO_MODE_OUTPUT) {
+        return ESP_ERR_NOT_SUPPORTED;
+    }
     return gpio_set_direction(pinNum, pinMode);
 }
 
