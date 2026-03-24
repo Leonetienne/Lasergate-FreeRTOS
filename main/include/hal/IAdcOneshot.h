@@ -24,6 +24,8 @@ public:
     IAdcOneshot(IAdcOneshot&& other) noexcept;
     virtual ~IAdcOneshot() = default;
 
+    virtual esp_err_t initialize() noexcept = 0;
+
     /**
      * Will prepare an adc channel to be used by this ADC driver wrapper
      */

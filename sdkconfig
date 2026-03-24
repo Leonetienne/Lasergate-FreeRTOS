@@ -1,6 +1,6 @@
 #
 # Automatically generated file. DO NOT EDIT.
-# Espressif IoT Development Framework (ESP-IDF) 6.0.0 Project Configuration
+# Espressif IoT Development Framework (ESP-IDF) 6.0.1 Project Configuration
 #
 # default:
 CONFIG_SOC_CAPS_ECO_VER_MAX=301
@@ -243,6 +243,8 @@ CONFIG_SOC_RTCIO_HOLD_SUPPORTED=y
 # default:
 CONFIG_SOC_RTCIO_WAKE_SUPPORTED=y
 # default:
+CONFIG_SOC_RTC_CNTL_NEEDS_ATOMIC_ACCESS=y
+# default:
 CONFIG_SOC_SPI_HD_BOTH_INOUT_SUPPORTED=y
 # default:
 CONFIG_SOC_SPI_AS_CS_SUPPORTED=y
@@ -259,13 +261,7 @@ CONFIG_SOC_SPI_MAXIMUM_BUFFER_SIZE=64
 # default:
 CONFIG_SOC_SPI_MAX_PRE_DIVIDER=8192
 # default:
-CONFIG_SOC_MEMSPI_SRC_FREQ_80M_SUPPORTED=y
-# default:
-CONFIG_SOC_MEMSPI_SRC_FREQ_40M_SUPPORTED=y
-# default:
-CONFIG_SOC_MEMSPI_SRC_FREQ_26M_SUPPORTED=y
-# default:
-CONFIG_SOC_MEMSPI_SRC_FREQ_20M_SUPPORTED=y
+CONFIG_SOC_MEMSPI_ENCRYPTION_ALIGNMENT=16
 # default:
 CONFIG_SOC_LP_TIMER_BIT_WIDTH_LO=32
 # default:
@@ -439,6 +435,11 @@ CONFIG_APP_BUILD_USE_FLASH_SECTIONS=y
 # CONFIG_APP_COMPATIBLE_PRE_V2_1_BOOTLOADERS is not set
 # CONFIG_APP_COMPATIBLE_PRE_V3_1_BOOTLOADERS is not set
 # end of Build type
+
+#
+# App Update config
+#
+# end of App Update config
 
 #
 # Bootloader config

@@ -11,7 +11,7 @@ typedef enum {
     ADC_UNIT_2
 } adc_unit_t;
 #else
-#include "esp_adc/adc_types.h"
+#include "esp_adc/adc_oneshot.h"
 #endif
 
 #endif //LASERGATE_V2_ADC_UNIT_H

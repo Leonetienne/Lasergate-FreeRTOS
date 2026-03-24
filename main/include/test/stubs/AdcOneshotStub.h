@@ -23,6 +23,8 @@ public:
     AdcOneshotStub& operator=(const AdcOneshotStub&) = delete;
     ~AdcOneshotStub() override = default;
 
+    esp_err_t initialize() noexcept override;
+
     /**
      * Will prepare an adc channel to be used by this ADC driver wrapper
      */
