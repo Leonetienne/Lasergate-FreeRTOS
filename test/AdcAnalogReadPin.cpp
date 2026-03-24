@@ -10,7 +10,7 @@
 TEST_CASE("AdcAnalogReadPin: lifecycle", "[AdcAnalogReadPin]") {
     GpioPinRegister pr{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
-    gpio_num_t bindPin = 34;
+    constexpr gpio_num_t bindPin = GPIO_NUM_34;
     AdcAnalogReadPin pin(pr, adcStub, bindPin);
 
     SECTION("not ready by default") {

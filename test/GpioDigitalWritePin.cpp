@@ -10,7 +10,7 @@
 TEST_CASE("GpioDigitalWritePin: lifecycle", "[GpioDigitalWritePin]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
-    GpioDigitalWritePin pin{pr, gpioStub, 19};
+    GpioDigitalWritePin pin{pr, gpioStub, GPIO_NUM_19};
 
     SECTION("not ready by default") {
         REQUIRE_FALSE(pin.isReady());
@@ -32,16 +32,16 @@ TEST_CASE("GpioDigitalWritePin: lifecycle", "[GpioDigitalWritePin]") {
 
     SECTION("pin is bound after initialization") {
         REQUIRE(pin.initialize());
-        REQUIRE(pr.isPinBound(19));
+        REQUIRE(pr.isPinBound(GPIO_NUM_19));
     }
 
     SECTION("pin is set to direction output after initialization") {
         REQUIRE(pin.initialize());
-        REQUIRE(gpioStub.test_gpioGetMode(19) == GPIO_MODE_OUTPUT);
+        REQUIRE(gpioStub.test_gpioGetMode(GPIO_NUM_19) == GPIO_MODE_OUTPUT);
     }
 
     SECTION("initialize fails if pin is already bound") {
-        REQUIRE(pr.bindPin(19));
+        REQUIRE(pr.bindPin(GPIO_NUM_19));
         REQUIRE_FALSE(pin.initialize());
     }
 
@@ -59,7 +59,7 @@ TEST_CASE("GpioDigitalWritePin: lifecycle", "[GpioDigitalWritePin]") {
     SECTION("pin sets output to HIGH on gpio") {
         REQUIRE(pin.initialize());
         REQUIRE(pin.setState(PIN_STATE_DIGITAL::HIGH));
-        REQUIRE(gpioStub.test_gpioGetLevel(19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
     SECTION("pin accepts output LOW") {
@@ -76,7 +76,7 @@ TEST_CASE("GpioDigitalWritePin: lifecycle", "[GpioDigitalWritePin]") {
     SECTION("pin sets output to LOW on gpio") {
         REQUIRE(pin.initialize());
         REQUIRE(pin.setState(PIN_STATE_DIGITAL::LOW));
-        REQUIRE(gpioStub.test_gpioGetLevel(19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
     SECTION("can switch from HIGH to LOW") {
@@ -86,7 +86,7 @@ TEST_CASE("GpioDigitalWritePin: lifecycle", "[GpioDigitalWritePin]") {
 
         REQUIRE(pin.setState(PIN_STATE_DIGITAL::LOW));
         REQUIRE(pin.getState() == PIN_STATE_DIGITAL::LOW);
-        REQUIRE(gpioStub.test_gpioGetLevel(19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
     SECTION("setState fails when pin is not initialized") {
@@ -117,14 +117,14 @@ TEST_CASE("GpioDigitalWritePin: lifecycle", "[GpioDigitalWritePin]") {
     SECTION("pin is no longer bound after freeing") {
         REQUIRE(pin.initialize());
         REQUIRE(pin.free());
-        REQUIRE_FALSE(pr.isPinBound(19));
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_19));
     }
 
     SECTION("free sets output to LOW before release") {
         REQUIRE(pin.initialize());
         REQUIRE(pin.setState(PIN_STATE_DIGITAL::HIGH));
         REQUIRE(pin.free());
-        REQUIRE(gpioStub.test_gpioGetLevel(19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_19) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
     SECTION("moved pin transfers readiness") {

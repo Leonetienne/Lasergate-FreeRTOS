@@ -6,12 +6,12 @@
 #include "test/stubs/GpioStub.h"
 
 TEST_CASE("GpioStub", "[GpioStub]") {
-    constexpr gpio_num_t testPin = 19;
+    constexpr gpio_num_t testPin = GPIO_NUM_19;
     GpioStub gpStub;
 
     SECTION("all pins are disabled at start") {
-        for (gpio_num_t pin = 0; pin < 64; ++pin) {
-            CHECK(gpStub.test_gpioGetMode(pin) == GPIO_MODE_DISABLE);
+        for (std::size_t pin = 0; pin < 64; ++pin) {
+            CHECK(gpStub.test_gpioGetMode(static_cast<gpio_num_t>(pin)) == GPIO_MODE_DISABLE);
         }
     }
 
@@ -25,20 +25,20 @@ TEST_CASE("GpioStub", "[GpioStub]") {
     }
 
     SECTION("all pins are at level 0 at start") {
-        for (gpio_num_t pin = 0; pin < 64; ++pin) {
-            CHECK(gpStub.test_gpioGetLevel(pin) == 0);
+        for (std::size_t pin = 0; pin < 64; ++pin) {
+            CHECK(gpStub.test_gpioGetLevel(static_cast<gpio_num_t>(pin)) == 0);
         }
     }
 
     SECTION("setting a pin level stores level") {
-        for (gpio_num_t pin = 0; pin < 64; ++pin) {
+        for (std::size_t pin = 0; pin < 64; ++pin) {
             const uint32_t level = pin * pin;
-            REQUIRE(gpStub.gpioSetLevel(pin, level) == ESP_OK);
+            REQUIRE(gpStub.gpioSetLevel(static_cast<gpio_num_t>(pin), level) == ESP_OK);
         }
 
-        for (gpio_num_t pin = 0; pin < 64; ++pin) {
+        for (std::size_t pin = 0; pin < 64; ++pin) {
             const uint32_t level = pin * pin;
-            CHECK(gpStub.test_gpioGetLevel(pin) == level);
+            CHECK(gpStub.test_gpioGetLevel(static_cast<gpio_num_t>(pin)) == level);
         }
     }
 }

@@ -24,8 +24,8 @@ TEST_CASE("AdcOneshotStub", "[AdcOneshotStub]") {
     }
 
     SECTION("reading uninitialized channel fails") {
-        int buf;
-        REQUIRE_FALSE(stubAdc1.readChannel(ADC_CHANNEL_6, buf) == ESP_OK);
+        const auto readResult = stubAdc1.readChannel(ADC_CHANNEL_6);
+        REQUIRE_FALSE(readResult.has_value());
     }
 
     SECTION("can initialize channel") {
@@ -48,16 +48,16 @@ TEST_CASE("AdcOneshotStub", "[AdcOneshotStub]") {
 
     SECTION("reading initialized channel works and returns 0") {
         REQUIRE(stubAdc1.registerChannel(ADC_CHANNEL_6) == ESP_OK);
-        int buf;
-        REQUIRE(stubAdc1.readChannel(ADC_CHANNEL_6, buf) == ESP_OK);
-        REQUIRE(buf == 0);
+        const auto readResult = stubAdc1.readChannel(ADC_CHANNEL_6);
+        REQUIRE(readResult.has_value());
+        REQUIRE(readResult == 0);
     }
 
     SECTION("reading initialized channel works and returns stored value") {
         REQUIRE(stubAdc1.registerChannel(ADC_CHANNEL_6) == ESP_OK);
-        int buf;
         stubAdc1.test_setChannelValue(ADC_CHANNEL_6, 2484);
-        REQUIRE(stubAdc1.readChannel(ADC_CHANNEL_6, buf) == ESP_OK);
-        REQUIRE(buf == 2484);
+        const auto readResult = stubAdc1.readChannel(ADC_CHANNEL_6);
+        REQUIRE(readResult.has_value());
+        REQUIRE(readResult == 2484);
     }
 }
