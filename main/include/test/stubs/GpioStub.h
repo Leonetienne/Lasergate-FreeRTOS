@@ -32,7 +32,7 @@ public:
     esp_err_t gpioSetLevel(const gpio_num_t pinNum, const uint32_t level) noexcept override;
 
     /* Unit test interrogoters */
-    [[ nodiscard ]] gpio_num_t test_gpioGetMode(const gpio_num_t pinNum) noexcept;
+    [[ nodiscard ]] gpio_mode_t test_gpioGetMode(const gpio_num_t pinNum) noexcept;
     [[ nodiscard ]] uint32_t test_gpioGetLevel(const gpio_num_t pinNum) noexcept;
 
 private:

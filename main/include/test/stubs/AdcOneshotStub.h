@@ -30,13 +30,9 @@ public:
 
     /**
     * Will read the value at an ADC channel
+    * @returns the retrieved value or an error
     */
-    [[ nodiscard ]] esp_err_t readChannel(adc_channel_t adcChannel, int& buffer) const noexcept override;
-
-    /**
-     * @returns whether this ADC driver wrapper is fully initialized and ready
-     */
-    [[ nodiscard ]] bool isReady() const noexcept override { return ready; };
+    [[ nodiscard ]] std::expected<int, esp_err_t> readChannel(adc_channel_t adcChannel) const noexcept override;
 
     /**
      * Will set a specific value to be present at a specific channel for testing purposes

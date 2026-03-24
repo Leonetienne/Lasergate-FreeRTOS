@@ -40,13 +40,12 @@ esp_err_t AdcAnalogReadPin::initialize() noexcept {
     }
 
     // Retrieve adc unit and adc channel for that pin number
-    if (const esp_err_t res = AdcGpioMapping::gpioToChannel(
-        gpioPinNum,
-        adcUnit,
-        adcChannel
-    ); res != ESP_OK) {
-        return res;
+    const auto adcChannelInfo = AdcGpioMapping::gpioToChannel(gpioPinNum);
+    if (!adcChannelInfo.has_value()) {
+        return adcChannelInfo.error();
     }
+    this->adcUnit = adcChannelInfo.value().first;
+    this->adcChannel = adcChannelInfo.value().second;
 
     // Is this adc channel on the correct adc unit?
     if (adcUnit != adcOneshot.getAdcUnit()) {
@@ -79,10 +78,10 @@ std::expected<int, esp_err_t> AdcAnalogReadPin::read() const noexcept {
         return std::unexpected(ESP_ERR_INVALID_STATE);
     }
 
-    int buf;
-    if (const esp_err_t ret = adcOneshot.readChannel(adcChannel, buf); ret != ESP_OK) {
-        return std::unexpected(ret);
+    const auto readResult = adcOneshot.readChannel(adcChannel);
+    if (!readResult.has_value()) {
+        return std::unexpected(readResult.error());
     }
 
-    return buf;
+    return readResult.value();
 }

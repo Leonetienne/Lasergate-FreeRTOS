@@ -38,6 +38,13 @@ target_include_directories(lasergate_tests PRIVATE
 target_compile_definitions(lasergate_tests PRIVATE HOST_BUILD=1)
 target_compile_features(lasergate_tests PRIVATE cxx_std_23)
 
+target_compile_options(lasergate_tests PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+        -Wno-unused
+)
+
 include(CTest)
 include(${catch2_SOURCE_DIR}/extras/Catch.cmake)
 catch_discover_tests(lasergate_tests)

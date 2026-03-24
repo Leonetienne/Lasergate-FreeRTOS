@@ -6,12 +6,12 @@
 #include "GpioPinRegister.h"
 
 TEST_CASE("GpioPinRegister", "[GpioPinRegister]") {
-    constexpr gpio_num_t testPin = 16;
+    constexpr gpio_num_t testPin = GPIO_NUM_16;
     GpioPinRegister pr;
 
     SECTION("all pins are free at start") {
-        for (gpio_num_t pin = 0; pin < 64; ++pin) {
-            CHECK_FALSE(pr.isPinBound(pin));
+        for (std::size_t pin = 0; pin < 64; ++pin) {
+            CHECK_FALSE(pr.isPinBound(static_cast<gpio_num_t>(pin)));
         }
     }
 
@@ -27,9 +27,9 @@ TEST_CASE("GpioPinRegister", "[GpioPinRegister]") {
     SECTION("other pins remain free after assigning a pin") {
         REQUIRE(pr.bindPin(testPin));
 
-        for (gpio_num_t pin = 0; pin < 64; ++pin) {
+        for (std::size_t pin = 0; pin < 64; ++pin) {
             if (pin != testPin) {
-                CHECK_FALSE(pr.isPinBound(pin));
+                CHECK_FALSE(pr.isPinBound(static_cast<gpio_num_t>(pin)));
             }
         }
     }
