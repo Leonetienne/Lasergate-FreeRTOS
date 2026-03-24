@@ -26,6 +26,8 @@ add_executable(lasergate_tests
         ../main/src/hal/AdcGpioMapping.cpp
         ../main/src/test/stubs/GpioStub.cpp
         ../main/src/test/stubs/AdcOneshotStub.cpp
+        ../main/src/platform/AdcOneshot.cpp
+        ../main/include/platform/AdcOneshot.h
 )
 
 

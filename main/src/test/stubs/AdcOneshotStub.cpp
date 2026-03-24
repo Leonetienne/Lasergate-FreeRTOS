@@ -7,7 +7,7 @@
 AdcOneshotStub::AdcOneshotStub(const adc_unit_t adcUnit) noexcept :
     IAdcOneshot(adcUnit)
 {
-    this->ready = true;
+    this->ready = false;
 }
 
 AdcOneshotStub::AdcOneshotStub(AdcOneshotStub&& other) noexcept :
@@ -15,6 +15,11 @@ AdcOneshotStub::AdcOneshotStub(AdcOneshotStub&& other) noexcept :
 {
     this->registeredChannels = std::move(other.registeredChannels);
     this->inputValueMap = std::move(other.inputValueMap);
+}
+
+esp_err_t AdcOneshotStub::initialize() noexcept {
+    this->ready = true;
+    return ESP_OK;
 }
 
 esp_err_t AdcOneshotStub::registerChannel(const adc_channel_t adcChannel) noexcept {

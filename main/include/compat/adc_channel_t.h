@@ -20,7 +20,7 @@ typedef enum {
     ADC_CHANNEL_10
 } adc_channel_t;
 #else
-#include "esp_adc/adc_types.h"
+#include "esp_adc/adc_oneshot.h"
 #endif
 
 #endif //LASERGATE_V2_ADC_CHANNEL_H
