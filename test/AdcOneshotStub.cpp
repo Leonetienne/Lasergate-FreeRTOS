@@ -8,7 +8,12 @@
 TEST_CASE("AdcOneshotStub", "[AdcOneshotStub]") {
     AdcOneshotStub stubAdc1(ADC_UNIT_1);
 
-    SECTION("ready by default") {
+    SECTION("not ready by default") {
+        REQUIRE_FALSE(stubAdc1.isReady());
+    }
+
+    SECTION("ready after initialize") {
+        REQUIRE(stubAdc1.initialize() == ESP_OK);
         REQUIRE(stubAdc1.isReady());
     }
 
@@ -17,7 +22,8 @@ TEST_CASE("AdcOneshotStub", "[AdcOneshotStub]") {
         REQUIRE_FALSE(stubAdc1.isReady());
     }
 
-    SECTION("moved-to is ready after move") {
+    SECTION("moved-to is ready after move if it was initialized") {
+        REQUIRE(stubAdc1.initialize() == ESP_OK);
         AdcOneshotStub stub2 = std::move(stubAdc1);
         REQUIRE_FALSE(stubAdc1.isReady());
         REQUIRE(stub2.isReady());

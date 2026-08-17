@@ -2,8 +2,8 @@
 // Created by Leon Etienne on 21.03.26.
 //
 
-#ifndef LASERGATE_V2_IGPIO_H
-#define LASERGATE_V2_IGPIO_H
+#ifndef LASERGATE_V2_IADCONESHOT_H
+#define LASERGATE_V2_IADCONESHOT_H
 
 #include "compat/adc_channel_t.h"
 #include "compat/esp_err_t.h"
@@ -54,4 +54,4 @@ protected:
 };
 
 
-#endif //LASERGATE_V2_IGPIO_H
+#endif //LASERGATE_V2_IADCONESHOT_H

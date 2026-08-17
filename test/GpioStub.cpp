@@ -20,8 +20,25 @@ TEST_CASE("GpioStub", "[GpioStub]") {
         REQUIRE(gpStub.test_gpioGetMode(testPin) == GPIO_MODE_OUTPUT);
     }
 
-    SECTION("setting pin direction to anything but output fails") {
-        REQUIRE(gpStub.gpioSetDirection(testPin, GPIO_MODE_INPUT) == ESP_ERR_NOT_SUPPORTED);
+    SECTION("setting pin direction to input stores direction") {
+        REQUIRE(gpStub.gpioSetDirection(testPin, GPIO_MODE_INPUT) == ESP_OK);
+        REQUIRE(gpStub.test_gpioGetMode(testPin) == GPIO_MODE_INPUT);
+    }
+
+    SECTION("setting pin direction to anything but input/output fails") {
+        REQUIRE(gpStub.gpioSetDirection(testPin, GPIO_MODE_OUTPUT_OD) == ESP_ERR_NOT_SUPPORTED);
+    }
+
+    SECTION("an input pin defaults to level 1 (idle/released) until explicitly set") {
+        REQUIRE(gpStub.gpioGetLevel(testPin) == 1);
+    }
+
+    SECTION("test_setInputLevel controls what gpioGetLevel reads back") {
+        gpStub.test_setInputLevel(testPin, 0);
+        REQUIRE(gpStub.gpioGetLevel(testPin) == 0);
+
+        gpStub.test_setInputLevel(testPin, 1);
+        REQUIRE(gpStub.gpioGetLevel(testPin) == 1);
     }
 
     SECTION("all pins are at level 0 at start") {
