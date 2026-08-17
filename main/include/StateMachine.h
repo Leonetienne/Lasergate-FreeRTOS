@@ -5,7 +5,7 @@
 #ifndef LASERGATE_V2_STATEMACHINE_H
 #define LASERGATE_V2_STATEMACHINE_H
 
-#include "States.h"
+#include "enum/States.h"
 
 class StateMachine {
 public:
@@ -14,8 +14,18 @@ public:
     StateMachine(StateMachine&&) = delete;
     StateMachine& operator=(const StateMachine&) = delete;
 
+    /**
+     * @return The current state
+     */
+    [[nodiscard]] STATE getState() const noexcept;
+
+    /**
+     * Sets the current state
+     */
+    void setState(STATE state) noexcept;
+
 private:
-    STATE currentState;
+    STATE currentState = STATE::INITIALIZATION;
 };
 
 #endif //LASERGATE_V2_STATEMACHINE_H

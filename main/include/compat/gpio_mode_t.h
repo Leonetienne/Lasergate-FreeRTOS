@@ -20,4 +20,4 @@ typedef enum {
 #include "hal/gpio_types.h"
 #endif
 
-#endif //LASERGATE_V2_GPIO_MODE_T_
+#endif //LASERGATE_V2_GPIO_MODE_T_H

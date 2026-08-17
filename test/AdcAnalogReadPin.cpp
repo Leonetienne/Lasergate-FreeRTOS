@@ -55,12 +55,14 @@ TEST_CASE("AdcAnalogReadPin: lifecycle", "[AdcAnalogReadPin]") {
     }
 
     SECTION("pin can read after initialization") {
+        REQUIRE(adcStub.initialize() == ESP_OK);
         REQUIRE(pin.initialize() == ESP_OK);
         auto result = pin.read();
         REQUIRE(result.has_value());
     }
 
     SECTION("pin reads 0 after initialization") {
+        REQUIRE(adcStub.initialize() == ESP_OK);
         REQUIRE(pin.initialize() == ESP_OK);
         auto result = pin.read();
         REQUIRE(result.has_value());
@@ -68,6 +70,7 @@ TEST_CASE("AdcAnalogReadPin: lifecycle", "[AdcAnalogReadPin]") {
     }
 
     SECTION("pin reads actual value") {
+        REQUIRE(adcStub.initialize() == ESP_OK);
         REQUIRE(pin.initialize() == ESP_OK);
         adcStub.test_setChannelValue(ADC_CHANNEL_6, 2734);
         auto result = pin.read();

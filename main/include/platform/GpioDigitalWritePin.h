@@ -17,9 +17,10 @@ class GpioDigitalWritePin {
 public:
     GpioDigitalWritePin(GpioPinRegister& pinRegister, IGpio& gpio, const gpio_num_t pinNum);
     GpioDigitalWritePin(const GpioDigitalWritePin&) = delete;
-    GpioDigitalWritePin(GpioDigitalWritePin&& other) noexcept;
-    ~GpioDigitalWritePin();
     GpioDigitalWritePin& operator=(const GpioDigitalWritePin&) = delete;
+    GpioDigitalWritePin(GpioDigitalWritePin&& other) noexcept;
+    GpioDigitalWritePin& operator=(GpioDigitalWritePin&& other) noexcept;
+    ~GpioDigitalWritePin();
 
     /**
      * Will initialize the pin

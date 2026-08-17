@@ -1,5 +1,11 @@
-#include "System.h"
+#include "platform/SystemEsp32.h"
+#include "esp_system.h"
 
 extern "C" void app_main() {
-    System system;
+    System& system = getSystem();
+    system.init();
+    system.loop();
+    system.free();
+
+    esp_restart();
 }
