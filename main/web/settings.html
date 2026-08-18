@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+    <header class="page-head">
+        <div>
+            <h1>Settings</h1>
+            <p class="subtitle" id="device-name"></p>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <a href="/">Status</a>
+        <a href="/settings" class="active">Settings</a>
+        <a href="/settings/advanced">Advanced</a>
+    </nav>
+
+    <div id="status" class="status-msg"></div>
+
+    <form class="card" id="settings-form">
+        <h2>Device</h2>
+        <label for="device_name">Device name</label>
+        <input type="text" id="device_name" name="device_name" maxlength="31" required>
+
+        <h2 style="margin-top:1.4rem">MQTT</h2>
+        <p class="hint">Leave the broker URI blank to disable MQTT.</p>
+        <label for="mqtt_uri">Broker URI</label>
+        <input type="text" id="mqtt_uri" name="mqtt_uri" placeholder="mqtt://192.168.0.10:1883" maxlength="63">
+
+        <label for="mqtt_user">Username</label>
+        <input type="text" id="mqtt_user" name="mqtt_user" maxlength="31">
+
+        <label for="mqtt_pass">Password</label>
+        <input type="password" id="mqtt_pass" name="mqtt_pass" placeholder="leave blank to keep unchanged">
+
+        <label for="node_id">Discovery node ID</label>
+        <input type="text" id="node_id" name="node_id" maxlength="31" placeholder="defaults to device name">
+
+        <button type="submit">Save &amp; restart</button>
+    </form>
+</div>
+
+<script>
+async function loadSettings() {
+    const res = await fetch('/api/settings');
+    const text = await res.text();
+    const values = {};
+    text.trim().split('\n').filter(Boolean).forEach(line => {
+        const i = line.indexOf('=');
+        values[line.slice(0, i)] = line.slice(i + 1);
+    });
+    const name = values.device_name || '';
+    document.title = name ? name + ' - Settings' : 'Settings';
+    document.getElementById('device-name').textContent = name;
+    document.getElementById('device_name').value = name;
+    document.getElementById('mqtt_uri').value = values.mqtt_uri || '';
+    document.getElementById('mqtt_user').value = values.mqtt_user || '';
+    document.getElementById('mqtt_pass').placeholder = values.mqtt_password_set === '1' ? 'leave blank to keep unchanged' : '';
+    document.getElementById('node_id').value = values.node_id || '';
+}
+
+document.getElementById('settings-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = document.getElementById('status');
+    status.className = 'status-msg show';
+    status.textContent = 'Saving & restarting…';
+    await fetch('/settings', { method: 'POST', body: new URLSearchParams(new FormData(e.target)) });
+    status.textContent = 'Saved. The device is restarting -- reload the page in a few seconds.';
+});
+
+loadSettings();
+</script>
+</body>
+</html>

@@ -63,3 +63,25 @@ std::expected<gpio_num_t, bool> SettingsManager::retrieveMqttLedGpioPin() const 
     }
     return std::unexpected(false);
 }
+
+bool SettingsManager::storeEthernetLedGpioPin(gpio_num_t gpioPin) const noexcept {
+    return i_nvs.setInt("eth_led_gpio", static_cast<int32_t>(gpioPin));
+}
+
+std::expected<gpio_num_t, bool> SettingsManager::retrieveEthernetLedGpioPin() const noexcept {
+    if (int32_t buf{}; i_nvs.getInt("eth_led_gpio", buf)) {
+        return static_cast<gpio_num_t>(buf);
+    }
+    return std::unexpected(false);
+}
+
+bool SettingsManager::storeConnLedsEnabled(bool enabled) const noexcept {
+    return i_nvs.setInt("conn_leds_en", enabled ? 1 : 0);
+}
+
+std::expected<bool, bool> SettingsManager::retrieveConnLedsEnabled() const noexcept {
+    if (int32_t buf{}; i_nvs.getInt("conn_leds_en", buf)) {
+        return buf != 0;
+    }
+    return std::unexpected(false);
+}

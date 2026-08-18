@@ -1141,7 +1141,7 @@ CONFIG_ESP_ERR_TO_NAME_LOOKUP=y
 # GDMA Configurations
 #
 # default:
-# CONFIG_GDMA_CTRL_FUNC_IN_IRAM is not set
+CONFIG_GDMA_CTRL_FUNC_IN_IRAM=y
 # default:
 CONFIG_GDMA_ISR_HANDLER_IN_IRAM=y
 # default:
@@ -1156,6 +1156,17 @@ CONFIG_GDMA_OBJ_DRAM_SAFE=y
 # default:
 # CONFIG_GPIO_CTRL_FUNC_IN_IRAM is not set
 # end of ESP-Driver:GPIO Configurations
+
+#
+# ESP-Driver:SPI Configurations
+#
+# default:
+CONFIG_SPI_MASTER_ISR_IN_IRAM=y
+# default:
+# CONFIG_SPI_SLAVE_IN_IRAM is not set
+# default:
+CONFIG_SPI_SLAVE_ISR_IN_IRAM=y
+# end of ESP-Driver:SPI Configurations
 
 #
 # ESP-Driver:UART Configurations
@@ -1183,6 +1194,19 @@ CONFIG_USJ_ENABLE_USB_SERIAL_JTAG=y
 # end of ESP-Driver:USB Serial/JTAG Configuration
 
 #
+# Ethernet
+#
+# default:
+CONFIG_ETH_ENABLED=y
+# default:
+CONFIG_ETH_USE_SPI_ETHERNET=y
+# default:
+# CONFIG_ETH_USE_OPENETH is not set
+# default:
+# CONFIG_ETH_TRANSMIT_MUTEX is not set
+# end of Ethernet
+
+#
 # Event Loop Library
 #
 # default:
@@ -1192,6 +1216,27 @@ CONFIG_ESP_EVENT_POST_FROM_ISR=y
 # default:
 CONFIG_ESP_EVENT_POST_FROM_IRAM_ISR=y
 # end of Event Loop Library
+
+#
+# HTTP Server
+#
+# default:
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
+# default:
+CONFIG_HTTPD_MAX_URI_LEN=512
+# default:
+CONFIG_HTTPD_ERR_RESP_NO_DELAY=y
+# default:
+CONFIG_HTTPD_PURGE_BUF_LEN=32
+# default:
+# CONFIG_HTTPD_LOG_PURGE_DATA is not set
+# default:
+# CONFIG_HTTPD_WS_SUPPORT is not set
+# default:
+# CONFIG_HTTPD_QUEUE_WORK_BLOCKING is not set
+# default:
+CONFIG_HTTPD_SERVER_EVENT_POST_TIMEOUT=2000
+# end of HTTP Server
 
 #
 # Hardware Settings
@@ -1346,6 +1391,8 @@ CONFIG_ESP_BROWNOUT_USE_INTR=y
 # end of Power Supplier
 
 # default:
+CONFIG_ESP_SPI_BUS_LOCK_ISR_FUNCS_IN_IRAM=y
+# default:
 CONFIG_ESP_INTR_IN_IRAM=y
 # end of Hardware Settings
 
@@ -1392,6 +1439,33 @@ CONFIG_LIBC_ASSERT_BUFFER_SIZE=200
 # default:
 # CONFIG_ESP_MM_CACHE_MSYNC_C2M_CHUNKED_OPS is not set
 # end of ESP-MM: Memory Management Configurations
+
+#
+# ESP NETIF Adapter
+#
+# default:
+CONFIG_ESP_NETIF_LOST_IP_TIMER_ENABLE=y
+# default:
+CONFIG_ESP_NETIF_IP_LOST_TIMER_INTERVAL=120
+# default:
+# CONFIG_ESP_NETIF_PROVIDE_CUSTOM_IMPLEMENTATION is not set
+# default:
+CONFIG_ESP_NETIF_TCPIP_LWIP=y
+# default:
+# CONFIG_ESP_NETIF_LOOPBACK is not set
+# default:
+CONFIG_ESP_NETIF_USES_TCPIP_WITH_BSD_API=y
+# default:
+CONFIG_ESP_NETIF_REPORT_DATA_TRAFFIC=y
+# default:
+CONFIG_ESP_NETIF_RECEIVE_REPORT_ERRORS=y
+# default:
+# CONFIG_ESP_NETIF_L2_TAP is not set
+# default:
+# CONFIG_ESP_NETIF_BRIDGE_EN is not set
+# default:
+# CONFIG_ESP_NETIF_SET_DNS_PER_DEFAULT_NETIF is not set
+# end of ESP NETIF Adapter
 
 #
 # Partition API Configuration

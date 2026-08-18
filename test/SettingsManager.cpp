@@ -75,3 +75,47 @@ TEST_CASE("SettingsManager: mqtt led gpio pin", "[SettingsManager]") {
         REQUIRE_FALSE(settings.retrieveMqttLedGpioPin().has_value());
     }
 }
+
+TEST_CASE("SettingsManager: ethernet led gpio pin", "[SettingsManager]") {
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+
+    SECTION("round trip stores and retrieves the pin") {
+        REQUIRE(settings.storeEthernetLedGpioPin(GPIO_NUM_4));
+
+        const auto result = settings.retrieveEthernetLedGpioPin();
+        REQUIRE(result.has_value());
+        REQUIRE(*result == GPIO_NUM_4);
+    }
+
+    SECTION("retrieve fails when nothing was stored") {
+        REQUIRE_FALSE(settings.retrieveEthernetLedGpioPin().has_value());
+    }
+}
+
+TEST_CASE("SettingsManager: connectivity leds enabled", "[SettingsManager]") {
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+
+    SECTION("round trip stores and retrieves true") {
+        REQUIRE(settings.storeConnLedsEnabled(true));
+
+        const auto result = settings.retrieveConnLedsEnabled();
+        REQUIRE(result.has_value());
+        REQUIRE(*result == true);
+    }
+
+    SECTION("round trip stores and retrieves false") {
+        REQUIRE(settings.storeConnLedsEnabled(false));
+
+        const auto result = settings.retrieveConnLedsEnabled();
+        REQUIRE(result.has_value());
+        REQUIRE(*result == false);
+    }
+
+    SECTION("retrieve fails when nothing was stored") {
+        REQUIRE_FALSE(settings.retrieveConnLedsEnabled().has_value());
+    }
+}
