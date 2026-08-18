@@ -4,6 +4,8 @@ idf_component_register(SRCS
                        "src/System.cpp"
                        "src/GpioPinRegister.cpp"
                        "src/SettingsManager.cpp"
+                       "src/UrlEncodedForm.cpp"
+                       "src/ApiController.cpp"
                        "src/hal/IAdcOneshot.cpp"
                        "src/platform/GpioEsp32.cpp"
                        "src/platform/GpioDigitalWritePin.cpp"
@@ -12,9 +14,12 @@ idf_component_register(SRCS
                        "src/platform/TimeEsp32.cpp"
                        "src/platform/NVSEsp32.cpp"
                        "src/platform/MqttEsp32.cpp"
+                       "src/platform/EthernetManagerEsp32.cpp"
+                       "src/platform/HttpServerEsp32.cpp"
                        "src/platform/SystemEsp32.cpp"
                        PRIV_REQUIRES spi_flash
-                       REQUIRES esp_driver_gpio esp_adc nvs_flash mqtt
-                       INCLUDE_DIRS "include")
+                       REQUIRES esp_driver_gpio esp_driver_spi esp_adc nvs_flash mqtt esp_eth esp_netif esp_event esp_http_server
+                       INCLUDE_DIRS "include"
+                       EMBED_FILES "web/index.html" "web/style.css" "web/settings.html" "web/advanced.html")
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -std=gnu++23)

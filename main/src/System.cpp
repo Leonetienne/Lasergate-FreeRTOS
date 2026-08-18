@@ -18,7 +18,9 @@ System::System(
     ITime& i_time,
     INVS& nvs,
     SettingsManager& settings,
-    IMqtt& mqtt
+    IMqtt& mqtt,
+    IEthernetManager& ethernetMan,
+    IHttpServer& httpServer
 ) noexcept :
     stateMachine(stateMachine),
     gpioPinRegister(gpioPinRegister),
@@ -27,6 +29,8 @@ System::System(
     nvs(nvs),
     settings(settings),
     mqtt(mqtt),
+    ethernetMan(ethernetMan),
+    httpServer(httpServer),
     laserTestPin(gpioPinRegister, gpio, LASER_TEST_PIN)
 { }
 
@@ -52,8 +56,18 @@ void System::init() noexcept {
         onMqttMessage(topic, payload);
     });
 
-    // The network interface is expected to be brought up outside this class
-    // (ethernet). esp_mqtt_client reconnects automatically until it succeeds.
+    ethernetMan.setOnConnected([this]() { onEthernetConnected(); });
+    ethernetMan.setOnDisconnected([this]() { onEthernetDisconnected(); });
+
+    if (!ethernetMan.begin()) {
+        ESP_LOGW(LOG_TAG, "ethernetMan.begin() failed");
+    }
+    if (!httpServer.begin()) {
+        ESP_LOGW(LOG_TAG, "httpServer.begin() failed");
+    }
+
+    // esp_mqtt_client reconnects automatically until it succeeds, so it's fine
+    // to begin it before ethernet has actually acquired a link/ip.
     const auto brokerConfig = settings.retrieveMqttBrokerConfig();
     if (!brokerConfig.has_value() || brokerConfig->uri.empty()) {
         ESP_LOGI(LOG_TAG, "no broker uri configured, skipping mqtt connect");
@@ -104,6 +118,13 @@ bool System::free() noexcept {
         success = false;
     }
 
+    // httpServer may already be stopped (e.g. ethernet never came up) - that's fine
+    httpServer.free();
+
+    if (ethernetMan.isReady() && !ethernetMan.free()) {
+        success = false;
+    }
+
     if (laserTestPin.isReady() && !laserTestPin.free()) {
         success = false;
     }
@@ -151,4 +172,12 @@ void System::onMqttMessage(const std::string& topic, const std::string& payload)
     (void)topic;
     (void)payload;
     ESP_LOGI(LOG_TAG, "mqtt message on topic '%s': '%.*s'", topic.c_str(), static_cast<int>(payload.size()), payload.c_str());
+}
+
+void System::onEthernetConnected() noexcept {
+    ESP_LOGI(LOG_TAG, "ethernet connected");
+}
+
+void System::onEthernetDisconnected() noexcept {
+    ESP_LOGW(LOG_TAG, "ethernet disconnected");
 }

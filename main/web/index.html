@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+    <header class="page-head">
+        <div>
+            <h1>Status</h1>
+            <p class="subtitle" id="device-name"></p>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <a href="/" class="active">Status</a>
+        <a href="/settings">Settings</a>
+        <a href="/settings/advanced">Advanced</a>
+    </nav>
+
+    <div class="card">
+        <h2>Connectivity</h2>
+        <div class="row">
+            <div class="label"><span class="dot" id="ethernet-dot"></span>Ethernet</div>
+            <div class="state" id="ethernet-state">-</div>
+        </div>
+        <div class="row">
+            <div class="label"><span class="dot" id="mqtt-dot"></span>MQTT</div>
+            <div class="state" id="mqtt-state">-</div>
+        </div>
+    </div>
+</div>
+
+<script>
+function parseKeyValues(text) {
+    const values = {};
+    text.trim().split('\n').filter(Boolean).forEach(line => {
+        const i = line.indexOf('=');
+        values[line.slice(0, i)] = line.slice(i + 1);
+    });
+    return values;
+}
+
+function applyState(dotId, stateId, state) {
+    document.getElementById(dotId).classList.toggle('on', state === 'connected');
+    document.getElementById(stateId).textContent = state || 'unknown';
+}
+
+async function loadStatus() {
+    const res = await fetch('/api/status');
+    const values = parseKeyValues(await res.text());
+
+    const name = values.device_name || '';
+    document.title = name ? name + ' - Status' : 'Status';
+    document.getElementById('device-name').textContent = name;
+
+    applyState('ethernet-dot', 'ethernet-state', values.ethernet_state);
+    applyState('mqtt-dot', 'mqtt-state', values.mqtt_state);
+}
+
+loadStatus();
+setInterval(loadStatus, 3000);
+</script>
+</body>
+</html>

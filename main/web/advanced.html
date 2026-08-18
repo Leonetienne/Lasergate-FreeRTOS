@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Advanced</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+    <header class="page-head">
+        <div>
+            <h1>Advanced</h1>
+            <p class="subtitle" id="device-name"></p>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <a href="/">Status</a>
+        <a href="/settings">Settings</a>
+        <a href="/settings/advanced" class="active">Advanced</a>
+    </nav>
+
+    <div id="status" class="status-msg"></div>
+
+    <form class="card" id="gpio-form">
+        <h2>Status LEDs</h2>
+
+        <div class="check-row">
+            <input type="checkbox" id="enable_conn_leds" name="enable_conn_leds" value="1" checked>
+            <label for="enable_conn_leds" style="margin:0">Enable connectivity status LEDs (Ethernet/MQTT)</label>
+        </div>
+
+        <label for="ethernet_led_gpio">Ethernet OK LED - GPIO</label>
+        <input type="number" id="ethernet_led_gpio" name="ethernet_led_gpio" min="0" max="39" placeholder="not set">
+        <label for="mqtt_led_gpio">MQTT OK LED - GPIO</label>
+        <input type="number" id="mqtt_led_gpio" name="mqtt_led_gpio" min="0" max="39" placeholder="not set">
+
+        <button type="submit">Save &amp; restart</button>
+    </form>
+</div>
+
+<script>
+async function loadAdvanced() {
+    const res = await fetch('/api/settings/advanced');
+    const text = await res.text();
+    const values = {};
+    text.trim().split('\n').filter(Boolean).forEach(line => {
+        const i = line.indexOf('=');
+        values[line.slice(0, i)] = line.slice(i + 1);
+    });
+
+    document.getElementById('ethernet_led_gpio').value = values.ethernet_led_gpio || '';
+    document.getElementById('mqtt_led_gpio').value = values.mqtt_led_gpio || '';
+    document.getElementById('enable_conn_leds').checked = values.conn_leds_enabled !== '0';
+}
+
+async function loadDeviceName() {
+    const res = await fetch('/api/settings');
+    const text = await res.text();
+    const values = {};
+    text.trim().split('\n').filter(Boolean).forEach(line => {
+        const i = line.indexOf('=');
+        values[line.slice(0, i)] = line.slice(i + 1);
+    });
+    const name = values.device_name || '';
+    document.title = name ? name + ' - Advanced' : 'Advanced';
+    document.getElementById('device-name').textContent = name;
+}
+
+document.getElementById('gpio-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = document.getElementById('status');
+    status.className = 'status-msg show';
+    status.textContent = 'Saving & restarting…';
+    await fetch('/settings/advanced', { method: 'POST', body: new URLSearchParams(new FormData(e.target)) });
+    status.textContent = 'Saved. The device is restarting -- reload the page in a few seconds.';
+});
+
+loadDeviceName();
+loadAdvanced();
+</script>
+</body>
+</html>

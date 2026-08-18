@@ -7,6 +7,8 @@
 #include "test/stubs/TimeStub.h"
 #include "test/stubs/NVSStub.h"
 #include "test/stubs/MqttStub.h"
+#include "test/stubs/EthernetManagerStub.h"
+#include "test/stubs/HttpServerStub.h"
 
 TEST_CASE("System: init", "[System]") {
     GpioPinRegister pr{};
@@ -17,8 +19,10 @@ TEST_CASE("System: init", "[System]") {
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    HttpServerStub httpServerStub;
 
-    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, mqttStub);
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
 
     SECTION("initializes the laser test pin as output") {
         system.init();
@@ -55,8 +59,10 @@ TEST_CASE("System: free", "[System]") {
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    HttpServerStub httpServerStub;
 
-    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, mqttStub);
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
 
     SECTION("fails before init") {
         REQUIRE_FALSE(system.free());
@@ -88,8 +94,10 @@ TEST_CASE("System: update toggles the laser test pin once per second", "[System]
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    HttpServerStub httpServerStub;
 
-    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, mqttStub);
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
     system.init();
 
     SECTION("starts LOW") {
@@ -129,8 +137,10 @@ TEST_CASE("System: onMqttConnected publishes availability", "[System]") {
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    HttpServerStub httpServerStub;
 
-    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, mqttStub);
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
 
     SECTION("publishes Online on the lwt topic") {
         REQUIRE(settings.storeMqttBrokerConfig({"mqtt://broker.example", "", ""}));
@@ -164,8 +174,10 @@ TEST_CASE("System: update polls the mqtt activity led pulse", "[System]") {
     StateMachine stateMachine{};
     SettingsManager settings(nvs);
     MqttStub mqttStub(GPIO_NUM_3, gpioStub, pr, timeStub);
+    EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
+    HttpServerStub httpServerStub;
 
-    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, mqttStub);
+    System system(stateMachine, pr, gpioStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
     system.init();
 
     SECTION("turns the led back on 100ms after a publish, regardless of system state") {

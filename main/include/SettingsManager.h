@@ -42,6 +42,19 @@ public:
     bool storeMqttLedGpioPin(gpio_num_t gpioPin) const noexcept;
     [[nodiscard]] std::expected<gpio_num_t, bool> retrieveMqttLedGpioPin() const noexcept;
 
+    /**
+     * @return Success state
+     */
+    bool storeEthernetLedGpioPin(gpio_num_t gpioPin) const noexcept;
+    [[nodiscard]] std::expected<gpio_num_t, bool> retrieveEthernetLedGpioPin() const noexcept;
+
+    /**
+     * Master switch for the ethernet/mqtt connectivity status LEDs
+     * @return Success state
+     */
+    bool storeConnLedsEnabled(bool enabled) const noexcept;
+    [[nodiscard]] std::expected<bool, bool> retrieveConnLedsEnabled() const noexcept;
+
 private:
     INVS& i_nvs;
 };

@@ -20,13 +20,19 @@ add_executable(lasergate_tests
         TimeStub.cpp
         NVSStub.cpp
         MqttStub.cpp
+        EthernetManagerStub.cpp
+        HttpServerStub.cpp
         SettingsManager.cpp
+        UrlEncodedForm.cpp
+        ApiController.cpp
         System.cpp
 
         ../main/src/StateMachine.cpp
         ../main/src/System.cpp
         ../main/src/GpioPinRegister.cpp
         ../main/src/SettingsManager.cpp
+        ../main/src/UrlEncodedForm.cpp
+        ../main/src/ApiController.cpp
         ../main/src/platform/GpioDigitalWritePin.cpp
         ../main/src/platform/AdcAnalogReadPin.cpp
         ../main/src/platform/TimeEsp32.cpp
@@ -37,6 +43,7 @@ add_executable(lasergate_tests
         ../main/src/test/stubs/TimeStub.cpp
         ../main/src/test/stubs/NVSStub.cpp
         ../main/src/test/stubs/MqttStub.cpp
+        ../main/src/test/stubs/EthernetManagerStub.cpp
         ../main/src/test/stubs/HttpServerStub.cpp
         ../main/src/test/stubs/SystemStub.cpp
         ../main/include/platform/AdcOneshot.h

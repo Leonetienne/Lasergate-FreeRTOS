@@ -12,14 +12,13 @@
 #include "hal/ITime.h"
 #include "hal/INVS.h"
 #include "hal/IMqtt.h"
+#include "hal/IEthernetManager.h"
+#include "hal/IHttpServer.h"
 #include "platform/GpioDigitalWritePin.h"
 #include <string>
 
 /**
  * System entrypoint and main runtime.
- *
- * Depends only on interfaces (plus the portable, non-hardware logic classes),
- * so it can be run against either the esp32 platform implementations.
  */
 class System {
 public:
@@ -30,7 +29,9 @@ public:
         ITime& i_time,
         INVS& nvs,
         SettingsManager& settings,
-        IMqtt& mqtt
+        IMqtt& mqtt,
+        IEthernetManager& ethernetMan,
+        IHttpServer& httpServer
     ) noexcept;
     System(const System&) = delete;
     System& operator=(const System&) = delete;
@@ -74,6 +75,16 @@ private:
      */
     void onMqttMessage(const std::string& topic, const std::string& payload) noexcept;
 
+    /**
+     * Called by ethernetMan once the link is up and an IP has been acquired.
+     */
+    void onEthernetConnected() noexcept;
+
+    /**
+     * Called by ethernetMan once a previously established connection is lost.
+     */
+    void onEthernetDisconnected() noexcept;
+
     static constexpr gpio_num_t LASER_TEST_PIN = GPIO_NUM_39;
     static constexpr int64_t LASER_TEST_TOGGLE_INTERVAL_MS = 1000;
     int64_t lastToggleMillis = 0;
@@ -86,6 +97,8 @@ private:
     INVS& nvs;
     SettingsManager& settings;
     IMqtt& mqtt;
+    IEthernetManager& ethernetMan;
+    IHttpServer& httpServer;
 
     GpioDigitalWritePin laserTestPin;
     std::string lwtTopic;
