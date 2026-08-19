@@ -4,18 +4,22 @@
 #include "StateMachine.h"
 #include "test/stubs/GpioStub.h"
 #include "test/stubs/AdcOneshotStub.h"
+#include "test/stubs/RandomStub.h"
+#include "test/stubs/TimeStub.h"
 
 TEST_CASE("GateModule: lifecycle", "[GateModule]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
     StateMachine stateMachine{};
 
     constexpr gpio_num_t laserPin = GPIO_NUM_16;
     constexpr gpio_num_t ledPin = GPIO_NUM_17;
     constexpr gpio_num_t ldrPin = GPIO_NUM_34;
 
-    GateModule module(stateMachine, pr, gpioStub, adcStub, laserPin, ledPin, ldrPin);
+    GateModule module(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
 
     SECTION("not ready by default") {
         REQUIRE_FALSE(module.isReady());
@@ -46,20 +50,22 @@ TEST_CASE("GateModule: isConfigured", "[GateModule]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
     StateMachine stateMachine{};
 
     SECTION("true when the laser and ldr pins are both real, regardless of the status led") {
-        GateModule module(stateMachine, pr, gpioStub, adcStub, GPIO_NUM_16, GPIO_NUM_NC, GPIO_NUM_34);
+        GateModule module(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, GPIO_NUM_16, GPIO_NUM_NC, GPIO_NUM_34);
         REQUIRE(module.isConfigured());
     }
 
     SECTION("false when the laser pin is GPIO_NUM_NC") {
-        GateModule module(stateMachine, pr, gpioStub, adcStub, GPIO_NUM_NC, GPIO_NUM_17, GPIO_NUM_34);
+        GateModule module(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, GPIO_NUM_NC, GPIO_NUM_17, GPIO_NUM_34);
         REQUIRE_FALSE(module.isConfigured());
     }
 
     SECTION("false when the ldr pin is GPIO_NUM_NC") {
-        GateModule module(stateMachine, pr, gpioStub, adcStub, GPIO_NUM_16, GPIO_NUM_17, GPIO_NUM_NC);
+        GateModule module(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, GPIO_NUM_16, GPIO_NUM_17, GPIO_NUM_NC);
         REQUIRE_FALSE(module.isConfigured());
     }
 }
@@ -68,12 +74,14 @@ TEST_CASE("GateModule: status led is optional", "[GateModule]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
     StateMachine stateMachine{};
 
     constexpr gpio_num_t laserPin = GPIO_NUM_16;
     constexpr gpio_num_t ldrPin = GPIO_NUM_34;
 
-    GateModule module(stateMachine, pr, gpioStub, adcStub, laserPin, GPIO_NUM_NC, ldrPin);
+    GateModule module(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, GPIO_NUM_NC, ldrPin);
 
     SECTION("initializes successfully without a configured status led") {
         REQUIRE(module.initialize());
@@ -96,13 +104,15 @@ TEST_CASE("GateModule: state dispatch", "[GateModule]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
     StateMachine stateMachine{};
 
     constexpr gpio_num_t laserPin = GPIO_NUM_16;
     constexpr gpio_num_t ledPin = GPIO_NUM_17;
     constexpr gpio_num_t ldrPin = GPIO_NUM_34;
 
-    GateModule module(stateMachine, pr, gpioStub, adcStub, laserPin, ledPin, ldrPin);
+    GateModule module(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
     REQUIRE(module.initialize());
 
     SECTION("USER_ADJUSTING_BEAMS turns the laser on and the status led off") {

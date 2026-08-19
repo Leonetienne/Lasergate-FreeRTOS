@@ -10,6 +10,7 @@ idf_component_register(SRCS
                        "src/LaserSensor.cpp"
                        "src/Gate.cpp"
                        "src/GateModule.cpp"
+                       "src/PulseRingBuffer.cpp"
                        "src/hal/IAdcOneshot.cpp"
                        "src/hal/IRandom.cpp"
                        "src/platform/GpioEsp32.cpp"
