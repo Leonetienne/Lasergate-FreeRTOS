@@ -3,21 +3,28 @@
 constexpr int INITIAL_LDR_THRESH = 0;
 
 GateModule::GateModule(
-    StateMachine &stateMachine,
-    LaserDiode &laserDiode,
-    LightEmittingDiode &statusLed,
-    LaserSensor &laserSensor
+    StateMachine& stateMachine,
+    GpioPinRegister& pinRegister,
+    IGpio& gpio,
+    IAdcOneshot& adcOneshot,
+    gpio_num_t laserPin,
+    gpio_num_t statusLedPin,
+    gpio_num_t ldrPin
 ) noexcept:
     stateMachine {stateMachine},
-    laserDiode {laserDiode},
-    statusLed {statusLed},
-    laserSensor {laserSensor}
+    laserDiode {pinRegister, gpio, laserPin},
+    statusLed {pinRegister, gpio, statusLedPin},
+    laserSensor {pinRegister, adcOneshot, ldrPin}
 { }
 
 GateModule::~GateModule() noexcept {
     if (isInitialized) {
         free();
     }
+}
+
+bool GateModule::isConfigured() const noexcept {
+    return laserDiode.isConfigured() && laserSensor.isConfigured();
 }
 
 bool GateModule::initialize() noexcept {
@@ -27,10 +34,11 @@ bool GateModule::initialize() noexcept {
 
     bool success = true;
 
-    if (!laserDiode.initialize()) {
+    // The status led is optional
+    if (statusLed.isConfigured() && !statusLed.initialize()) {
         success = false;
     }
-    if (!statusLed.initialize()) {
+    if (!laserDiode.initialize()) {
         success = false;
     }
     if (!laserSensor.initialize(INITIAL_LDR_THRESH)) {
@@ -54,7 +62,7 @@ bool GateModule::free() noexcept {
     if (!laserDiode.free()) {
         success = false;
     }
-    if (!statusLed.free()) {
+    if (statusLed.isReady() && !statusLed.free()) {
         success = false;
     }
     if (!laserSensor.free()) {

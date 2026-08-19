@@ -1,15 +1,13 @@
 #include <catch2/catch_test_macros.hpp>
 #include "GpioPinRegister.h"
 #include "LaserSensor.h"
-#include "platform/AdcAnalogReadPin.h"
 #include "test/stubs/AdcOneshotStub.h"
 
 TEST_CASE("LaserSensor: lifecycle", "[LaserSensor]") {
     GpioPinRegister pr{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
     constexpr gpio_num_t bindPin = GPIO_NUM_34;
-    AdcAnalogReadPin ldrPin(pr, adcStub, bindPin);
-    LaserSensor sensor{ldrPin};
+    LaserSensor sensor{pr, adcStub, bindPin};
 
     REQUIRE(adcStub.initialize() == ESP_OK);
 
@@ -32,7 +30,7 @@ TEST_CASE("LaserSensor: lifecycle", "[LaserSensor]") {
     }
 
     SECTION("initialize fails if underlying ldr pin fails to initialize") {
-        REQUIRE(ldrPin.initialize() == ESP_OK);
+        REQUIRE(pr.bindPin(bindPin));
         REQUIRE_FALSE(sensor.initialize(500));
     }
 

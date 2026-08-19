@@ -2,11 +2,11 @@
 #define LASERGATE_TESTS_ADCONESHOT_H
 #include <unordered_set>
 
-#include "../../../../../.espressif/v6.0.1/esp-idf/components/esp_adc/include/esp_adc/adc_oneshot.h"
 #include "hal/IAdcOneshot.h"
 #include "esp_adc/adc_oneshot.h"
 
 class AdcOneshot : public IAdcOneshot {
+public:
     /**
      * @param adcUnit The adc unit this ADC driver wrapper should manage
      */

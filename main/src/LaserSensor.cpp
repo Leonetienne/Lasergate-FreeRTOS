@@ -1,7 +1,7 @@
 #include "LaserSensor.h"
 
-LaserSensor::LaserSensor(AdcAnalogReadPin &ldrPin) noexcept:
-    ldrPin {ldrPin}
+LaserSensor::LaserSensor(GpioPinRegister& pinRegister, IAdcOneshot& adcOneshot, gpio_num_t pinNum) noexcept:
+    ldrPin {pinRegister, adcOneshot, pinNum}
 { }
 
 LaserSensor::~LaserSensor() noexcept {
@@ -44,6 +44,10 @@ bool LaserSensor::free() noexcept {
     isInitialized = false;
 
     return success;
+}
+
+bool LaserSensor::isConfigured() const noexcept {
+    return ldrPin.getGpioNum() != GPIO_NUM_NC;
 }
 
 bool LaserSensor::isReady() const noexcept {

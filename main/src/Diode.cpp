@@ -1,7 +1,7 @@
 #include "../include/Diode.h"
 
-Diode::Diode(GpioDigitalWritePin &gpioPin) noexcept :
-    gpioPin { gpioPin }
+Diode::Diode(GpioPinRegister& pinRegister, IGpio& gpio, gpio_num_t pinNum) noexcept :
+    gpioPin { pinRegister, gpio, pinNum }
 {}
 
 Diode::~Diode() noexcept {
@@ -48,7 +48,11 @@ bool Diode::isReady() const noexcept {
     return isInitialized;
 }
 
-bool Diode::turnOn() const noexcept {
+bool Diode::isConfigured() const noexcept {
+    return gpioPin.getGpioNum() != GPIO_NUM_NC;
+}
+
+bool Diode::turnOn() noexcept {
     if (!isInitialized) {
         return false;
     }
@@ -56,7 +60,7 @@ bool Diode::turnOn() const noexcept {
     return gpioPin.setState(PIN_STATE_DIGITAL::HIGH);
 }
 
-bool Diode::turnOff() const noexcept {
+bool Diode::turnOff() noexcept {
     if (!isInitialized) {
         return false;
     }

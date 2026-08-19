@@ -8,6 +8,8 @@ idf_component_register(SRCS
                        "src/ApiController.cpp"
                        "src/Diode.cpp"
                        "src/LaserSensor.cpp"
+                       "src/Gate.cpp"
+                       "src/GateModule.cpp"
                        "src/hal/IAdcOneshot.cpp"
                        "src/hal/IRandom.cpp"
                        "src/platform/GpioEsp32.cpp"

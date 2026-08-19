@@ -1,14 +1,13 @@
 #include <catch2/catch_test_macros.hpp>
 #include "../main/include/LaserDiode.h"
 #include "../main/include/GpioPinRegister.h"
-#include "../main/include/platform/GpioDigitalWritePin.h"
 #include "test/stubs/GpioStub.h"
 
 TEST_CASE("LaserDiode: lifecycle", "[LaserDiode]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
-    GpioDigitalWritePin gpioPin{pr, gpioStub, GPIO_NUM_19};
-    LaserDiode diode{gpioPin};
+    constexpr gpio_num_t bindPin = GPIO_NUM_19;
+    LaserDiode diode{pr, gpioStub, bindPin};
 
     SECTION("not ready by default") {
         REQUIRE_FALSE(diode.isReady());
@@ -29,7 +28,7 @@ TEST_CASE("LaserDiode: lifecycle", "[LaserDiode]") {
     }
 
     SECTION("initialize fails if underlying gpio pin fails to initialize") {
-        REQUIRE(gpioPin.initialize());
+        REQUIRE(pr.bindPin(bindPin));
         REQUIRE_FALSE(diode.initialize());
     }
 
@@ -54,27 +53,27 @@ TEST_CASE("LaserDiode: lifecycle", "[LaserDiode]") {
     SECTION("turnOn sets the gpio pin HIGH") {
         REQUIRE(diode.initialize());
         REQUIRE(diode.turnOn());
-        REQUIRE(gpioPin.getState() == PIN_STATE_DIGITAL::HIGH);
+        REQUIRE(gpioStub.test_gpioGetLevel(bindPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
     SECTION("turnOff sets the gpio pin LOW") {
         REQUIRE(diode.initialize());
         REQUIRE(diode.turnOn());
         REQUIRE(diode.turnOff());
-        REQUIRE(gpioPin.getState() == PIN_STATE_DIGITAL::LOW);
+        REQUIRE(gpioStub.test_gpioGetLevel(bindPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
     SECTION("setPowerState(true) turns the gpio pin on") {
         REQUIRE(diode.initialize());
         REQUIRE(diode.setPowerState(true));
-        REQUIRE(gpioPin.getState() == PIN_STATE_DIGITAL::HIGH);
+        REQUIRE(gpioStub.test_gpioGetLevel(bindPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
     SECTION("setPowerState(false) turns the gpio pin off") {
         REQUIRE(diode.initialize());
         REQUIRE(diode.setPowerState(true));
         REQUIRE(diode.setPowerState(false));
-        REQUIRE(gpioPin.getState() == PIN_STATE_DIGITAL::LOW);
+        REQUIRE(gpioStub.test_gpioGetLevel(bindPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
     }
 
     SECTION("diode can be freed") {

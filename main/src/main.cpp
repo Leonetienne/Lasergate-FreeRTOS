@@ -3,7 +3,7 @@
 
 extern "C" void app_main() {
     System& system = getSystem();
-    system.init();
+    system.initialize();
     system.loop();
     system.free();
 
