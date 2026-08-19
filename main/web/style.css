@@ -4,8 +4,8 @@
     --text: #1c2321;
     --muted: #647268;
     --border: #dfe6e2;
-    --accent: #632f9e;
-    --accent-dark: #4b227a;
+    --accent: #e2231a;
+    --accent-dark: #b81b13;
     --danger: #c0392b;
     --radius: 14px;
 }
@@ -17,8 +17,8 @@
         --text: #eef2ef;
         --muted: #93a49b;
         --border: #2c3538;
-        --accent: #823ecf;
-        --accent-dark: #672fa8;
+        --accent: #ff4438;
+        --accent-dark: #cc372c;
         --danger: #e0574a;
     }
 }
