@@ -1,4 +1,5 @@
 #include "../include/SettingsManager.h"
+#include <cstdio>
 
 SettingsManager::SettingsManager(INVS &i_nvs) noexcept :
     i_nvs (i_nvs)
@@ -82,6 +83,51 @@ bool SettingsManager::storeConnLedsEnabled(bool enabled) const noexcept {
 std::expected<bool, bool> SettingsManager::retrieveConnLedsEnabled() const noexcept {
     if (int32_t buf{}; i_nvs.getInt("conn_leds_en", buf)) {
         return buf != 0;
+    }
+    return std::unexpected(false);
+}
+
+bool SettingsManager::storeGateModuleLaserGpioPin(std::size_t moduleIndex, gpio_num_t gpioPin) const noexcept {
+    char key[16];
+    snprintf(key, sizeof(key), "gm%zu_laser_gpio", moduleIndex);
+    return i_nvs.setInt(key, static_cast<int32_t>(gpioPin));
+}
+
+std::expected<gpio_num_t, bool> SettingsManager::retrieveGateModuleLaserGpioPin(std::size_t moduleIndex) const noexcept {
+    char key[16];
+    snprintf(key, sizeof(key), "gm%zu_laser_gpio", moduleIndex);
+    if (int32_t buf{}; i_nvs.getInt(key, buf)) {
+        return static_cast<gpio_num_t>(buf);
+    }
+    return std::unexpected(false);
+}
+
+bool SettingsManager::storeGateModuleLedGpioPin(std::size_t moduleIndex, gpio_num_t gpioPin) const noexcept {
+    char key[16];
+    snprintf(key, sizeof(key), "gm%zu_led_gpio", moduleIndex);
+    return i_nvs.setInt(key, static_cast<int32_t>(gpioPin));
+}
+
+std::expected<gpio_num_t, bool> SettingsManager::retrieveGateModuleLedGpioPin(std::size_t moduleIndex) const noexcept {
+    char key[16];
+    snprintf(key, sizeof(key), "gm%zu_led_gpio", moduleIndex);
+    if (int32_t buf{}; i_nvs.getInt(key, buf)) {
+        return static_cast<gpio_num_t>(buf);
+    }
+    return std::unexpected(false);
+}
+
+bool SettingsManager::storeGateModuleLdrGpioPin(std::size_t moduleIndex, gpio_num_t gpioPin) const noexcept {
+    char key[16];
+    snprintf(key, sizeof(key), "gm%zu_ldr_gpio", moduleIndex);
+    return i_nvs.setInt(key, static_cast<int32_t>(gpioPin));
+}
+
+std::expected<gpio_num_t, bool> SettingsManager::retrieveGateModuleLdrGpioPin(std::size_t moduleIndex) const noexcept {
+    char key[16];
+    snprintf(key, sizeof(key), "gm%zu_ldr_gpio", moduleIndex);
+    if (int32_t buf{}; i_nvs.getInt(key, buf)) {
+        return static_cast<gpio_num_t>(buf);
     }
     return std::unexpected(false);
 }

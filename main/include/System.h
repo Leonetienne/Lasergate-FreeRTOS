@@ -5,16 +5,17 @@
 #ifndef LASERGATE_V2_SYSTEM_H
 #define LASERGATE_V2_SYSTEM_H
 
+#include "Gate.h"
 #include "GpioPinRegister.h"
 #include "StateMachine.h"
 #include "SettingsManager.h"
+#include "hal/IAdcOneshot.h"
 #include "hal/IGpio.h"
 #include "hal/ITime.h"
 #include "hal/INVS.h"
 #include "hal/IMqtt.h"
 #include "hal/IEthernetManager.h"
 #include "hal/IHttpServer.h"
-#include "platform/GpioDigitalWritePin.h"
 #include <string>
 
 /**
@@ -26,6 +27,7 @@ public:
         StateMachine& stateMachine,
         GpioPinRegister& gpioPinRegister,
         IGpio& gpio,
+        IAdcOneshot& adcOneshot,
         ITime& i_time,
         INVS& nvs,
         SettingsManager& settings,
@@ -38,7 +40,7 @@ public:
     System(System&&) = delete;
     ~System() noexcept;
 
-    void init() noexcept;
+    void initialize() noexcept;
 
     /**
      * Runs the runtime loop until the state machine enters STATE::SHUTTING_DOWN.
@@ -52,13 +54,28 @@ public:
     bool free() noexcept;
 
     /**
-     * Processes one iteration of runtime work (test-pin toggle, mqtt activity
-     * LED pulse). Called repeatedly by loop().
+     * Processes one iteration of runtime work (mqtt activity LED pulse).
+     * Called repeatedly by loop().
      */
     void update() noexcept;
 
 private:
     void beforeShutdown() noexcept;
+
+    /**
+     * Wires up the mqtt connected/disconnected/message callbacks.
+     */
+    void wireMqttCallbacks() noexcept;
+
+    /**
+     * Wires up the ethernet connected/disconnected callbacks.
+     */
+    void wireEthernetCallbacks() noexcept;
+
+    /**
+     * Resolves the broker config from settings and connects to mqtt, if configured.
+     */
+    void beginMqtt() noexcept;
 
     /**
      * Called by mqtt once a connection to the broker is established.
@@ -85,14 +102,18 @@ private:
      */
     void onEthernetDisconnected() noexcept;
 
-    static constexpr gpio_num_t LASER_TEST_PIN = GPIO_NUM_39;
-    static constexpr int64_t LASER_TEST_TOGGLE_INTERVAL_MS = 1000;
-    int64_t lastToggleMillis = 0;
+    /**
+     * Called by stateMachine whenever setState() applies a new state.
+     */
+    void onStateChange() noexcept;
 
     bool isInitialized = false;
+
+    Gate gate;
     StateMachine& stateMachine;
     GpioPinRegister& gpioPinRegister;
     IGpio& gpio;
+    IAdcOneshot& adcOneshot;
     ITime& i_time;
     INVS& nvs;
     SettingsManager& settings;
@@ -100,7 +121,6 @@ private:
     IEthernetManager& ethernetMan;
     IHttpServer& httpServer;
 
-    GpioDigitalWritePin laserTestPin;
     std::string lwtTopic;
 };
 

@@ -1,6 +1,8 @@
 #ifndef LASERGATE_TESTS_LASERSENSOR_H
 #define LASERGATE_TESTS_LASERSENSOR_H
 
+#include "GpioPinRegister.h"
+#include "hal/IAdcOneshot.h"
 #include "platform/AdcAnalogReadPin.h"
 #include <expected>
 
@@ -9,7 +11,7 @@
  */
 class LaserSensor {
 public:
-    LaserSensor(AdcAnalogReadPin& ldrPin) noexcept;
+    LaserSensor(GpioPinRegister& pinRegister, IAdcOneshot& adcOneshot, gpio_num_t pinNum) noexcept;
     LaserSensor(const LaserSensor&) = delete;
     LaserSensor(LaserSensor&&) = delete;
     LaserSensor& operator=(const LaserSensor&) = delete;
@@ -27,6 +29,12 @@ public:
      * @return Success state
      */
     bool free() noexcept;
+
+    /**
+     * @return Whether an actual GPIO pin is used instead of NC
+     */
+    [[nodiscard]] bool isConfigured() const noexcept;
+
 
     /**
      * @return Whether this sensor is ready for operation
@@ -53,7 +61,7 @@ private:
      * Every adc read value above threshold is treated as HIGH / "laser hit".
      */
     int threshold = 0;
-    AdcAnalogReadPin& ldrPin;
+    AdcAnalogReadPin ldrPin;
 
 };
 

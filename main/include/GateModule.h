@@ -1,10 +1,13 @@
 #ifndef LASERGATE_TESTS_GATEMODULE_H
 #define LASERGATE_TESTS_GATEMODULE_H
 
+#include "GpioPinRegister.h"
 #include "LaserDiode.h"
 #include "LightEmittingDiode.h"
 #include "LaserSensor.h"
 #include "StateMachine.h"
+#include "hal/IAdcOneshot.h"
+#include "hal/IGpio.h"
 
 /**
  * Aggregates and drives a status led, a laser diode and a laser sensor into a module
@@ -12,12 +15,25 @@
  */
 class GateModule {
 public:
-    GateModule(StateMachine& stateMachine, LaserDiode& laserDiode, LightEmittingDiode& statusLed, LaserSensor& laserSensor) noexcept;
+    GateModule(
+        StateMachine& stateMachine,
+        GpioPinRegister& pinRegister,
+        IGpio& gpio,
+        IAdcOneshot& adcOneshot,
+        gpio_num_t laserPin,
+        gpio_num_t statusLedPin,
+        gpio_num_t ldrPin
+    ) noexcept;
     GateModule(const GateModule&) = delete;
     GateModule(GateModule&&) = delete;
     GateModule& operator=(const GateModule&) = delete;
     GateModule& operator=(GateModule&&) = delete;
     ~GateModule() noexcept;
+
+    /**
+     * @return Whether actual GPIO pins are used instead of NC, for laser diode and laser sensor
+     */
+    [[nodiscard]] bool isConfigured() const noexcept;
 
     /**
     * Will initialize this module
@@ -32,7 +48,7 @@ public:
     bool free() noexcept;
 
     /**
-     * @return Whether this moduls is ready for operation
+     * @return Whether this module is ready for operation
      */
     [[nodiscard]] bool isReady() const noexcept;
 
@@ -121,9 +137,9 @@ private:
     bool isInitialized = false;
 
     StateMachine& stateMachine;
-    LaserDiode& laserDiode;
-    LightEmittingDiode& statusLed;
-    LaserSensor& laserSensor;
+    LaserDiode laserDiode;
+    LightEmittingDiode statusLed;
+    LaserSensor laserSensor;
 };
 
 

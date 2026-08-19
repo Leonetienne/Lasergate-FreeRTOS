@@ -31,6 +31,8 @@ add_executable(lasergate_tests
         Diode.cpp
         LaserDiode.cpp
         LightEmittingDiode.cpp
+        GateModule.cpp
+        Gate.cpp
 
         ../main/src/StateMachine.cpp
         ../main/src/System.cpp
@@ -61,7 +63,7 @@ add_executable(lasergate_tests
         ../main/include/LaserSensor.h
         ../main/src/GateModule.cpp
         ../main/include/GateModule.h
-        ../main/include/Gate.cpp
+        ../main/src/Gate.cpp
         ../main/include/Gate.h
 )
 

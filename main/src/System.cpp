@@ -15,6 +15,7 @@ System::System(
     StateMachine& stateMachine,
     GpioPinRegister& gpioPinRegister,
     IGpio& gpio,
+    IAdcOneshot& adcOneshot,
     ITime& i_time,
     INVS& nvs,
     SettingsManager& settings,
@@ -22,16 +23,17 @@ System::System(
     IEthernetManager& ethernetMan,
     IHttpServer& httpServer
 ) noexcept :
+    gate(stateMachine, settings, gpioPinRegister, gpio, adcOneshot),
     stateMachine(stateMachine),
     gpioPinRegister(gpioPinRegister),
     gpio(gpio),
+    adcOneshot(adcOneshot),
     i_time(i_time),
     nvs(nvs),
     settings(settings),
     mqtt(mqtt),
     ethernetMan(ethernetMan),
-    httpServer(httpServer),
-    laserTestPin(gpioPinRegister, gpio, LASER_TEST_PIN)
+    httpServer(httpServer)
 { }
 
 System::~System() noexcept {
@@ -40,25 +42,18 @@ System::~System() noexcept {
     }
 }
 
-void System::init() noexcept {
+void System::initialize() noexcept {
     // nvs is expected to already be begun by the caller at this point: the mqtt
     // indicator LED pin is resolved from settings at construction time (see
     // getSystem()), which requires nvs to be readable before this System is even built.
 
-    laserTestPin.initialize();
-    if (laserTestPin.isReady()) {
-        lastToggleMillis = i_time.getMillis();
+    wireMqttCallbacks();
+    wireEthernetCallbacks();
+    stateMachine.setOnStateChange([this]() { onStateChange(); });
+
+    if (!gate.initialize()) {
+        ESP_LOGW(LOG_TAG, "gate.initialize() failed");
     }
-
-    mqtt.setOnConnected([this]() { onMqttConnected(); });
-    mqtt.setOnDisconnected([this]() { onMqttDisconnected(); });
-    mqtt.setOnMessage([this](const std::string& topic, const std::string& payload) {
-        onMqttMessage(topic, payload);
-    });
-
-    ethernetMan.setOnConnected([this]() { onEthernetConnected(); });
-    ethernetMan.setOnDisconnected([this]() { onEthernetDisconnected(); });
-
     if (!ethernetMan.begin()) {
         ESP_LOGW(LOG_TAG, "ethernetMan.begin() failed");
     }
@@ -68,10 +63,28 @@ void System::init() noexcept {
 
     // esp_mqtt_client reconnects automatically until it succeeds, so it's fine
     // to begin it before ethernet has actually acquired a link/ip.
+    beginMqtt();
+
+    isInitialized = true;
+}
+
+void System::wireMqttCallbacks() noexcept {
+    mqtt.setOnConnected([this]() { onMqttConnected(); });
+    mqtt.setOnDisconnected([this]() { onMqttDisconnected(); });
+    mqtt.setOnMessage([this](const std::string& topic, const std::string& payload) {
+        onMqttMessage(topic, payload);
+    });
+}
+
+void System::wireEthernetCallbacks() noexcept {
+    ethernetMan.setOnConnected([this]() { onEthernetConnected(); });
+    ethernetMan.setOnDisconnected([this]() { onEthernetDisconnected(); });
+}
+
+void System::beginMqtt() noexcept {
     const auto brokerConfig = settings.retrieveMqttBrokerConfig();
     if (!brokerConfig.has_value() || brokerConfig->uri.empty()) {
         ESP_LOGI(LOG_TAG, "no broker uri configured, skipping mqtt connect");
-        isInitialized = true;
         return;
     }
 
@@ -92,14 +105,14 @@ void System::init() noexcept {
     if (!mqtt.begin(options)) {
         ESP_LOGW(LOG_TAG, "mqtt.begin() failed for broker '%s'", options.brokerUri.c_str());
     }
-
-    isInitialized = true;
 }
 
 void System::loop() noexcept {
     while (stateMachine.getState() != STATE::SHUTTING_DOWN) {
         update();
 #ifndef HOST_BUILD
+        // this results in fixedUpdate being called every 10+n ms, n being overhead, instead of every 10,
+        // but it's fine, timing is not that sensitive.
         vTaskDelay(pdMS_TO_TICKS(10));
 #endif
     }
@@ -121,11 +134,11 @@ bool System::free() noexcept {
     // httpServer may already be stopped (e.g. ethernet never came up) - that's fine
     httpServer.free();
 
-    if (ethernetMan.isReady() && !ethernetMan.free()) {
+    if (gate.isReady() && !gate.free()) {
         success = false;
     }
 
-    if (laserTestPin.isReady() && !laserTestPin.free()) {
+    if (ethernetMan.isReady() && !ethernetMan.free()) {
         success = false;
     }
 
@@ -142,18 +155,7 @@ void System::beforeShutdown() noexcept {
 
 void System::update() noexcept {
     mqtt.updateActivityLedPulse();
-
-    if (laserTestPin.isReady()) {
-        const int64_t now = i_time.getMillis();
-        if (now - lastToggleMillis >= LASER_TEST_TOGGLE_INTERVAL_MS) {
-            lastToggleMillis = now;
-            if (laserTestPin.getState() == PIN_STATE_DIGITAL::LOW) {
-                laserTestPin.setState(PIN_STATE_DIGITAL::HIGH);
-            } else {
-                laserTestPin.setState(PIN_STATE_DIGITAL::LOW);
-            }
-        }
-    }
+    gate.fixedUpdate();
 }
 
 void System::onMqttConnected() noexcept {
@@ -180,4 +182,8 @@ void System::onEthernetConnected() noexcept {
 
 void System::onEthernetDisconnected() noexcept {
     ESP_LOGW(LOG_TAG, "ethernet disconnected");
+}
+
+void System::onStateChange() noexcept {
+    gate.onStateChange();
 }

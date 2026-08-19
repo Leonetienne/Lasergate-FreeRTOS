@@ -1,6 +1,8 @@
 #ifndef LASERGATE_V2_DIODE_H
 #define LASERGATE_V2_DIODE_H
 
+#include "GpioPinRegister.h"
+#include "hal/IGpio.h"
 #include "platform/GpioDigitalWritePin.h"
 #include <expected>
 
@@ -9,7 +11,7 @@
  */
 class Diode {
 public:
-    Diode(GpioDigitalWritePin& gpioPin) noexcept;
+    Diode(GpioPinRegister& pinRegister, IGpio& gpio, gpio_num_t pinNum) noexcept;
     Diode(const Diode&) = delete;
     Diode(Diode&&) = delete;
     Diode& operator=(const Diode&) = delete;
@@ -34,18 +36,23 @@ public:
     [[nodiscard]] virtual bool isReady() const noexcept;
 
     /**
+     * @return Whether an actual GPIO pin is used instead of NC
+     */
+    [[nodiscard]] bool isConfigured() const noexcept;
+
+    /**
      * Turns the diode on.
      * Idempotent.
      * @return Success state
      */
-    virtual bool turnOn() const noexcept;
+    virtual bool turnOn() noexcept;
 
     /**
      * Turns the diode off.
      * Idempotent.
      * @return Success state
      */
-    virtual bool turnOff() const noexcept;
+    virtual bool turnOff() noexcept;
 
     /**
      * Turns the diode on or off.
@@ -62,7 +69,7 @@ public:
 protected:
     bool isInitialized = false;
 
-    GpioDigitalWritePin& gpioPin;
+    GpioDigitalWritePin gpioPin;
     bool powerState = false;
 };
 

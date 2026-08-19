@@ -4,6 +4,7 @@
 #include "hal/INVS.h"
 #include "compat/gpio_num_t.h"
 #include "MqttBrokerConfig.h"
+#include <cstddef>
 #include <expected>
 #include <string>
 
@@ -54,6 +55,27 @@ public:
      */
     bool storeConnLedsEnabled(bool enabled) const noexcept;
     [[nodiscard]] std::expected<bool, bool> retrieveConnLedsEnabled() const noexcept;
+
+    /**
+     * @param moduleIndex Index of the gate module (0-based)
+     * @return Success state
+     */
+    bool storeGateModuleLaserGpioPin(std::size_t moduleIndex, gpio_num_t gpioPin) const noexcept;
+    [[nodiscard]] std::expected<gpio_num_t, bool> retrieveGateModuleLaserGpioPin(std::size_t moduleIndex) const noexcept;
+
+    /**
+     * @param moduleIndex Index of the gate module (0-based)
+     * @return Success state
+     */
+    bool storeGateModuleLedGpioPin(std::size_t moduleIndex, gpio_num_t gpioPin) const noexcept;
+    [[nodiscard]] std::expected<gpio_num_t, bool> retrieveGateModuleLedGpioPin(std::size_t moduleIndex) const noexcept;
+
+    /**
+     * @param moduleIndex Index of the gate module (0-based)
+     * @return Success state
+     */
+    bool storeGateModuleLdrGpioPin(std::size_t moduleIndex, gpio_num_t gpioPin) const noexcept;
+    [[nodiscard]] std::expected<gpio_num_t, bool> retrieveGateModuleLdrGpioPin(std::size_t moduleIndex) const noexcept;
 
 private:
     INVS& i_nvs;

@@ -2,14 +2,28 @@
 #define LASERGATE_TESTS_GATE_H
 
 #include "GateModule.h"
+#include "GpioPinRegister.h"
+#include "SettingsManager.h"
+#include "StateMachine.h"
+#include "hal/IAdcOneshot.h"
+#include "hal/IGpio.h"
 #include <array>
 
 /**
- * A gate aggregates multiple gate modules into a single gate
+ * A gate aggregates 4 gate modules into a single gate. Reads each module's
+ * gpio pins from settings at construction time.
  */
 class Gate {
 public:
-    Gate(StateMachine& stateMachine, std::array<GateModule, 1> gateModules) noexcept;
+    static constexpr std::size_t MODULE_COUNT = 4;
+
+    Gate(
+        StateMachine& stateMachine,
+        SettingsManager& settings,
+        GpioPinRegister& gpioPinRegister,
+        IGpio& gpio,
+        IAdcOneshot& adcOneshot
+    ) noexcept;
     Gate(const Gate&) = delete;
     Gate(Gate&&) = delete;
     Gate& operator=(const Gate&) = delete;
@@ -47,8 +61,7 @@ private:
     bool isInitialized = false;
 
     StateMachine& stateMachine;
-    std::array<GateModule, 1>& modules;
+    std::array<GateModule, MODULE_COUNT> modules;
 };
-
 
 #endif //LASERGATE_TESTS_GATE_H
