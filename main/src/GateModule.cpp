@@ -1,6 +1,6 @@
 #include "../include/GateModule.h"
 
-constexpr int INITIAL_LDR_THRESH = 0;
+constexpr int INITIAL_LDR_THRESH = 3000;
 
 GateModule::GateModule(
     StateMachine& stateMachine,
@@ -137,10 +137,33 @@ void GateModule::onStateFault() noexcept {
     statusLed.turnOff();
 }
 
+/**
+ * When the user is adjusting the beams, the user is turning screws by hand until the laser
+ * is pointing directly on the LDR. The desired behavior to aid the user is:
+ * - All lasers are constantly on
+ * - All status leds (if configured) are on if the laser is hitting the LDR.
+ */
 void GateModule::onStateUserAdjustingBeams() noexcept {
     if (!isInitialized) return;
-    if (!laserDiode.turnOn() || !statusLed.turnOff()) {
-        stateMachine.setState(STATE::FAULT, "GateModule::onStateUserAdjustingBeams: failed to turn off laser diode / status led");
+    if (!laserDiode.turnOn()) {
+        stateMachine.setState(STATE::FAULT, "GateModule::onStateUserAdjustingBeams: failed to turn on laser diode");
+    }
+    if (statusLed.isConfigured() && !statusLed.turnOff()) {
+        stateMachine.setState(STATE::FAULT, "GateModule::onStateUserAdjustingBeams: failed to turn off status LED");
+    }
+}
+
+void GateModule::updateStateUserAdjustingBeams() noexcept {
+    if (!isInitialized) return;
+
+    // Sync status led (if configured) state to laser hitting ldr
+    if (statusLed.isConfigured()) {
+        const auto reading = laserSensor.sensesLight();
+        if (!reading.has_value()) {
+            stateMachine.setState(STATE::FAULT, "GateModule::updateStateUserAdjustingBeams: failed to read laser sensor value");
+            return;
+        }
+        statusLed.setPowerState(*reading);
     }
 }
 
@@ -165,10 +188,6 @@ void GateModule::onStateDisarmed() noexcept {
 }
 
 void GateModule::updateStateFault() noexcept {
-    if (!isInitialized) return;
-}
-
-void GateModule::updateStateUserAdjustingBeams() noexcept {
     if (!isInitialized) return;
 }
 
