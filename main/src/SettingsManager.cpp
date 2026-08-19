@@ -7,7 +7,7 @@ SettingsManager::SettingsManager(INVS &i_nvs) noexcept :
 
 SettingsManager::SettingsManager(SettingsManager && other) noexcept :
     i_nvs(other.i_nvs)
-{}
+{ }
 
 bool SettingsManager::storeTitle(const std::string &title) const noexcept {
     return i_nvs.setString("title", title.c_str());
