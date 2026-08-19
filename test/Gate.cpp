@@ -61,7 +61,7 @@ TEST_CASE("Gate: lifecycle", "[Gate]") {
     }
 }
 
-TEST_CASE("Gate: unconfigured pins fall back to GPIO_NUM_NC", "[Gate]") {
+TEST_CASE("Gate: skips unconfigured modules", "[Gate]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
@@ -70,9 +70,39 @@ TEST_CASE("Gate: unconfigured pins fall back to GPIO_NUM_NC", "[Gate]") {
     SettingsManager settings(nvs);
     StateMachine stateMachine{};
 
-    // nothing stored in settings. every module's pins resolve to the same
-    // GPIO_NUM_NC sentinel, which collide against each other on binding
+    // nothing stored in settings, so every module resolves to GPIO_NUM_NC pins
+    // and is therefore unconfigured - none of them are attempted
     Gate gate(stateMachine, settings, pr, gpioStub, adcStub);
 
-    REQUIRE_FALSE(gate.initialize());
+    SECTION("initializes successfully when no module is configured") {
+        REQUIRE(gate.initialize());
+        REQUIRE(gate.isReady());
+    }
+
+    SECTION("fixedUpdate and onStateChange don't crash with no configured modules") {
+        REQUIRE(gate.initialize());
+        gate.fixedUpdate();
+        gate.onStateChange();
+    }
+}
+
+TEST_CASE("Gate: initializes only the configured modules", "[Gate]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    AdcOneshotStub adcStub(ADC_UNIT_1);
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+    StateMachine stateMachine{};
+
+    // only module 0 is configured, the other 3 stay GPIO_NUM_NC
+    REQUIRE(settings.storeGateModuleLaserGpioPin(0, GPIO_NUM_1));
+    REQUIRE(settings.storeGateModuleLedGpioPin(0, GPIO_NUM_2));
+    REQUIRE(settings.storeGateModuleLdrGpioPin(0, GPIO_NUM_34));
+
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub);
+
+    REQUIRE(gate.initialize());
+    REQUIRE(gate.isReady());
+    REQUIRE(pr.isPinBound(GPIO_NUM_1));
 }
