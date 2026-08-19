@@ -6,6 +6,7 @@ idf_component_register(SRCS
                        "src/SettingsManager.cpp"
                        "src/UrlEncodedForm.cpp"
                        "src/ApiController.cpp"
+                       "src/LaserDiode.cpp"
                        "src/hal/IAdcOneshot.cpp"
                        "src/platform/GpioEsp32.cpp"
                        "src/platform/GpioDigitalWritePin.cpp"

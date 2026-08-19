@@ -26,6 +26,7 @@ add_executable(lasergate_tests
         UrlEncodedForm.cpp
         ApiController.cpp
         System.cpp
+        LaserDiode.cpp
 
         ../main/src/StateMachine.cpp
         ../main/src/System.cpp
@@ -33,6 +34,7 @@ add_executable(lasergate_tests
         ../main/src/SettingsManager.cpp
         ../main/src/UrlEncodedForm.cpp
         ../main/src/ApiController.cpp
+        ../main/src/LaserDiode.cpp
         ../main/src/platform/GpioDigitalWritePin.cpp
         ../main/src/platform/AdcAnalogReadPin.cpp
         ../main/src/platform/TimeEsp32.cpp
