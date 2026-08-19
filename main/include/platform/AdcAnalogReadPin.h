@@ -14,7 +14,7 @@
 
 class AdcAnalogReadPin {
 public:
-    AdcAnalogReadPin(GpioPinRegister& pinRegister, IAdcOneshot& adcOS, const gpio_num_t pinNum) noexcept;
+    AdcAnalogReadPin(GpioPinRegister& pinRegister, IAdcOneshot& i_adcOneshot, const gpio_num_t pinNum) noexcept;
     AdcAnalogReadPin(const AdcAnalogReadPin&) = delete;
     AdcAnalogReadPin(AdcAnalogReadPin&& other) noexcept;
     AdcAnalogReadPin& operator=(const AdcAnalogReadPin&) = delete;
@@ -50,7 +50,7 @@ public:
 
 private:
     GpioPinRegister& pinRegister;
-    IAdcOneshot& adcOneshot;
+    IAdcOneshot& i_adcOneshot;
     const gpio_num_t gpioPinNum;
     adc_unit_t adcUnit = ADC_UNIT_1;
     adc_channel_t adcChannel = ADC_CHANNEL_0;

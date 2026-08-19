@@ -23,7 +23,7 @@ struct MqttSubscription {
 
 class MqttStub : public IMqtt {
 public:
-    MqttStub(gpio_num_t indicatorGpioPin, IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
+    MqttStub(gpio_num_t indicatorGpioPin, IGpio& i_gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
     MqttStub(const MqttStub&) = delete;
     MqttStub& operator=(const MqttStub&) = delete;
     MqttStub(MqttStub&&) = delete;
@@ -57,7 +57,7 @@ private:
 
     static constexpr int64_t PULSE_DURATION_MS = 100;
 
-    IGpio& gpio;
+    IGpio& i_gpio;
     GpioPinRegister& pinRegister;
     const ITime& i_time;
 

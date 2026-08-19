@@ -7,11 +7,11 @@
 
 GpioDigitalWritePin::GpioDigitalWritePin(
     GpioPinRegister& pinRegister,
-    IGpio& gpio,
+    IGpio& i_gpio,
     const gpio_num_t pinNum
     ) :
     pinRegister(pinRegister),
-    gpio(gpio),
+    i_gpio(i_gpio),
     pinNum { pinNum },
     ready { false },
     currentState { false }
@@ -19,7 +19,7 @@ GpioDigitalWritePin::GpioDigitalWritePin(
 
 GpioDigitalWritePin::GpioDigitalWritePin(GpioDigitalWritePin&& other) noexcept :
     pinRegister { other.pinRegister },
-    gpio { other.gpio },
+    i_gpio { other.i_gpio },
     pinNum { other.pinNum },
     ready { other.ready },
     currentState { other.currentState }
@@ -37,7 +37,7 @@ GpioDigitalWritePin& GpioDigitalWritePin::operator=(GpioDigitalWritePin&& other)
         free();
     }
 
-    // pinRegister, gpio and pinNum are bound at construction and left untouched here
+    // pinRegister, i_gpio and pinNum are bound at construction and left untouched here
     ready = other.ready;
     currentState = other.currentState;
 
@@ -65,11 +65,11 @@ bool GpioDigitalWritePin::initialize() noexcept {
     }
 
     // If success, book it/
-    if (gpio.gpioResetPin(pinNum) != ESP_OK) {
+    if (i_gpio.gpioResetPin(pinNum) != ESP_OK) {
         pinRegister.freePin(pinNum);
         return false;
     }
-    if (gpio.gpioSetDirection(pinNum, GPIO_MODE_OUTPUT) != ESP_OK) {
+    if (i_gpio.gpioSetDirection(pinNum, GPIO_MODE_OUTPUT) != ESP_OK) {
         pinRegister.freePin(pinNum);
         return false;
     }
@@ -97,7 +97,7 @@ bool GpioDigitalWritePin::setState(const PIN_STATE_DIGITAL state) noexcept {
         return false;
     }
 
-    if (gpio.gpioSetLevel(pinNum, static_cast<uint32_t>(state)) != ESP_OK) {
+    if (i_gpio.gpioSetLevel(pinNum, static_cast<uint32_t>(state)) != ESP_OK) {
         return false;
     }
 

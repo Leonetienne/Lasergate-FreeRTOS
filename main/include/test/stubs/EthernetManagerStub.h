@@ -9,7 +9,7 @@
 
 class EthernetManagerStub : public IEthernetManager {
 public:
-    EthernetManagerStub(gpio_num_t indicatorGpioPin, IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
+    EthernetManagerStub(gpio_num_t indicatorGpioPin, IGpio& i_gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
     EthernetManagerStub(const EthernetManagerStub&) = delete;
     EthernetManagerStub& operator=(const EthernetManagerStub&) = delete;
     EthernetManagerStub(EthernetManagerStub&&) noexcept;
@@ -32,7 +32,7 @@ public:
 private:
     void setIndicatorState(PIN_STATE_DIGITAL pinState) noexcept;
 
-    IGpio& gpio;
+    IGpio& i_gpio;
     GpioPinRegister& pinRegister;
     const ITime& i_time;
 

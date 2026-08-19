@@ -15,7 +15,7 @@
  */
 class GpioDigitalWritePin {
 public:
-    GpioDigitalWritePin(GpioPinRegister& pinRegister, IGpio& gpio, const gpio_num_t pinNum);
+    GpioDigitalWritePin(GpioPinRegister& pinRegister, IGpio& i_gpio, const gpio_num_t pinNum);
     GpioDigitalWritePin(const GpioDigitalWritePin&) = delete;
     GpioDigitalWritePin& operator=(const GpioDigitalWritePin&) = delete;
     GpioDigitalWritePin(GpioDigitalWritePin&& other) noexcept;
@@ -60,7 +60,7 @@ public:
 
 protected:
     GpioPinRegister& pinRegister;
-    IGpio& gpio;
+    IGpio& i_gpio;
     const gpio_num_t pinNum;
     bool ready;
     PIN_STATE_DIGITAL currentState;

@@ -1,7 +1,7 @@
 #include "../include/Diode.h"
 
-Diode::Diode(GpioPinRegister& pinRegister, IGpio& gpio, gpio_num_t pinNum) noexcept :
-    gpioPin { pinRegister, gpio, pinNum }
+Diode::Diode(GpioPinRegister& pinRegister, IGpio& i_gpio, gpio_num_t pinNum) noexcept :
+    gpioPin { pinRegister, i_gpio, pinNum }
 {}
 
 Diode::~Diode() noexcept {

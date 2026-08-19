@@ -1,7 +1,7 @@
 #include "LaserSensor.h"
 
-LaserSensor::LaserSensor(GpioPinRegister& pinRegister, IAdcOneshot& adcOneshot, gpio_num_t pinNum) noexcept:
-    ldrPin {pinRegister, adcOneshot, pinNum}
+LaserSensor::LaserSensor(GpioPinRegister& pinRegister, IAdcOneshot& i_adcOneshot, gpio_num_t pinNum) noexcept:
+    ldrPin {pinRegister, i_adcOneshot, pinNum}
 { }
 
 LaserSensor::~LaserSensor() noexcept {

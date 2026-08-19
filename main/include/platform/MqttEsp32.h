@@ -10,7 +10,7 @@
 
 class MqttEsp32 : public IMqtt {
 public:
-    MqttEsp32(gpio_num_t indicatorGpioPin, IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
+    MqttEsp32(gpio_num_t indicatorGpioPin, IGpio& i_gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
     MqttEsp32(const MqttEsp32&) = delete;
     MqttEsp32& operator=(const MqttEsp32&) = delete;
     MqttEsp32(MqttEsp32&&) = delete;
@@ -54,7 +54,7 @@ private:
 
     static constexpr int64_t PULSE_DURATION_MS = 100;
 
-    IGpio& gpio;
+    IGpio& i_gpio;
     GpioPinRegister& pinRegister;
     const ITime& i_time;
 

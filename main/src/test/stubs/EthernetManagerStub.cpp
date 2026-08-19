@@ -2,14 +2,14 @@
 
 EthernetManagerStub::EthernetManagerStub(
     gpio_num_t indicatorGpioPin,
-    IGpio& gpio,
+    IGpio& i_gpio,
     GpioPinRegister& pinRegister,
     const ITime& i_time
 ) noexcept :
-    gpio(gpio),
+    i_gpio(i_gpio),
     pinRegister(pinRegister),
     i_time(i_time),
-    indicatorPin(pinRegister, gpio, indicatorGpioPin)
+    indicatorPin(pinRegister, i_gpio, indicatorGpioPin)
 {
     if (indicatorPin.getGpioNum() != GPIO_NUM_NC) {
         indicatorPin.initialize();
@@ -18,7 +18,7 @@ EthernetManagerStub::EthernetManagerStub(
 }
 
 EthernetManagerStub::EthernetManagerStub(EthernetManagerStub&& other) noexcept :
-    gpio(other.gpio),
+    i_gpio(other.i_gpio),
     pinRegister(other.pinRegister),
     i_time(other.i_time),
     state(other.state),

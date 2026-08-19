@@ -14,14 +14,14 @@
 class ApiController {
 public:
     /**
-     * @param ethernetMan
-     * @param mqtt
+     * @param i_ethernetMan
+     * @param i_mqtt
      * @param settings
      * @return "key=value\n" lines describing the device name and live connectivity state
      */
     [[nodiscard]] static std::string buildStatusReport(
-        const IEthernetManager& ethernetMan,
-        const IMqtt& mqtt,
+        const IEthernetManager& i_ethernetMan,
+        const IMqtt& i_mqtt,
         const SettingsManager& settings
     ) noexcept;
 

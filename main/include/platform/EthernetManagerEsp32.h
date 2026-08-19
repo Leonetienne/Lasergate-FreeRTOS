@@ -18,7 +18,7 @@
  */
 class EthernetManagerEsp32 : public IEthernetManager {
 public:
-    EthernetManagerEsp32(gpio_num_t indicatorGpioPin, IGpio& gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
+    EthernetManagerEsp32(gpio_num_t indicatorGpioPin, IGpio& i_gpio, GpioPinRegister& pinRegister, const ITime& i_time) noexcept;
     EthernetManagerEsp32(const EthernetManagerEsp32&) = delete;
     EthernetManagerEsp32& operator=(const EthernetManagerEsp32&) = delete;
     EthernetManagerEsp32(EthernetManagerEsp32&&) = delete;
@@ -60,7 +60,7 @@ private:
     static constexpr int SPI_CLOCK_MHZ = 25;
     static constexpr uint8_t PHY_ADDR = 1;
 
-    IGpio& gpio;
+    IGpio& i_gpio;
     GpioPinRegister& pinRegister;
     const ITime& i_time;
 

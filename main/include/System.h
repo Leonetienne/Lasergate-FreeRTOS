@@ -11,6 +11,7 @@
 #include "SettingsManager.h"
 #include "hal/IAdcOneshot.h"
 #include "hal/IGpio.h"
+#include "hal/IRandom.h"
 #include "hal/ITime.h"
 #include "hal/INVS.h"
 #include "hal/IMqtt.h"
@@ -26,14 +27,15 @@ public:
     System(
         StateMachine& stateMachine,
         GpioPinRegister& gpioPinRegister,
-        IGpio& gpio,
-        IAdcOneshot& adcOneshot,
+        IGpio& i_gpio,
+        IAdcOneshot& i_adcOneshot,
+        IRandom& i_random,
         ITime& i_time,
-        INVS& nvs,
+        INVS& i_nvs,
         SettingsManager& settings,
-        IMqtt& mqtt,
-        IEthernetManager& ethernetMan,
-        IHttpServer& httpServer
+        IMqtt& i_mqtt,
+        IEthernetManager& i_ethernetMan,
+        IHttpServer& i_httpServer
     ) noexcept;
     System(const System&) = delete;
     System& operator=(const System&) = delete;
@@ -112,14 +114,15 @@ private:
     Gate gate;
     StateMachine& stateMachine;
     GpioPinRegister& gpioPinRegister;
-    IGpio& gpio;
-    IAdcOneshot& adcOneshot;
+    IGpio& i_gpio;
+    IAdcOneshot& i_adcOneshot;
+    IRandom& i_random;
     ITime& i_time;
-    INVS& nvs;
+    INVS& i_nvs;
     SettingsManager& settings;
-    IMqtt& mqtt;
-    IEthernetManager& ethernetMan;
-    IHttpServer& httpServer;
+    IMqtt& i_mqtt;
+    IEthernetManager& i_ethernetMan;
+    IHttpServer& i_httpServer;
 
     std::string lwtTopic;
 };

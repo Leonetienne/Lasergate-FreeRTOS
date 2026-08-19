@@ -5,9 +5,9 @@
 #include "platform/AdcAnalogReadPin.h"
 #include "hal/AdcGpioMapping.h"
 
-AdcAnalogReadPin::AdcAnalogReadPin(GpioPinRegister &pinRegister, IAdcOneshot &adcOS, const gpio_num_t pinNum) noexcept :
+AdcAnalogReadPin::AdcAnalogReadPin(GpioPinRegister &pinRegister, IAdcOneshot &i_adcOneshot, const gpio_num_t pinNum) noexcept :
     pinRegister { pinRegister },
-    adcOneshot { adcOS },
+    i_adcOneshot { i_adcOneshot },
     gpioPinNum { pinNum },
     ready { false }
 {
@@ -15,7 +15,7 @@ AdcAnalogReadPin::AdcAnalogReadPin(GpioPinRegister &pinRegister, IAdcOneshot &ad
 
 AdcAnalogReadPin::AdcAnalogReadPin(AdcAnalogReadPin &&other) noexcept :
     pinRegister { other.pinRegister },
-    adcOneshot { other.adcOneshot },
+    i_adcOneshot { other.i_adcOneshot },
     gpioPinNum { other.gpioPinNum },
     adcUnit { other.adcUnit },
     adcChannel { other.adcChannel },
@@ -48,12 +48,12 @@ esp_err_t AdcAnalogReadPin::initialize() noexcept {
     this->adcChannel = adcChannelInfo.value().second;
 
     // Is this adc channel on the correct adc unit?
-    if (adcUnit != adcOneshot.getAdcUnit()) {
+    if (adcUnit != i_adcOneshot.getAdcUnit()) {
         return ESP_ERR_INVALID_ARG;
     }
 
     // If success, book it/
-    if (const esp_err_t ret = adcOneshot.registerChannel(adcChannel); ret != ESP_OK) {
+    if (const esp_err_t ret = i_adcOneshot.registerChannel(adcChannel); ret != ESP_OK) {
         pinRegister.freePin(gpioPinNum);
         return ret;
     }
@@ -74,11 +74,11 @@ bool AdcAnalogReadPin::free() noexcept {
 }
 
 std::expected<int, esp_err_t> AdcAnalogReadPin::read() const noexcept {
-    if (!adcOneshot.isReady()) {
+    if (!i_adcOneshot.isReady()) {
         return std::unexpected(ESP_ERR_INVALID_STATE);
     }
 
-    const auto readResult = adcOneshot.readChannel(adcChannel);
+    const auto readResult = i_adcOneshot.readChannel(adcChannel);
     if (!readResult.has_value()) {
         return std::unexpected(readResult.error());
     }

@@ -13,7 +13,7 @@
  */
 class HttpServerEsp32 : public IHttpServer {
 public:
-    HttpServerEsp32(IEthernetManager& ethernetMan, IMqtt& mqtt, SettingsManager& settings, StateMachine& stateMachine) noexcept;
+    HttpServerEsp32(IEthernetManager& i_ethernetMan, IMqtt& i_mqtt, SettingsManager& settings, StateMachine& stateMachine) noexcept;
     HttpServerEsp32(const HttpServerEsp32&) = delete;
     HttpServerEsp32& operator=(const HttpServerEsp32&) = delete;
     HttpServerEsp32(HttpServerEsp32&&) = delete;
@@ -75,8 +75,8 @@ private:
 
     bool isInitialized = false;
     httpd_handle_t server = nullptr;
-    IEthernetManager& ethernetMan;
-    IMqtt& mqtt;
+    IEthernetManager& i_ethernetMan;
+    IMqtt& i_mqtt;
     SettingsManager& settings;
     StateMachine& stateMachine;
 };

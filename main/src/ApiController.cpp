@@ -70,8 +70,8 @@ const char* toString(MqttConnectionState state) noexcept {
 }
 
 std::string ApiController::buildStatusReport(
-    const IEthernetManager& ethernetMan,
-    const IMqtt& mqtt,
+    const IEthernetManager& i_ethernetMan,
+    const IMqtt& i_mqtt,
     const SettingsManager& settings
 ) noexcept {
     std::string report;
@@ -83,11 +83,11 @@ std::string ApiController::buildStatusReport(
     report += '\n';
 
     report += "ethernet_state=";
-    report += toString(ethernetMan.getState());
+    report += toString(i_ethernetMan.getState());
     report += '\n';
 
     report += "mqtt_state=";
-    report += toString(mqtt.getState());
+    report += toString(i_mqtt.getState());
     report += '\n';
 
     return report;
