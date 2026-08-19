@@ -29,7 +29,7 @@ gpio_num_t parseGpioField(const std::unordered_map<std::string, std::string>& fo
     }
 
     int32_t value = 0;
-    if (!parseInt32(it->second, value)) {
+    if (!parseInt32(it->second, value) || value < 0 || value >= GPIO_NUM_MAX) {
         return GPIO_NUM_NC;
     }
 
