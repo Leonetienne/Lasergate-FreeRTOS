@@ -14,7 +14,7 @@ public:
     LaserSensor(LaserSensor&&) = delete;
     LaserSensor& operator=(const LaserSensor&) = delete;
     LaserSensor& operator=(LaserSensor&&) = delete;
-    ~LaserSensor();
+    ~LaserSensor() noexcept;
 
     /**
      * Will initialize the sensor
@@ -52,7 +52,7 @@ private:
     /**
      * Every adc read value above threshold is treated as HIGH / "laser hit".
      */
-    int threshold;
+    int threshold = 0;
     AdcAnalogReadPin& ldrPin;
 
 };
