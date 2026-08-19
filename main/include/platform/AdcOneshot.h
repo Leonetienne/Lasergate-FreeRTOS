@@ -1,7 +1,3 @@
-//
-// Created by Agent on 30.05.26.
-//
-
 #ifndef LASERGATE_TESTS_ADCONESHOT_H
 #define LASERGATE_TESTS_ADCONESHOT_H
 #include <unordered_set>
