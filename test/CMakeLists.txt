@@ -16,6 +16,7 @@ add_executable(lasergate_tests
         AdcOneshotStub.cpp
         GpioDigitalWritePin.cpp
         AdcAnalogReadPin.cpp
+        LaserSensor.cpp
         StateMachine.cpp
         TimeStub.cpp
         NVSStub.cpp
@@ -51,6 +52,8 @@ add_executable(lasergate_tests
         ../main/src/test/stubs/HttpServerStub.cpp
         ../main/src/test/stubs/SystemStub.cpp
         ../main/include/platform/AdcOneshot.h
+        ../main/src/LaserSensor.cpp
+        ../main/include/LaserSensor.h
 )
 
 
