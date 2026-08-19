@@ -1,7 +1,3 @@
-//
-// Created by Agent on 30.05.26.
-//
-
 #include "../../include/platform/AdcOneshot.h"
 #include "esp_adc/adc_oneshot.h"
 
