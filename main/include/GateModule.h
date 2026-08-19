@@ -39,12 +39,12 @@ public:
     /**
      * Call every 10ms
      */
-    void fixedUpdate();
+    void fixedUpdate() noexcept;
 
     /**
      * Gets called right after system state changes
      */
-    void onStateChange();
+    void onStateChange() noexcept;
 
 private:
     /**

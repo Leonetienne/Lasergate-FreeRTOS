@@ -70,7 +70,7 @@ bool GateModule::isReady() const noexcept {
     return isInitialized;
 }
 
-void GateModule::fixedUpdate() {
+void GateModule::fixedUpdate() noexcept {
     switch (stateMachine.getState()) {
         case STATE::FAULT:
             updateStateFault();
@@ -98,7 +98,7 @@ void GateModule::fixedUpdate() {
     }
 }
 
-void GateModule::onStateChange() {
+void GateModule::onStateChange() noexcept {
     switch (stateMachine.getState()) {
         case STATE::FAULT:
             onStateFault();
