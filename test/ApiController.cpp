@@ -157,6 +157,22 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
         REQUIRE(*settings.retrieveMqttLedGpioPin() == GPIO_NUM_NC);
     }
 
+    SECTION("applyAdvancedSettingsForm accepts the highest esp32s3 gpio number") {
+        const std::unordered_map<std::string, std::string> form = {
+            {"ethernet_led_gpio", "48"},
+        };
+        REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
+        REQUIRE(*settings.retrieveEthernetLedGpioPin() == GPIO_NUM_48);
+    }
+
+    SECTION("applyAdvancedSettingsForm rejects gpio numbers beyond the esp32s3 range") {
+        const std::unordered_map<std::string, std::string> form = {
+            {"ethernet_led_gpio", "49"},
+        };
+        REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
+        REQUIRE(*settings.retrieveEthernetLedGpioPin() == GPIO_NUM_NC);
+    }
+
     SECTION("applyAdvancedSettingsForm requests a shutdown on success") {
         const std::unordered_map<std::string, std::string> form = {};
         REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
