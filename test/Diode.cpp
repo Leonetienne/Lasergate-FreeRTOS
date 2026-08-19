@@ -40,6 +40,21 @@ TEMPLATE_TEST_CASE("Diode: polymorphic dispatch", "[Diode]", LaserDiode, LightEm
     }
 }
 
+TEMPLATE_TEST_CASE("Diode: isConfigured", "[Diode]", LaserDiode, LightEmittingDiode) {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+
+    SECTION("false when bound to GPIO_NUM_NC") {
+        TestType diode{pr, gpioStub, GPIO_NUM_NC};
+        REQUIRE_FALSE(diode.isConfigured());
+    }
+
+    SECTION("true when bound to a real pin") {
+        TestType diode{pr, gpioStub, GPIO_NUM_19};
+        REQUIRE(diode.isConfigured());
+    }
+}
+
 TEST_CASE("Diode: heterogeneous collection of concrete diodes", "[Diode]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};

@@ -3,6 +3,21 @@
 #include "LaserSensor.h"
 #include "test/stubs/AdcOneshotStub.h"
 
+TEST_CASE("LaserSensor: isConfigured", "[LaserSensor]") {
+    GpioPinRegister pr{};
+    AdcOneshotStub adcStub(ADC_UNIT_1);
+
+    SECTION("false when bound to GPIO_NUM_NC") {
+        LaserSensor sensor{pr, adcStub, GPIO_NUM_NC};
+        REQUIRE_FALSE(sensor.isConfigured());
+    }
+
+    SECTION("true when bound to a real pin") {
+        LaserSensor sensor{pr, adcStub, GPIO_NUM_34};
+        REQUIRE(sensor.isConfigured());
+    }
+}
+
 TEST_CASE("LaserSensor: lifecycle", "[LaserSensor]") {
     GpioPinRegister pr{};
     AdcOneshotStub adcStub(ADC_UNIT_1);

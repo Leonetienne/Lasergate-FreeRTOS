@@ -42,6 +42,56 @@ TEST_CASE("GateModule: lifecycle", "[GateModule]") {
     }
 }
 
+TEST_CASE("GateModule: isConfigured", "[GateModule]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    AdcOneshotStub adcStub(ADC_UNIT_1);
+    StateMachine stateMachine{};
+
+    SECTION("true when the laser and ldr pins are both real, regardless of the status led") {
+        GateModule module(stateMachine, pr, gpioStub, adcStub, GPIO_NUM_16, GPIO_NUM_NC, GPIO_NUM_34);
+        REQUIRE(module.isConfigured());
+    }
+
+    SECTION("false when the laser pin is GPIO_NUM_NC") {
+        GateModule module(stateMachine, pr, gpioStub, adcStub, GPIO_NUM_NC, GPIO_NUM_17, GPIO_NUM_34);
+        REQUIRE_FALSE(module.isConfigured());
+    }
+
+    SECTION("false when the ldr pin is GPIO_NUM_NC") {
+        GateModule module(stateMachine, pr, gpioStub, adcStub, GPIO_NUM_16, GPIO_NUM_17, GPIO_NUM_NC);
+        REQUIRE_FALSE(module.isConfigured());
+    }
+}
+
+TEST_CASE("GateModule: status led is optional", "[GateModule]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    AdcOneshotStub adcStub(ADC_UNIT_1);
+    StateMachine stateMachine{};
+
+    constexpr gpio_num_t laserPin = GPIO_NUM_16;
+    constexpr gpio_num_t ldrPin = GPIO_NUM_34;
+
+    GateModule module(stateMachine, pr, gpioStub, adcStub, laserPin, GPIO_NUM_NC, ldrPin);
+
+    SECTION("initializes successfully without a configured status led") {
+        REQUIRE(module.initialize());
+        REQUIRE(module.isReady());
+    }
+
+    SECTION("does not bind a pin for the unconfigured status led") {
+        REQUIRE(module.initialize());
+        REQUIRE(pr.isPinBound(laserPin));
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_NC));
+    }
+
+    SECTION("freeing does not fail on account of the never-initialized status led") {
+        REQUIRE(module.initialize());
+        REQUIRE(module.free());
+    }
+}
+
 TEST_CASE("GateModule: state dispatch", "[GateModule]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
