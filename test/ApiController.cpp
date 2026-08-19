@@ -91,7 +91,7 @@ TEST_CASE("ApiController: settings report/form", "[ApiController]") {
     SECTION("applySettingsForm does not request a shutdown when it fails") {
         const std::unordered_map<std::string, std::string> form = {};
         ApiController::applySettingsForm(settings, stateMachine, form);
-        REQUIRE(stateMachine.getState() == STATE::INITIALIZATION);
+        REQUIRE(stateMachine.getState() == STATE::INITIALIZING);
     }
 
     SECTION("a blank mqtt password keeps the previously stored one") {

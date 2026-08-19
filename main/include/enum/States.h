@@ -8,8 +8,13 @@
 #include <cstdint>
 
 enum class STATE : uint8_t {
-    INITIALIZATION, // System is starting up
-    OPERATIONAL,    // System is fine and operating normally
+    INITIALIZING,           // System is starting up
+    USER_ADJUSTING_BEAMS,   // The user is tuning laser beam angle to hit the LDRs. Lasers must fire constantly and status leds must be on if laser is hitting LDR. No pulse modulation and person detection.
+    CALIBRATION_LDR_THRESH, // The modules are calibrating their LDR threshold to reliably but greedily detect laser diode power state.
+    CALIBRATION_MODULATION_FREQUENCY, // The modules are greedily calibrating the frequency at which they may modulate.
+    OBSERVING,      // System is operating normally and watching for gate interruptions.
+    DISARMED,       // The system is paused, lasers are offline.
+    ALARM,          // The system has detected an intrusion
     FAULT,          // The system has entered an invalid state.
     SHUTTING_DOWN   // System is shutting down
 };
