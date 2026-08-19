@@ -62,7 +62,7 @@ bool Gate::initialize() noexcept {
     bool success = true;
 
     for (GateModule& module : modules) {
-        if (!module.initialize()) {
+        if (module.isConfigured() && !module.initialize()) {
             success = false;
             stateMachine.setLastFaultReason("gate module initialization failed");
         }
@@ -83,7 +83,7 @@ bool Gate::free() noexcept {
     bool success = true;
 
     for (GateModule& module : modules) {
-        if (!module.free()) {
+        if (module.isConfigured() && !module.free()) {
             success = false;
             stateMachine.setLastFaultReason("gate module freeing failed");
         }
@@ -100,12 +100,16 @@ bool Gate::isReady() const noexcept {
 
 void Gate::fixedUpdate() noexcept {
     for (GateModule& module : modules) {
-        module.fixedUpdate();
+        if (module.isReady()) {
+            module.fixedUpdate();
+        }
     }
 }
 
 void Gate::onStateChange() noexcept {
     for (GateModule& module : modules) {
-        module.onStateChange();
+        if (module.isReady()) {
+            module.onStateChange();
+        }
     }
 }
