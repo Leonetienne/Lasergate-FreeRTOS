@@ -1,6 +1,7 @@
 #include "test/stubs/SystemStub.h"
 #include "test/stubs/AdcOneshotStub.h"
 #include "test/stubs/GpioStub.h"
+#include "test/stubs/RandomStub.h"
 #include "test/stubs/TimeStub.h"
 #include "test/stubs/NVSStub.h"
 #include "test/stubs/MqttStub.h"
@@ -13,6 +14,7 @@
 System& getSystem() noexcept {
     static GpioStub gpio;
     static AdcOneshotStub adcOneshot(ADC_UNIT_1);
+    static RandomStub random;
     static TimeStub time;
     static NVSStub nvs;
     nvs.begin("system");
@@ -29,7 +31,7 @@ System& getSystem() noexcept {
     static HttpServerStub httpServer;
     static StateMachine stateMachine;
     static System system(
-        stateMachine, gpioPinRegister, gpio, adcOneshot, time, nvs, settings, mqtt, ethernetMan, httpServer
+        stateMachine, gpioPinRegister, gpio, adcOneshot, random, time, nvs, settings, mqtt, ethernetMan, httpServer
     );
     return system;
 }

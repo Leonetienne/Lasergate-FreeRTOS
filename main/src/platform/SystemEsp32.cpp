@@ -1,6 +1,7 @@
 #include "platform/SystemEsp32.h"
 #include "platform/AdcOneshot.h"
 #include "platform/GpioEsp32.h"
+#include "platform/RandomEsp32.h"
 #include "platform/TimeEsp32.h"
 #include "platform/NVSEsp32.h"
 #include "platform/MqttEsp32.h"
@@ -13,6 +14,7 @@
 System& getSystem() noexcept {
     static GpioEsp32 gpio;
     static AdcOneshot adcOneshot(ADC_UNIT_1);
+    static RandomEsp32 random;
     static TimeEsp32 time;
     static NVSEsp32 nvs;
     nvs.begin("system");
@@ -29,7 +31,7 @@ System& getSystem() noexcept {
     static StateMachine stateMachine;
     static HttpServerEsp32 httpServer(ethernetMan, mqtt, settings, stateMachine);
     static System system(
-        stateMachine, gpioPinRegister, gpio, adcOneshot, time, nvs, settings, mqtt, ethernetMan, httpServer
+        stateMachine, gpioPinRegister, gpio, adcOneshot, random, time, nvs, settings, mqtt, ethernetMan, httpServer
     );
     return system;
 }
