@@ -4,7 +4,7 @@ LaserSensor::LaserSensor(AdcAnalogReadPin &ldrPin) noexcept:
     ldrPin {ldrPin}
 { }
 
-LaserSensor::~LaserSensor() {
+LaserSensor::~LaserSensor() noexcept {
     if (isInitialized) {
         free();
     }

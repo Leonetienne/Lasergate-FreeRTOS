@@ -14,6 +14,7 @@ add_executable(lasergate_tests
         GpioPinRegister.cpp
         GpioStub.cpp
         AdcOneshotStub.cpp
+        RandomStub.cpp
         GpioDigitalWritePin.cpp
         AdcAnalogReadPin.cpp
         LaserSensor.cpp
@@ -43,6 +44,10 @@ add_executable(lasergate_tests
         ../main/src/platform/TimeEsp32.cpp
         ../main/src/hal/IAdcOneshot.cpp
         ../main/src/hal/AdcGpioMapping.cpp
+        ../main/src/hal/IRandom.cpp
+        ../main/include/hal/IRandom.h
+        ../main/src/test/stubs/RandomStub.cpp
+        ../main/include/test/stubs/RandomStub.h
         ../main/src/test/stubs/GpioStub.cpp
         ../main/src/test/stubs/AdcOneshotStub.cpp
         ../main/src/test/stubs/TimeStub.cpp
@@ -54,6 +59,8 @@ add_executable(lasergate_tests
         ../main/include/platform/AdcOneshot.h
         ../main/src/LaserSensor.cpp
         ../main/include/LaserSensor.h
+        ../main/src/GateModule.cpp
+        ../main/include/GateModule.h
 )
 
 
