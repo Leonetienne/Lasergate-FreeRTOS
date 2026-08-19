@@ -1,16 +1,16 @@
-#include "../include/LaserDiode.h"
+#include "../include/Diode.h"
 
-LaserDiode::LaserDiode(GpioDigitalWritePin &gpioPin) noexcept :
+Diode::Diode(GpioDigitalWritePin &gpioPin) noexcept :
     gpioPin { gpioPin }
 {}
 
-LaserDiode::~LaserDiode() noexcept {
+Diode::~Diode() noexcept {
     if (isInitialized) {
         free();
     }
 }
 
-bool LaserDiode::initialize() noexcept {
+bool Diode::initialize() noexcept {
     if (isInitialized) {
         return false;
     }
@@ -28,7 +28,7 @@ bool LaserDiode::initialize() noexcept {
     return success;
 }
 
-bool LaserDiode::free() noexcept {
+bool Diode::free() noexcept {
     if (!isInitialized) {
         return false;
     }
@@ -44,11 +44,11 @@ bool LaserDiode::free() noexcept {
     return success;
 }
 
-bool LaserDiode::isReady() const noexcept {
+bool Diode::isReady() const noexcept {
     return isInitialized;
 }
 
-bool LaserDiode::turnOn() const noexcept {
+bool Diode::turnOn() const noexcept {
     if (!isInitialized) {
         return false;
     }
@@ -56,7 +56,7 @@ bool LaserDiode::turnOn() const noexcept {
     return gpioPin.setState(PIN_STATE_DIGITAL::HIGH);
 }
 
-bool LaserDiode::turnOff() const noexcept {
+bool Diode::turnOff() const noexcept {
     if (!isInitialized) {
         return false;
     }
@@ -64,7 +64,7 @@ bool LaserDiode::turnOff() const noexcept {
     return gpioPin.setState(PIN_STATE_DIGITAL::LOW);
 }
 
-bool LaserDiode::setPowerState(bool desiredPowerState) noexcept {
+bool Diode::setPowerState(bool desiredPowerState) noexcept {
     if (!isInitialized) {
         return false;
     }
@@ -75,7 +75,7 @@ bool LaserDiode::setPowerState(bool desiredPowerState) noexcept {
     return turnOff();
 }
 
-std::expected<bool, bool> LaserDiode::getPowerState() const noexcept {
+std::expected<bool, bool> Diode::getPowerState() const noexcept {
     if (!isInitialized) {
         return std::unexpected(false);
     }
