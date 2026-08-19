@@ -7,6 +7,8 @@
 #include "StateMachine.h"
 #include "hal/IAdcOneshot.h"
 #include "hal/IGpio.h"
+#include "hal/IRandom.h"
+#include "hal/ITime.h"
 #include <array>
 
 /**
@@ -21,8 +23,10 @@ public:
         StateMachine& stateMachine,
         SettingsManager& settings,
         GpioPinRegister& gpioPinRegister,
-        IGpio& gpio,
-        IAdcOneshot& adcOneshot
+        IGpio& i_gpio,
+        IAdcOneshot& i_adcOneshot,
+        IRandom& i_random,
+        ITime& i_time
     ) noexcept;
     Gate(const Gate&) = delete;
     Gate(Gate&&) = delete;

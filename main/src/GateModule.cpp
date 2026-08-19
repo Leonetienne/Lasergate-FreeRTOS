@@ -1,20 +1,27 @@
 #include "../include/GateModule.h"
 
-constexpr int INITIAL_LDR_THRESH = 3000;
+constexpr int64_t INITIAL_LDR_THRESH = 3000;
+
+constexpr int64_t CALIB_LDR_TRESH_PULSE_FREQ = 500; // ms
 
 GateModule::GateModule(
     StateMachine& stateMachine,
     GpioPinRegister& pinRegister,
-    IGpio& gpio,
-    IAdcOneshot& adcOneshot,
+    IGpio& i_gpio,
+    IAdcOneshot& i_adcOneshot,
+    IRandom& i_random,
+    ITime& i_time,
     gpio_num_t laserPin,
     gpio_num_t statusLedPin,
     gpio_num_t ldrPin
 ) noexcept:
     stateMachine {stateMachine},
-    laserDiode {pinRegister, gpio, laserPin},
-    statusLed {pinRegister, gpio, statusLedPin},
-    laserSensor {pinRegister, adcOneshot, ldrPin}
+    i_random {i_random},
+    i_time {i_time},
+    laserDiode {pinRegister, i_gpio, laserPin},
+    statusLed {pinRegister, i_gpio, statusLedPin},
+    laserSensor {pinRegister, i_adcOneshot, ldrPin},
+    pulseTimer (0)
 { }
 
 GateModule::~GateModule() noexcept {
@@ -44,6 +51,9 @@ bool GateModule::initialize() noexcept {
     if (!laserSensor.initialize(INITIAL_LDR_THRESH)) {
         success = false;
     }
+
+    resetPulseTimer();
+    resetPulseStats();
 
     if (success) {
         isInitialized = true;
@@ -145,9 +155,13 @@ void GateModule::onStateFault() noexcept {
  */
 void GateModule::onStateUserAdjustingBeams() noexcept {
     if (!isInitialized) return;
+
+    // Turn the laser diode on (it stays that way)
     if (!laserDiode.turnOn()) {
         stateMachine.setState(STATE::FAULT, "GateModule::onStateUserAdjustingBeams: failed to turn on laser diode");
     }
+
+    // Turn the status led off, if it is configured
     if (statusLed.isConfigured() && !statusLed.turnOff()) {
         stateMachine.setState(STATE::FAULT, "GateModule::onStateUserAdjustingBeams: failed to turn off status LED");
     }
@@ -165,10 +179,47 @@ void GateModule::updateStateUserAdjustingBeams() noexcept {
         }
         statusLed.setPowerState(*reading);
     }
+    resetPulseTimer();
+    isInitialPulse = true;
 }
 
+/**
+ * When the system is calibrating its LDR thresholds, it is establishing which raw sensor readings
+ * are to be identified as "laser off" and which are "laser on".
+ * - It should pulse the laser at a conservative frequency
+ * - Slowly ramp up the pulse frequency until LDR readings differ from actual state
+ * - To prevent patters from influencing the calibration, the pulse modulation is random
+ */
 void GateModule::onStateCalibrationLdrThresh() noexcept {
     if (!isInitialized) return;
+
+    // Turn the laser diode off initially
+    if (!laserDiode.turnOn()) {
+        stateMachine.setState(STATE::FAULT, "GateModule::onStateCalibrationLdrThresh: failed to turn off laser diode");
+    }
+
+    // Turn the status led off, if it is configured
+    if (statusLed.isConfigured() && !statusLed.turnOff()) {
+        stateMachine.setState(STATE::FAULT, "GateModule::onStateCalibrationLdrThresh: failed to turn off status LED");
+    }
+
+    resetPulseTimer();
+    resetPulseStats();
+}
+
+void GateModule::updateStateCalibrationLdrThresh() noexcept {
+    if (!isInitialized) return;
+
+    // The LDR needs some time to pull up after initial light hit.
+    // This is why the pulse frequency is critical.
+    // This implies that we must pulse like this:
+    // SET_STATE -> DELAY -> VERIFY -> ...
+    // Since the verify method is delay-guarded, the verification must happen before setting state
+
+
+    if (i_time.getMillis() - pulseTimer > CALIB_LDR_TRESH_PULSE_FREQ) {
+        doPulseCycle();
+    }
 }
 
 void GateModule::onStateCalibrationModulationFrequency() noexcept {
@@ -191,10 +242,6 @@ void GateModule::updateStateFault() noexcept {
     if (!isInitialized) return;
 }
 
-void GateModule::updateStateCalibrationLdrThresh() noexcept {
-    if (!isInitialized) return;
-}
-
 void GateModule::updateStateCalibrationModulationFrequency() noexcept {
 }
 
@@ -208,4 +255,54 @@ void GateModule::updateStateAlarm() noexcept {
 
 void GateModule::updateStateDisarmed() noexcept {
     if (!isInitialized) return;
+}
+
+void GateModule::applyPulseTarget() noexcept {
+    if (!isInitialized) return;
+    laserDiode.setPowerState(i_random.getNextBit());
+}
+
+void GateModule::resetPulseStats() noexcept {
+    pulseRingBuffer = 0xFFFFFFFF;
+    pulseRingBufferPointer = 0;
+    pulseSampleCount = 0;
+}
+
+void GateModule::resetPulseTimer() noexcept {
+    if (!isInitialized) return;
+    pulseTimer = i_time.getMillis();
+}
+
+void GateModule::insertPulseResult(bool pulseResult) noexcept {
+    if (pulseResult) {
+        pulseRingBuffer |= (1 << pulseRingBufferPointer++);
+    } else {
+        pulseRingBuffer &= ~(1 << pulseRingBufferPointer++);
+    }
+    if (pulseRingBufferPointer >= static_cast<uint8_t>(sizeof(pulseRingBuffer) * 8)) {
+        pulseRingBufferPointer = 0;
+    }
+    if (pulseSampleCount < 32) {
+        ++pulseSampleCount;
+    }
+}
+
+bool GateModule::checkLaserPulse() const noexcept {
+    const auto sensorReading = laserSensor.sensesLight();
+    if (!sensorReading.has_value()) {
+        stateMachine.setState(STATE::FAULT, "GateModule::checkLaserPulse: failed to read laser sensor");
+        return false;
+    }
+    const auto laserState = laserDiode.getPowerState();
+    if (!laserState.has_value()) {
+        stateMachine.setState(STATE::FAULT, "GateModule::checkLaserPulse: failed to read laser status");
+        return false;
+    }
+    return *sensorReading == *laserState;
+}
+
+void GateModule::doPulseCycle() noexcept {
+    insertPulseResult(checkLaserPulse());
+    applyPulseTarget();
+    resetPulseTimer();
 }

@@ -11,7 +11,7 @@
  */
 class LaserSensor {
 public:
-    LaserSensor(GpioPinRegister& pinRegister, IAdcOneshot& adcOneshot, gpio_num_t pinNum) noexcept;
+    LaserSensor(GpioPinRegister& pinRegister, IAdcOneshot& i_adcOneshot, gpio_num_t pinNum) noexcept;
     LaserSensor(const LaserSensor&) = delete;
     LaserSensor(LaserSensor&&) = delete;
     LaserSensor& operator=(const LaserSensor&) = delete;
