@@ -4,16 +4,20 @@ Gate::Gate(
     StateMachine& stateMachine,
     SettingsManager& settings,
     GpioPinRegister& gpioPinRegister,
-    IGpio& gpio,
-    IAdcOneshot& adcOneshot
+    IGpio& i_gpio,
+    IAdcOneshot& i_adcOneshot,
+    IRandom& i_random,
+    ITime& i_time
 ) noexcept:
     stateMachine {stateMachine},
     modules {
         GateModule(
             stateMachine,
             gpioPinRegister,
-            gpio,
-            adcOneshot,
+            i_gpio,
+            i_adcOneshot,
+            i_random,
+            i_time,
             settings.retrieveGateModuleLaserGpioPin(0).value_or(GPIO_NUM_NC),
             settings.retrieveGateModuleLedGpioPin(0).value_or(GPIO_NUM_NC),
             settings.retrieveGateModuleLdrGpioPin(0).value_or(GPIO_NUM_NC)
@@ -21,8 +25,10 @@ Gate::Gate(
         GateModule(
             stateMachine,
             gpioPinRegister,
-            gpio,
-            adcOneshot,
+            i_gpio,
+            i_adcOneshot,
+            i_random,
+            i_time,
             settings.retrieveGateModuleLaserGpioPin(1).value_or(GPIO_NUM_NC),
             settings.retrieveGateModuleLedGpioPin(1).value_or(GPIO_NUM_NC),
             settings.retrieveGateModuleLdrGpioPin(1).value_or(GPIO_NUM_NC)
@@ -30,8 +36,10 @@ Gate::Gate(
         GateModule(
             stateMachine,
             gpioPinRegister,
-            gpio,
-            adcOneshot,
+            i_gpio,
+            i_adcOneshot,
+            i_random,
+            i_time,
             settings.retrieveGateModuleLaserGpioPin(2).value_or(GPIO_NUM_NC),
             settings.retrieveGateModuleLedGpioPin(2).value_or(GPIO_NUM_NC),
             settings.retrieveGateModuleLdrGpioPin(2).value_or(GPIO_NUM_NC)
@@ -39,8 +47,10 @@ Gate::Gate(
         GateModule(
             stateMachine,
             gpioPinRegister,
-            gpio,
-            adcOneshot,
+            i_gpio,
+            i_adcOneshot,
+            i_random,
+            i_time,
             settings.retrieveGateModuleLaserGpioPin(3).value_or(GPIO_NUM_NC),
             settings.retrieveGateModuleLedGpioPin(3).value_or(GPIO_NUM_NC),
             settings.retrieveGateModuleLdrGpioPin(3).value_or(GPIO_NUM_NC)

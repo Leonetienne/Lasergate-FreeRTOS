@@ -11,7 +11,7 @@
  */
 class Diode {
 public:
-    Diode(GpioPinRegister& pinRegister, IGpio& gpio, gpio_num_t pinNum) noexcept;
+    Diode(GpioPinRegister& pinRegister, IGpio& i_gpio, gpio_num_t pinNum) noexcept;
     Diode(const Diode&) = delete;
     Diode(Diode&&) = delete;
     Diode& operator=(const Diode&) = delete;

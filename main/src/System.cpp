@@ -14,26 +14,28 @@ static const char* LOG_TAG = "System";
 System::System(
     StateMachine& stateMachine,
     GpioPinRegister& gpioPinRegister,
-    IGpio& gpio,
-    IAdcOneshot& adcOneshot,
+    IGpio& i_gpio,
+    IAdcOneshot& i_adcOneshot,
+    IRandom& i_random,
     ITime& i_time,
-    INVS& nvs,
+    INVS& i_nvs,
     SettingsManager& settings,
-    IMqtt& mqtt,
-    IEthernetManager& ethernetMan,
-    IHttpServer& httpServer
+    IMqtt& i_mqtt,
+    IEthernetManager& i_ethernetMan,
+    IHttpServer& i_httpServer
 ) noexcept :
-    gate(stateMachine, settings, gpioPinRegister, gpio, adcOneshot),
+    gate(stateMachine, settings, gpioPinRegister, i_gpio, i_adcOneshot, i_random, i_time),
     stateMachine(stateMachine),
     gpioPinRegister(gpioPinRegister),
-    gpio(gpio),
-    adcOneshot(adcOneshot),
+    i_gpio(i_gpio),
+    i_adcOneshot(i_adcOneshot),
+    i_random(i_random),
     i_time(i_time),
-    nvs(nvs),
+    i_nvs(i_nvs),
     settings(settings),
-    mqtt(mqtt),
-    ethernetMan(ethernetMan),
-    httpServer(httpServer)
+    i_mqtt(i_mqtt),
+    i_ethernetMan(i_ethernetMan),
+    i_httpServer(i_httpServer)
 { }
 
 System::~System() noexcept {
@@ -54,10 +56,10 @@ void System::initialize() noexcept {
     if (!gate.initialize()) {
         ESP_LOGW(LOG_TAG, "gate.initialize() failed");
     }
-    if (!ethernetMan.begin()) {
+    if (!i_ethernetMan.begin()) {
         ESP_LOGW(LOG_TAG, "ethernetMan.begin() failed");
     }
-    if (!httpServer.begin()) {
+    if (!i_httpServer.begin()) {
         ESP_LOGW(LOG_TAG, "httpServer.begin() failed");
     }
 
@@ -69,16 +71,16 @@ void System::initialize() noexcept {
 }
 
 void System::wireMqttCallbacks() noexcept {
-    mqtt.setOnConnected([this]() { onMqttConnected(); });
-    mqtt.setOnDisconnected([this]() { onMqttDisconnected(); });
-    mqtt.setOnMessage([this](const std::string& topic, const std::string& payload) {
+    i_mqtt.setOnConnected([this]() { onMqttConnected(); });
+    i_mqtt.setOnDisconnected([this]() { onMqttDisconnected(); });
+    i_mqtt.setOnMessage([this](const std::string& topic, const std::string& payload) {
         onMqttMessage(topic, payload);
     });
 }
 
 void System::wireEthernetCallbacks() noexcept {
-    ethernetMan.setOnConnected([this]() { onEthernetConnected(); });
-    ethernetMan.setOnDisconnected([this]() { onEthernetDisconnected(); });
+    i_ethernetMan.setOnConnected([this]() { onEthernetConnected(); });
+    i_ethernetMan.setOnDisconnected([this]() { onEthernetDisconnected(); });
 }
 
 void System::beginMqtt() noexcept {
@@ -102,7 +104,7 @@ void System::beginMqtt() noexcept {
         "Offline"
     };
 
-    if (!mqtt.begin(options)) {
+    if (!i_mqtt.begin(options)) {
         ESP_LOGW(LOG_TAG, "mqtt.begin() failed for broker '%s'", options.brokerUri.c_str());
     }
 }
@@ -127,22 +129,22 @@ bool System::free() noexcept {
     // Tear everything down even if an individual step fails, so pins stay
     // unbound and nvs gets closed; report the aggregated outcome.
     bool success = true;
-    if (mqtt.isReady() && !mqtt.free()) {
+    if (i_mqtt.isReady() && !i_mqtt.free()) {
         success = false;
     }
 
     // httpServer may already be stopped (e.g. ethernet never came up) - that's fine
-    httpServer.free();
+    i_httpServer.free();
 
     if (gate.isReady() && !gate.free()) {
         success = false;
     }
 
-    if (ethernetMan.isReady() && !ethernetMan.free()) {
+    if (i_ethernetMan.isReady() && !i_ethernetMan.free()) {
         success = false;
     }
 
-    if (!nvs.free()) {
+    if (!i_nvs.free()) {
         success = false;
     }
 
@@ -154,7 +156,7 @@ void System::beforeShutdown() noexcept {
 }
 
 void System::update() noexcept {
-    mqtt.updateActivityLedPulse();
+    i_mqtt.updateActivityLedPulse();
     gate.fixedUpdate();
 }
 
@@ -163,7 +165,7 @@ void System::onMqttConnected() noexcept {
     if (lwtTopic.empty()) {
         return;
     }
-    mqtt.publish(lwtTopic, "Online", 1, true);
+    i_mqtt.publish(lwtTopic, "Online", 1, true);
 }
 
 void System::onMqttDisconnected() noexcept {

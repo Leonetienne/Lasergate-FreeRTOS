@@ -36,13 +36,13 @@ extern const uint8_t advanced_html_start[] asm("_binary_advanced_html_start");
 extern const uint8_t advanced_html_end[] asm("_binary_advanced_html_end");
 
 HttpServerEsp32::HttpServerEsp32(
-    IEthernetManager& ethernetMan,
-    IMqtt& mqtt,
+    IEthernetManager& i_ethernetMan,
+    IMqtt& i_mqtt,
     SettingsManager& settings,
     StateMachine& stateMachine
 ) noexcept :
-    ethernetMan(ethernetMan),
-    mqtt(mqtt),
+    i_ethernetMan(i_ethernetMan),
+    i_mqtt(i_mqtt),
     settings(settings),
     stateMachine(stateMachine)
 { }
@@ -161,7 +161,7 @@ esp_err_t HttpServerEsp32::handleGetApi(httpd_req_t* req) noexcept {
 
     std::string report;
     if (uri == "/api/status") {
-        report = ApiController::buildStatusReport(self->ethernetMan, self->mqtt, self->settings);
+        report = ApiController::buildStatusReport(self->i_ethernetMan, self->i_mqtt, self->settings);
     } else if (uri == "/api/settings") {
         report = ApiController::buildSettingsReport(self->settings);
     } else if (uri == "/api/settings/advanced") {
