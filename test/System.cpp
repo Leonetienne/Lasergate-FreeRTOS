@@ -10,11 +10,13 @@
 #include "test/stubs/EthernetManagerStub.h"
 #include "test/stubs/HttpServerStub.h"
 #include "test/stubs/AdcOneshotStub.h"
+#include "test/stubs/RandomStub.h"
 
 TEST_CASE("System: init", "[System]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
@@ -24,7 +26,7 @@ TEST_CASE("System: init", "[System]") {
     EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
     HttpServerStub httpServerStub;
 
-    System system(stateMachine, pr, gpioStub, adcStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
+    System system(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
 
     SECTION("connects to mqtt when a broker is configured") {
         REQUIRE(settings.storeMqttBrokerConfig({"mqtt://broker.example", "user", "pass"}));
@@ -49,6 +51,7 @@ TEST_CASE("System: free", "[System]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
@@ -58,7 +61,7 @@ TEST_CASE("System: free", "[System]") {
     EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
     HttpServerStub httpServerStub;
 
-    System system(stateMachine, pr, gpioStub, adcStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
+    System system(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
 
     SECTION("fails before init") {
         REQUIRE_FALSE(system.free());
@@ -83,6 +86,7 @@ TEST_CASE("System: onMqttConnected publishes availability", "[System]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
@@ -92,7 +96,7 @@ TEST_CASE("System: onMqttConnected publishes availability", "[System]") {
     EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
     HttpServerStub httpServerStub;
 
-    System system(stateMachine, pr, gpioStub, adcStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
+    System system(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
 
     SECTION("publishes Online on the lwt topic") {
         REQUIRE(settings.storeMqttBrokerConfig({"mqtt://broker.example", "", ""}));
@@ -120,6 +124,7 @@ TEST_CASE("System: update polls the mqtt activity led pulse", "[System]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
     TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
@@ -130,7 +135,7 @@ TEST_CASE("System: update polls the mqtt activity led pulse", "[System]") {
     EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
     HttpServerStub httpServerStub;
 
-    System system(stateMachine, pr, gpioStub, adcStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
+    System system(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
     system.initialize();
 
     SECTION("turns the led back on 100ms after a publish, regardless of system state") {

@@ -5,12 +5,16 @@
 #include "SettingsManager.h"
 #include "test/stubs/GpioStub.h"
 #include "test/stubs/AdcOneshotStub.h"
+#include "test/stubs/RandomStub.h"
 #include "test/stubs/NVSStub.h"
+#include "test/stubs/TimeStub.h"
 
 TEST_CASE("Gate: lifecycle", "[Gate]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
     SettingsManager settings(nvs);
@@ -29,7 +33,7 @@ TEST_CASE("Gate: lifecycle", "[Gate]") {
     REQUIRE(settings.storeGateModuleLedGpioPin(3, GPIO_NUM_8));
     REQUIRE(settings.storeGateModuleLdrGpioPin(3, GPIO_NUM_37));
 
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
 
     SECTION("not ready by default") {
         REQUIRE_FALSE(gate.isReady());
@@ -65,6 +69,8 @@ TEST_CASE("Gate: skips unconfigured modules", "[Gate]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
     SettingsManager settings(nvs);
@@ -72,7 +78,7 @@ TEST_CASE("Gate: skips unconfigured modules", "[Gate]") {
 
     // nothing stored in settings, so every module resolves to GPIO_NUM_NC pins
     // and is therefore unconfigured - none of them are attempted
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
 
     SECTION("initializes successfully when no module is configured") {
         REQUIRE(gate.initialize());
@@ -90,6 +96,8 @@ TEST_CASE("Gate: initializes only the configured modules", "[Gate]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
     SettingsManager settings(nvs);
@@ -100,7 +108,7 @@ TEST_CASE("Gate: initializes only the configured modules", "[Gate]") {
     REQUIRE(settings.storeGateModuleLedGpioPin(0, GPIO_NUM_2));
     REQUIRE(settings.storeGateModuleLdrGpioPin(0, GPIO_NUM_34));
 
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
 
     REQUIRE(gate.initialize());
     REQUIRE(gate.isReady());

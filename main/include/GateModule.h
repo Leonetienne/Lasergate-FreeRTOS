@@ -5,6 +5,7 @@
 #include "LaserDiode.h"
 #include "LightEmittingDiode.h"
 #include "LaserSensor.h"
+#include "PulseRingBuffer.h"
 #include "StateMachine.h"
 #include "hal/IAdcOneshot.h"
 #include "hal/IGpio.h"
@@ -143,19 +144,9 @@ private:
     void applyPulseTarget() noexcept;
 
     /**
-     * Resets pulseRingPuffer, pulseRingPufferPointer, and pulseSampleCount
-     */
-    void resetPulseStats() noexcept;
-
-    /**
      * Resets the current monotonic millis timer
      */
     void resetPulseTimer() noexcept;
-
-    /**
-     * Will insert a pulse result into the pulse ring buffer
-     */
-    void insertPulseResult(bool pulseResult) noexcept;
 
     /**
      * Compares the lasers actual state to its read state
@@ -180,12 +171,7 @@ private:
 
     time_t pulseTimer;
     bool isInitialPulse = true;
-    // Stores pulse violations. each low bit represents one violation.
-    uint32_t pulseRingBuffer = 0xFFFFFFFF;
-    uint8_t pulseRingBufferPointer = 0;
-    // Counts real pulses recorded since the ring buffer was last reset, capped at 32.
-    // The violation count in pulseRingPuffer isn't meaningful until this reaches 32.
-    uint8_t pulseSampleCount = 0;
+    PulseRingBuffer pulseHistory;
 };
 
 

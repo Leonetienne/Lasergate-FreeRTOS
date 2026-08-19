@@ -53,7 +53,7 @@ bool GateModule::initialize() noexcept {
     }
 
     resetPulseTimer();
-    resetPulseStats();
+    pulseHistory.reset();
 
     if (success) {
         isInitialized = true;
@@ -204,7 +204,7 @@ void GateModule::onStateCalibrationLdrThresh() noexcept {
     }
 
     resetPulseTimer();
-    resetPulseStats();
+    pulseHistory.reset();
 }
 
 void GateModule::updateStateCalibrationLdrThresh() noexcept {
@@ -262,29 +262,9 @@ void GateModule::applyPulseTarget() noexcept {
     laserDiode.setPowerState(i_random.getNextBit());
 }
 
-void GateModule::resetPulseStats() noexcept {
-    pulseRingBuffer = 0xFFFFFFFF;
-    pulseRingBufferPointer = 0;
-    pulseSampleCount = 0;
-}
-
 void GateModule::resetPulseTimer() noexcept {
     if (!isInitialized) return;
     pulseTimer = i_time.getMillis();
-}
-
-void GateModule::insertPulseResult(bool pulseResult) noexcept {
-    if (pulseResult) {
-        pulseRingBuffer |= (1 << pulseRingBufferPointer++);
-    } else {
-        pulseRingBuffer &= ~(1 << pulseRingBufferPointer++);
-    }
-    if (pulseRingBufferPointer >= static_cast<uint8_t>(sizeof(pulseRingBuffer) * 8)) {
-        pulseRingBufferPointer = 0;
-    }
-    if (pulseSampleCount < 32) {
-        ++pulseSampleCount;
-    }
 }
 
 bool GateModule::checkLaserPulse() const noexcept {
@@ -302,7 +282,7 @@ bool GateModule::checkLaserPulse() const noexcept {
 }
 
 void GateModule::doPulseCycle() noexcept {
-    insertPulseResult(checkLaserPulse());
+    pulseHistory.insertResult(checkLaserPulse());
     applyPulseTarget();
     resetPulseTimer();
 }

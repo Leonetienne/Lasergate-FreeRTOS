@@ -33,6 +33,7 @@ add_executable(lasergate_tests
         LightEmittingDiode.cpp
         GateModule.cpp
         Gate.cpp
+        PulseRingBuffer.cpp
 
         ../main/src/StateMachine.cpp
         ../main/src/System.cpp
@@ -65,6 +66,8 @@ add_executable(lasergate_tests
         ../main/include/GateModule.h
         ../main/src/Gate.cpp
         ../main/include/Gate.h
+        ../main/src/PulseRingBuffer.cpp
+        ../main/include/PulseRingBuffer.h
 )
 
 
