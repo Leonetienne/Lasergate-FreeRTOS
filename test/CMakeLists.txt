@@ -61,6 +61,8 @@ add_executable(lasergate_tests
         ../main/include/LaserSensor.h
         ../main/src/GateModule.cpp
         ../main/include/GateModule.h
+        ../main/include/Gate.cpp
+        ../main/include/Gate.h
 )
 
 

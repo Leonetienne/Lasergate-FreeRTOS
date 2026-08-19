@@ -1,7 +1,3 @@
-//
-// Created by Leon Etienne on 18.03.26.
-//
-
 #include "StateMachine.h"
 #include "compat/esp_log_macros.h"
 
