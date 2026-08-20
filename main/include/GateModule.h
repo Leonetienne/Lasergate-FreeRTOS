@@ -11,6 +11,8 @@
 #include "hal/IGpio.h"
 #include "hal/IRandom.h"
 #include "hal/ITime.h"
+#include <optional>
+#include <utility>
 
 /**
  * Aggregates and drives a status led, a laser diode and a laser sensor into a module
@@ -149,10 +151,10 @@ private:
     void resetPulseTimer() noexcept;
 
     /**
-     * Compares the lasers actual state to its read state
-     * @return
+     * Reads the sensor and the laser diode's actual state for a pulse verification
+     * @return {sensorDetectedOn, laserActuallyOn}, or std::nullopt on a read failure (also faults the state machine)
      */
-    [[nodiscard]] bool checkLaserPulse() const noexcept;
+    [[nodiscard]] std::optional<std::pair<bool, bool>> readPulseState() const noexcept;
 
     /**
      * Will complete a whole pulse cycle: verify, record, set new state

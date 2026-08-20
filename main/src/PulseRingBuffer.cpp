@@ -2,14 +2,14 @@
 
 #include <bit>
 
-void PulseRingBuffer::insertResult(bool pulseMatched) noexcept {
-    if (pulseMatched) {
-        ringBuffer |= (1u << ringBufferPointer);
-    } else {
-        ringBuffer &= ~(1u << ringBufferPointer);
-    }
+void PulseRingBuffer::insertResult(bool sensorDetectedOn, bool laserActuallyOn) noexcept {
+    const uint32_t mask = 1u << ringBufferPointer;
+
+    sensedBuffer = sensorDetectedOn ? (sensedBuffer | mask) : (sensedBuffer & ~mask);
+    expectedBuffer = laserActuallyOn ? (expectedBuffer | mask) : (expectedBuffer & ~mask);
+
     ++ringBufferPointer;
-    if (ringBufferPointer >= static_cast<uint8_t>(sizeof(ringBuffer) * 8)) {
+    if (ringBufferPointer >= static_cast<uint8_t>(sizeof(sensedBuffer) * 8)) {
         ringBufferPointer = 0;
     }
     if (sampleCount < 32) {
@@ -18,17 +18,26 @@ void PulseRingBuffer::insertResult(bool pulseMatched) noexcept {
 }
 
 void PulseRingBuffer::reset() noexcept {
-    ringBuffer = 0xFFFFFFFF;
+    sensedBuffer = 0xFFFFFFFF;
+    expectedBuffer = 0xFFFFFFFF;
     ringBufferPointer = 0;
     sampleCount = 0;
 }
 
 uint8_t PulseRingBuffer::getFailureCount() const noexcept {
-    return static_cast<uint8_t>(std::popcount(static_cast<uint32_t>(~ringBuffer)));
+    return static_cast<uint8_t>(std::popcount(sensedBuffer ^ expectedBuffer));
 }
 
 uint8_t PulseRingBuffer::getSuccessCount() const noexcept {
-    return static_cast<uint8_t>(std::popcount(static_cast<uint32_t>(ringBuffer)));
+    return static_cast<uint8_t>(std::popcount(~(sensedBuffer ^ expectedBuffer)));
+}
+
+uint8_t PulseRingBuffer::getFalsePositiveCount() const noexcept {
+    return static_cast<uint8_t>(std::popcount(sensedBuffer & ~expectedBuffer));
+}
+
+uint8_t PulseRingBuffer::getFalseNegativeCount() const noexcept {
+    return static_cast<uint8_t>(std::popcount(~sensedBuffer & expectedBuffer));
 }
 
 uint8_t PulseRingBuffer::getSampleCount() const noexcept {

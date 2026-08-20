@@ -219,6 +219,10 @@ void GateModule::updateStateCalibrationLdrThresh() noexcept {
 
     if (i_time.getMillis() - pulseTimer > CALIB_LDR_TRESH_PULSE_FREQ) {
         doPulseCycle();
+
+        // Is this batch completed?
+        if (pulseHistory.getSampleCount() == 32) {
+        }
     }
 }
 
@@ -267,22 +271,24 @@ void GateModule::resetPulseTimer() noexcept {
     pulseTimer = i_time.getMillis();
 }
 
-bool GateModule::checkLaserPulse() const noexcept {
+std::optional<std::pair<bool, bool>> GateModule::readPulseState() const noexcept {
     const auto sensorReading = laserSensor.sensesLight();
     if (!sensorReading.has_value()) {
-        stateMachine.setState(STATE::FAULT, "GateModule::checkLaserPulse: failed to read laser sensor");
-        return false;
+        stateMachine.setState(STATE::FAULT, "GateModule::readPulseState: failed to read laser sensor");
+        return std::nullopt;
     }
     const auto laserState = laserDiode.getPowerState();
     if (!laserState.has_value()) {
-        stateMachine.setState(STATE::FAULT, "GateModule::checkLaserPulse: failed to read laser status");
-        return false;
+        stateMachine.setState(STATE::FAULT, "GateModule::readPulseState: failed to read laser status");
+        return std::nullopt;
     }
-    return *sensorReading == *laserState;
+    return std::make_pair(*sensorReading, *laserState);
 }
 
 void GateModule::doPulseCycle() noexcept {
-    pulseHistory.insertResult(checkLaserPulse());
+    if (const auto pulseState = readPulseState(); pulseState.has_value()) {
+        pulseHistory.insertResult(pulseState->first, pulseState->second);
+    }
     applyPulseTarget();
     resetPulseTimer();
 }
