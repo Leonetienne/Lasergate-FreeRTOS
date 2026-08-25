@@ -32,8 +32,10 @@ add_executable(lasergate_tests
         LaserDiode.cpp
         LightEmittingDiode.cpp
         GateModule.cpp
+        LdrThreshCalibration.cpp
         Gate.cpp
         PulseRingBuffer.cpp
+        LdrPhysicsSim.cpp
 
         ../main/src/StateMachine.cpp
         ../main/src/System.cpp
@@ -68,6 +70,8 @@ add_executable(lasergate_tests
         ../main/include/Gate.h
         ../main/src/PulseRingBuffer.cpp
         ../main/include/PulseRingBuffer.h
+        ../main/src/test/stubs/LdrPhysicsSim.cpp
+        ../main/include/test/stubs/LdrPhysicsSim.h
 )
 
 
