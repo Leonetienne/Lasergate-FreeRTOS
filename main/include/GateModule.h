@@ -140,6 +140,26 @@ private:
     void updateStateCalibrationModulationFrequency() noexcept;
 
     /**
+     * Concludes LDR threshold calibration: computes the calibrated value from the homed
+     * lower/upper bounds, applies and persists it, resets calibration state, and moves the
+     * state machine to DISARMED (or FAULT on a persistence failure).
+     */
+    void wrapUpLdrThreshCalib() noexcept;
+
+    /**
+     * Concludes the HOMING_LOWER phase of LDR threshold calibration: stores the homed lower
+     * bound, resets the sensor to the initial threshold, and hands off to HOMING_UPPER.
+     */
+    void advanceLdrThreshCalib() noexcept;
+
+    /**
+     * Concludes laser pulse frequency calibration: applies and persists the last known-good
+     * frequency, resets calibration state, and moves the state machine to DISARMED (or FAULT
+     * if no known-good frequency was ever found, or on a persistence failure).
+     */
+    void wrapUpPulseFreqCalib() noexcept;
+
+    /**
      * Gets called by update during state OBSERVING
      */
     void updateStateObserving() noexcept;
@@ -193,7 +213,6 @@ private:
     LaserSensor laserSensor;
 
     time_t pulseTimer;
-    bool isInitialPulse = true;
     PulseRingBuffer pulseHistory;
     uint16_t laserPulseFrequency = 0;
 
@@ -206,6 +225,9 @@ private:
         HOMING_LOWER,
         HOMING_UPPER
     } calib_ldr_state = CALIB_LDR_STATE::NONE;
+
+    /* Laser pulse frequency calibration helpers */
+    uint16_t calib_freq_last_good_freq = 0;
 };
 
 
