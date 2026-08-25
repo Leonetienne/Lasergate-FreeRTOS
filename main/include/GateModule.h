@@ -161,6 +161,11 @@ private:
      */
     void doPulseCycle() noexcept;
 
+    /**
+     * @return Whether pulseHistory holds a batch that's good enough to be considered healthy (Num of misreads within tolerance)
+     */
+    [[nodiscard]] std::optional<bool> isPulseBatchAcceptable() const noexcept;
+
 
     bool isInitialized = false;
 
@@ -174,6 +179,16 @@ private:
     time_t pulseTimer;
     bool isInitialPulse = true;
     PulseRingBuffer pulseHistory;
+
+    /* LDR Thresh calibration helpers */
+    int calib_ldr_lower_threshold = 0;
+    int calib_ldr_upper_threshold = 0;
+    int calib_ldr_last_good_threshold = 0;
+    enum class CALIB_LDR_STATE {
+        NONE,
+        HOMING_LOWER,
+        HOMING_UPPER
+    } calib_ldr_state = CALIB_LDR_STATE::NONE;
 };
 
 

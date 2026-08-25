@@ -1,8 +1,14 @@
 #include "../include/GateModule.h"
 
-constexpr int64_t INITIAL_LDR_THRESH = 3000;
+constexpr uint8_t ALLOWED_MISREADS_PER_BATCH = 1; // Allow for this many misreads in a pulse batch to be still considered healthy
 
-constexpr int64_t CALIB_LDR_TRESH_PULSE_FREQ = 500; // ms
+constexpr int CALIB_LDR_TRESH_PULSE_FREQ = 500; // ms
+constexpr int CALIB_LDR_THRESH_INITIAL_THRESH = 3000; // MUST satisfy CALIB_LDR_TRESH_MIN_THRESH << CALIB_LDR_INITIAL_LDR_THRESH << CALIB_LDR_TRESH_MAX_THRESH
+constexpr int CALIB_LDR_TRESH_MIN_THRESH = 500; // lower limit of plausible values
+constexpr int CALIB_LDR_TRESH_MAX_THRESH = 20000;  // upper limit of plausible values
+constexpr float CALIB_LDR_TRESH_STEP_FACTOR = 0.2f; // reduce by 20% each iteration
+constexpr float CALIB_LDR_TRESH_TARGET_IN_RANGE = 0.75f; // calibration target is position 75% of valid range
+constexpr int CALIB_LDR_TRESH_MIN_STEP_SIZE = 50;  // prevent super slow or stuck calibration
 
 GateModule::GateModule(
     StateMachine& stateMachine,
@@ -48,7 +54,7 @@ bool GateModule::initialize() noexcept {
     if (!laserDiode.initialize()) {
         success = false;
     }
-    if (!laserSensor.initialize(INITIAL_LDR_THRESH)) {
+    if (!laserSensor.initialize(CALIB_LDR_THRESH_INITIAL_THRESH)) {
         success = false;
     }
 
@@ -203,25 +209,99 @@ void GateModule::onStateCalibrationLdrThresh() noexcept {
         stateMachine.setState(STATE::FAULT, "GateModule::onStateCalibrationLdrThresh: failed to turn off status LED");
     }
 
+    calib_ldr_state = CALIB_LDR_STATE::HOMING_LOWER;
+
     resetPulseTimer();
     pulseHistory.reset();
 }
 
+/**
+ * Calibrating LDR threshold:
+ * - Home lower limit (just before false positives take over: ambient light becomes too bright)
+ * - Home upper limit (just before false negatives take over: laser is not bright enough)
+ * - Calibrated value is the 3rd quartile of this established range
+*/
 void GateModule::updateStateCalibrationLdrThresh() noexcept {
     if (!isInitialized) return;
 
-    // The LDR needs some time to pull up after initial light hit.
-    // This is why the pulse frequency is critical.
-    // This implies that we must pulse like this:
-    // SET_STATE -> DELAY -> VERIFY -> ...
-    // Since the verify method is delay-guarded, the verification must happen before setting state
-
-
+    // Run 32 pulses at initial threshold
     if (i_time.getMillis() - pulseTimer > CALIB_LDR_TRESH_PULSE_FREQ) {
         doPulseCycle();
 
         // Is this batch completed?
         if (pulseHistory.getSampleCount() == 32) {
+            // Check whether the result set for this batch is acceptable
+            if (isPulseBatchAcceptable().value_or(false)) {
+                // Value is still good.
+
+                // Store this known-good thresh
+                calib_ldr_last_good_threshold = laserSensor.getThreshold();
+
+                // Are we currently homing towards lower or upper boundary?
+                switch (calib_ldr_state) {
+                    case CALIB_LDR_STATE::HOMING_LOWER: {
+                        // Reduce and check again
+                        const int step = std::max(CALIB_LDR_TRESH_MIN_STEP_SIZE, static_cast<int>(
+                            static_cast<float>(calib_ldr_last_good_threshold - CALIB_LDR_TRESH_MIN_THRESH) * CALIB_LDR_TRESH_STEP_FACTOR
+                        ));
+                        laserSensor.setThreshold(std::max(calib_ldr_last_good_threshold - step, CALIB_LDR_TRESH_MIN_THRESH));
+                        break;
+                    }
+                    case CALIB_LDR_STATE::HOMING_UPPER: {
+                        // Increase and check again
+                        const int step = std::max(CALIB_LDR_TRESH_MIN_STEP_SIZE, static_cast<int>(
+                            static_cast<float>(CALIB_LDR_TRESH_MAX_THRESH - calib_ldr_last_good_threshold) * CALIB_LDR_TRESH_STEP_FACTOR
+                        ));
+                        laserSensor.setThreshold(std::min(calib_ldr_last_good_threshold + step, CALIB_LDR_TRESH_MAX_THRESH));
+                        break;
+                    }
+                    default:
+                        stateMachine.setState(STATE::FAULT, "GateModule::updateStateCalibrationLdrThresh: ended up in invalid state (CALIB_LDR_STATE::NONE) during incrementing/decrementing limit");
+                        break;
+                }
+            }
+            // Value is not good. Treat last known good threshold value as valid limit
+            else {
+                // Do we even have a good result?
+                if (calib_ldr_last_good_threshold == 0) {
+                    stateMachine.setState(STATE::FAULT, "GateModule::updateStateCalibrationLdrThresh: calibration failed! known_good_lower=" +
+                        std::to_string(calib_ldr_lower_threshold) + " known_good_higher=" + std::to_string(calib_ldr_upper_threshold) +
+                        " last_know_good=" + std::to_string(calib_ldr_last_good_threshold));
+                    return;
+                }
+
+                // Yes, we do.
+                switch (calib_ldr_state) {
+                    // Still in first step, store intermittent result and reset
+                    case CALIB_LDR_STATE::HOMING_LOWER: {
+                        calib_ldr_lower_threshold = calib_ldr_last_good_threshold;
+                        calib_ldr_last_good_threshold = 0;
+                        laserSensor.setThreshold(CALIB_LDR_THRESH_INITIAL_THRESH);
+                        calib_ldr_state = CALIB_LDR_STATE::HOMING_UPPER;
+                        break;
+                    }
+                    // Already in second step: this concludes the calibration
+                    case CALIB_LDR_STATE::HOMING_UPPER: {
+                        calib_ldr_upper_threshold = calib_ldr_last_good_threshold;
+                        calib_ldr_last_good_threshold = 0;
+                        // Compute calibrated value
+                        const int calib_ldr_calibrated_thresh = static_cast<int>(
+                            static_cast<float>(calib_ldr_lower_threshold) +
+                            ((static_cast<float>(calib_ldr_upper_threshold) - static_cast<float>(calib_ldr_lower_threshold)) * CALIB_LDR_TRESH_TARGET_IN_RANGE)
+                        );
+                        laserSensor.setThreshold(calib_ldr_calibrated_thresh);
+                        calib_ldr_state = CALIB_LDR_STATE::NONE;
+                        break;
+                    }
+                    default:
+                        stateMachine.setState(STATE::FAULT, "GateModule::updateStateCalibrationLdrThresh: ended up in invalid state (CALIB_LDR_STATE::NONE) during storing result");
+                        break;
+                }
+            }
+
+
+            // Reset for new batch
+            pulseHistory.reset();
         }
     }
 }
@@ -286,9 +366,22 @@ std::optional<std::pair<bool, bool>> GateModule::readPulseState() const noexcept
 }
 
 void GateModule::doPulseCycle() noexcept {
+    // The LDR needs some time to pull up after initial light hit.
+    // This is why the pulse frequency is critical.
+    // This implies that we must pulse like this:
+    // SET_STATE -> DELAY -> VERIFY -> ...
+    // Since the verify method is delay-guarded, the verification must happen before setting state
+
     if (const auto pulseState = readPulseState(); pulseState.has_value()) {
         pulseHistory.insertResult(pulseState->first, pulseState->second);
     }
     applyPulseTarget();
     resetPulseTimer();
+}
+
+std::optional<bool> GateModule::isPulseBatchAcceptable() const noexcept {
+    if (!isInitialized) return std::nullopt;
+    if (pulseHistory.getSampleCount() != 32) return std::nullopt;
+
+    return pulseHistory.getFailureCount() <= ALLOWED_MISREADS_PER_BATCH;
 }
