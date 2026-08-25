@@ -2,13 +2,13 @@
 
 constexpr uint8_t ALLOWED_MISREADS_PER_BATCH = 1; // Allow for this many misreads in a pulse batch to be still considered healthy
 
-constexpr int CALIB_LDR_TRESH_PULSE_FREQ = 500; // ms
-constexpr int CALIB_LDR_THRESH_INITIAL_THRESH = 3000; // MUST satisfy CALIB_LDR_TRESH_MIN_THRESH << CALIB_LDR_INITIAL_LDR_THRESH << CALIB_LDR_TRESH_MAX_THRESH
-constexpr int CALIB_LDR_TRESH_MIN_THRESH = 500; // lower limit of plausible values
-constexpr int CALIB_LDR_TRESH_MAX_THRESH = 20000;  // upper limit of plausible values
-constexpr float CALIB_LDR_TRESH_STEP_FACTOR = 0.2f; // reduce by 20% each iteration
+constexpr int   CALIB_LDR_TRESH_PULSE_FREQ      = 500; // ms
+constexpr int   CALIB_LDR_THRESH_INITIAL_THRESH = 3000; // MUST satisfy CALIB_LDR_TRESH_MIN_THRESH << CALIB_LDR_INITIAL_LDR_THRESH << CALIB_LDR_TRESH_MAX_THRESH
+constexpr int   CALIB_LDR_TRESH_MIN_THRESH      = 500; // lower limit of plausible values
+constexpr int   CALIB_LDR_TRESH_MAX_THRESH      = 20000;  // upper limit of plausible values
+constexpr float CALIB_LDR_TRESH_STEP_FACTOR     = 0.2f; // reduce by 20% each iteration
 constexpr float CALIB_LDR_TRESH_TARGET_IN_RANGE = 0.75f; // calibration target is position 75% of valid range
-constexpr int CALIB_LDR_TRESH_MIN_STEP_SIZE = 50;  // prevent super slow or stuck calibration
+constexpr int   CALIB_LDR_TRESH_MIN_STEP_SIZE   = 50;  // prevent super slow or stuck calibration
 
 GateModule::GateModule(
     StateMachine& stateMachine,
@@ -223,7 +223,7 @@ void GateModule::onStateCalibrationLdrThresh() noexcept {
  * Calibrating LDR threshold:
  * - Home lower limit (just before false positives take over: ambient light becomes too bright)
  * - Home upper limit (just before false negatives take over: laser is not bright enough)
- * - Calibrated value is the 3rd quartile of this established range
+ * - Calibrated value is the somewhere on the established good value range
 */
 void GateModule::updateStateCalibrationLdrThresh() noexcept {
     if (!isInitialized) return;
@@ -295,6 +295,7 @@ void GateModule::updateStateCalibrationLdrThresh() noexcept {
                         );
                         laserSensor.setThreshold(calib_ldr_calibrated_thresh);
                         calib_ldr_state = CALIB_LDR_STATE::NONE;
+                        stateMachine.setState(STATE::DISARMED);
                         break;
                     }
                     default:
