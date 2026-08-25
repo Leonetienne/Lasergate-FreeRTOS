@@ -35,6 +35,7 @@ add_executable(lasergate_tests
         LdrThreshCalibration.cpp
         LaserPulseFreqCalibration.cpp
         Gate.cpp
+        GateCalibration.cpp
         PulseRingBuffer.cpp
         LdrPhysicsSim.cpp
 
@@ -71,6 +72,10 @@ add_executable(lasergate_tests
         ../main/include/LdrThreshCalibConfig.h
         ../main/include/LaserPulseFreqCalibConfig.h
         ../main/include/GateModuleConfig.h
+        ../main/src/LdrThreshCalibrator.cpp
+        ../main/include/LdrThreshCalibrator.h
+        ../main/src/PulseFreqCalibrator.cpp
+        ../main/include/PulseFreqCalibrator.h
         ../main/src/Gate.cpp
         ../main/include/Gate.h
         ../main/src/PulseRingBuffer.cpp

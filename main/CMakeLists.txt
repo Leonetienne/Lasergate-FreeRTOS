@@ -10,6 +10,8 @@ idf_component_register(SRCS
                        "src/LaserSensor.cpp"
                        "src/Gate.cpp"
                        "src/GateModule.cpp"
+                       "src/LdrThreshCalibrator.cpp"
+                       "src/PulseFreqCalibrator.cpp"
                        "src/PulseRingBuffer.cpp"
                        "src/hal/IAdcOneshot.cpp"
                        "src/hal/AdcGpioMapping.cpp"

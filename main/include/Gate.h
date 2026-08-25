@@ -3,6 +3,8 @@
 
 #include "GateModule.h"
 #include "GpioPinRegister.h"
+#include "LdrThreshCalibrator.h"
+#include "PulseFreqCalibrator.h"
 #include "SettingsManager.h"
 #include "StateMachine.h"
 #include "hal/IAdcOneshot.h"
@@ -65,7 +67,10 @@ private:
     bool isInitialized = false;
 
     StateMachine& stateMachine;
+    // keep the calibrators declared after modules. they hold references into it, order matters
     std::array<GateModule, MODULE_COUNT> modules;
+    std::array<LdrThreshCalibrator, MODULE_COUNT> ldrCalibrators;
+    std::array<PulseFreqCalibrator, MODULE_COUNT> freqCalibrators;
 };
 
 #endif //LASERGATE_TESTS_GATE_H

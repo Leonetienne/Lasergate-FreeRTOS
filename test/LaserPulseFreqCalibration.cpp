@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include "GateModule.h"
 #include "GpioPinRegister.h"
+#include "PulseFreqCalibrator.h"
 #include "SettingsManager.h"
 #include "StateMachine.h"
 #include "test/stubs/GpioStub.h"
@@ -11,9 +12,6 @@
 #include "test/stubs/LdrPhysicsSim.h"
 #include "LaserPulseFreqCalibConfig.h"
 
-// separate file, same reasoning as LdrThreshCalibration.cpp: kept isolated so only the
-// drivers below need to change if this logic moves out of GateModule later
-
 namespace {
     constexpr gpio_num_t LASER_PIN = GPIO_NUM_16;
     constexpr gpio_num_t LED_PIN = GPIO_NUM_17;
@@ -22,7 +20,7 @@ namespace {
 
     // one pulse cycle, timed off the module's *current* pulse frequency (it shrinks as
     // calibration homes in, unlike the fixed period LdrThreshCalibration uses)
-    void tickPulse(GateModule& module, GpioStub& gpioStub, AdcOneshotStub& adcStub, TimeStub& timeStub, LdrPhysicsSim& ldrSim) noexcept {
+    void tickPulse(GateModule& module, PulseFreqCalibrator& calibrator, GpioStub& gpioStub, AdcOneshotStub& adcStub, TimeStub& timeStub, LdrPhysicsSim& ldrSim) noexcept {
         const bool laserOn = gpioStub.test_gpioGetLevel(LASER_PIN) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH);
         ldrSim.setPowerState(laserOn, timeStub.getMillis());
 
@@ -31,20 +29,13 @@ namespace {
         timeStub.setStubbedMillis(now);
         adcStub.test_setChannelValue(LDR_CHANNEL, ldrSim.getCurrentReading(now));
 
-        module.fixedUpdate();
+        calibrator.fixedUpdate();
     }
 
-    void runPulses(GateModule& module, GpioStub& gpioStub, AdcOneshotStub& adcStub, TimeStub& timeStub, LdrPhysicsSim& ldrSim, int count) noexcept {
+    void runPulses(GateModule& module, PulseFreqCalibrator& calibrator, GpioStub& gpioStub, AdcOneshotStub& adcStub, TimeStub& timeStub, LdrPhysicsSim& ldrSim, int count) noexcept {
         for (int i = 0; i < count; ++i) {
-            tickPulse(module, gpioStub, adcStub, timeStub, ldrSim);
+            tickPulse(module, calibrator, gpioStub, adcStub, timeStub, ldrSim);
         }
-    }
-
-    void enterCalibration(GateModule& module, StateMachine& stateMachine) noexcept {
-        stateMachine.setState(STATE::DISARMED);
-        module.onStateChange();
-        stateMachine.setState(STATE::CALIBRATION_MODULATION_FREQUENCY);
-        module.onStateChange();
     }
 }
 
@@ -62,6 +53,7 @@ TEST_CASE("laser pulse frequency calibration: converges on the fastest frequency
 
     GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
     REQUIRE(module.initialize());
+    PulseFreqCalibrator calibrator(module);
 
     // ambient/lit stay well clear of the (default) ldr threshold. this test is only about
     // whether the pulse period leaves the ldr time to settle, not about the threshold itself.
@@ -71,13 +63,13 @@ TEST_CASE("laser pulse frequency calibration: converges on the fastest frequency
     randomStub.test_setSeed(1234);
     LdrPhysicsSim ldrSim(800, 3900, 300);
 
-    enterCalibration(module, stateMachine);
+    calibrator.begin();
 
     bool reachedTerminalState = false;
     for (int batch = 0; batch < 60 && !reachedTerminalState; ++batch) {
-        runPulses(module, gpioStub, adcStub, timeStub, ldrSim, 32);
-        REQUIRE(stateMachine.getState() != STATE::FAULT);
-        if (stateMachine.getState() == STATE::DISARMED) {
+        runPulses(module, calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
+        REQUIRE(calibrator.status() != PulseFreqCalibrator::Status::FAILED);
+        if (calibrator.status() == PulseFreqCalibrator::Status::CONCLUDED) {
             reachedTerminalState = true;
         }
     }
@@ -104,19 +96,20 @@ TEST_CASE("laser pulse frequency calibration: does not hang forever", "[LaserPul
 
     GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
     REQUIRE(module.initialize());
+    PulseFreqCalibrator calibrator(module);
 
     // rise/fall time so fast it settles comfortably even at the 50ms floor. homing down
     // should never actually produce a bad batch, all the way to CALIB_PULSE_FREQ_MIN_FREQ
     randomStub.test_setSeed(1234);
     LdrPhysicsSim ldrSim(800, 3900, 5);
 
-    enterCalibration(module, stateMachine);
+    calibrator.begin();
 
     bool reachedTerminalState = false;
     for (int batch = 0; batch < 60 && !reachedTerminalState; ++batch) {
-        runPulses(module, gpioStub, adcStub, timeStub, ldrSim, 32);
-        REQUIRE(stateMachine.getState() != STATE::FAULT);
-        if (stateMachine.getState() == STATE::DISARMED) {
+        runPulses(module, calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
+        REQUIRE(calibrator.status() != PulseFreqCalibrator::Status::FAILED);
+        if (calibrator.status() == PulseFreqCalibrator::Status::CONCLUDED) {
             reachedTerminalState = true;
         }
     }
@@ -140,6 +133,7 @@ TEST_CASE("laser pulse frequency calibration: faults when even the slowest frequ
 
     GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
     REQUIRE(module.initialize());
+    PulseFreqCalibrator calibrator(module);
 
     // rise/fall time (2000ms) far outlasts even the slowest, most conservative calibration
     // period (MAX_FREQ = 800ms). the very first batch can't keep up, so there's never a
@@ -147,11 +141,11 @@ TEST_CASE("laser pulse frequency calibration: faults when even the slowest frequ
     randomStub.test_setSeed(1234);
     LdrPhysicsSim ldrSim(800, 3900, 2000);
 
-    enterCalibration(module, stateMachine);
-    runPulses(module, gpioStub, adcStub, timeStub, ldrSim, 32);
+    calibrator.begin();
+    runPulses(module, calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
 
-    REQUIRE(stateMachine.getState() == STATE::FAULT);
-    REQUIRE(stateMachine.getLastFaultReason().find("calibration failed") != std::string::npos);
+    REQUIRE(calibrator.status() == PulseFreqCalibrator::Status::FAILED);
+    REQUIRE(calibrator.failureReason().find("calibration failed") != std::string::npos);
 }
 
 TEST_CASE("laser pulse frequency calibration: resets to the max (safest) frequency on re-entry", "[LaserPulseFreqCalibration]") {
@@ -168,21 +162,21 @@ TEST_CASE("laser pulse frequency calibration: resets to the max (safest) frequen
 
     GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
     REQUIRE(module.initialize());
+    PulseFreqCalibrator calibrator(module);
 
     randomStub.test_setSeed(1234);
-    enterCalibration(module, stateMachine);
+    calibrator.begin();
     REQUIRE(module.getPulseFrequency() == CALIB_PULSE_FREQ_MAX_FREQ);
 
     // a clean, fast-settling signal lets one batch pass and the period shrink away from the default
     LdrPhysicsSim cleanSim(800, 3900, 10);
-    runPulses(module, gpioStub, adcStub, timeStub, cleanSim, 32);
-    REQUIRE(stateMachine.getState() != STATE::FAULT);
+    runPulses(module, calibrator, gpioStub, adcStub, timeStub, cleanSim, 32);
+    REQUIRE(calibrator.status() != PulseFreqCalibrator::Status::FAILED);
     REQUIRE(module.getPulseFrequency() < CALIB_PULSE_FREQ_MAX_FREQ);
 
-    // bail out mid-calibration (e.g. a user cancel) and start over. enterCalibration()
-    // itself already goes through DISARMED first, so no separate exit step is needed
-    enterCalibration(module, stateMachine);
+    // bail out mid-calibration (e.g. a user cancel) and start over
+    calibrator.begin();
 
-    REQUIRE(stateMachine.getState() == STATE::CALIBRATION_MODULATION_FREQUENCY);
+    REQUIRE(calibrator.status() == PulseFreqCalibrator::Status::RUNNING);
     REQUIRE(module.getPulseFrequency() == CALIB_PULSE_FREQ_MAX_FREQ);
 }

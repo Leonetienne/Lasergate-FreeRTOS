@@ -1,4 +1,5 @@
 #include "../include/Gate.h"
+#include <string>
 
 Gate::Gate(
     StateMachine& stateMachine,
@@ -63,6 +64,18 @@ Gate::Gate(
             settings.retrieveGateModuleLedGpioPin(3).value_or(GPIO_NUM_NC),
             settings.retrieveGateModuleLdrGpioPin(3).value_or(GPIO_NUM_NC)
         )
+    },
+    ldrCalibrators {
+        LdrThreshCalibrator(modules[0]),
+        LdrThreshCalibrator(modules[1]),
+        LdrThreshCalibrator(modules[2]),
+        LdrThreshCalibrator(modules[3])
+    },
+    freqCalibrators {
+        PulseFreqCalibrator(modules[0]),
+        PulseFreqCalibrator(modules[1]),
+        PulseFreqCalibrator(modules[2]),
+        PulseFreqCalibrator(modules[3])
     }
 { }
 
@@ -117,6 +130,50 @@ bool Gate::isReady() const noexcept {
 }
 
 void Gate::fixedUpdate() noexcept {
+    if (stateMachine.getState() == STATE::CALIBRATION_LDR_THRESH) {
+        bool allDone = true;
+        for (std::size_t i = 0; i < modules.size(); ++i) {
+            if (!modules[i].isReady()) continue; // unconfigured modules don't block completion
+            ldrCalibrators[i].fixedUpdate();
+
+            if (ldrCalibrators[i].status() == LdrThreshCalibrator::Status::FAILED) {
+                stateMachine.setState(STATE::FAULT,
+                    "Gate: LDR threshold calibration failed for module " + std::to_string(i) +
+                    ": " + ldrCalibrators[i].failureReason());
+                return;
+            }
+            if (ldrCalibrators[i].status() == LdrThreshCalibrator::Status::RUNNING) {
+                allDone = false;
+            }
+        }
+        if (allDone) {
+            stateMachine.setState(STATE::DISARMED);
+        }
+        return;
+    }
+
+    if (stateMachine.getState() == STATE::CALIBRATION_MODULATION_FREQUENCY) {
+        bool allDone = true;
+        for (std::size_t i = 0; i < modules.size(); ++i) {
+            if (!modules[i].isReady()) continue; // unconfigured modules don't block completion
+            freqCalibrators[i].fixedUpdate();
+
+            if (freqCalibrators[i].status() == PulseFreqCalibrator::Status::FAILED) {
+                stateMachine.setState(STATE::FAULT,
+                    "Gate: laser pulse frequency calibration failed for module " + std::to_string(i) +
+                    ": " + freqCalibrators[i].failureReason());
+                return;
+            }
+            if (freqCalibrators[i].status() == PulseFreqCalibrator::Status::RUNNING) {
+                allDone = false;
+            }
+        }
+        if (allDone) {
+            stateMachine.setState(STATE::DISARMED);
+        }
+        return;
+    }
+
     for (GateModule& module : modules) {
         if (module.isReady()) {
             module.fixedUpdate();
@@ -125,9 +182,27 @@ void Gate::fixedUpdate() noexcept {
 }
 
 void Gate::onStateChange() noexcept {
-    for (GateModule& module : modules) {
-        if (module.isReady()) {
-            module.onStateChange();
-        }
+    switch (stateMachine.getState()) {
+        case STATE::CALIBRATION_LDR_THRESH:
+            for (std::size_t i = 0; i < modules.size(); ++i) {
+                if (modules[i].isReady()) {
+                    ldrCalibrators[i].begin();
+                }
+            }
+            break;
+        case STATE::CALIBRATION_MODULATION_FREQUENCY:
+            for (std::size_t i = 0; i < modules.size(); ++i) {
+                if (modules[i].isReady()) {
+                    freqCalibrators[i].begin();
+                }
+            }
+            break;
+        default:
+            for (GateModule& module : modules) {
+                if (module.isReady()) {
+                    module.onStateChange();
+                }
+            }
+            break;
     }
 }

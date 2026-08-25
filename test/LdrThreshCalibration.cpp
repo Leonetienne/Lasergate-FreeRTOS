@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include "GateModule.h"
 #include "GpioPinRegister.h"
+#include "LdrThreshCalibrator.h"
 #include "SettingsManager.h"
 #include "StateMachine.h"
 #include "test/stubs/AdcOneshotStub.h"
@@ -11,8 +12,9 @@
 #include "test/stubs/TimeStub.h"
 #include "LdrThreshCalibConfig.h"
 
-// separate file on purpose. this calibration logic will move out of GateModule at
-// some point, keep it isolated so only the drivers below need to change, not the test cases
+// drives LdrThreshCalibrator directly against a real GateModule, no need to go through Gate
+// for this. Gate's own aggregation behavior (waiting on all modules, faulting immediately,
+// skipping unconfigured ones) gets tested in GateCalibration.cpp instead
 
 namespace {
     constexpr gpio_num_t LASER_PIN = GPIO_NUM_16;
@@ -22,8 +24,8 @@ namespace {
     constexpr int64_t PULSE_STEP_MILLIS = 501; // just past CALIB_LDR_TRESH_PULSE_FREQ (500ms)
 
     // one pulse cycle: mirror the laser's actual gpio state into the ldr sim, advance time,
-    // push the ramped reading into the adc, then let the module react
-    void tickPulse(GateModule& module, GpioStub& gpioStub, AdcOneshotStub& adcStub, TimeStub& timeStub, LdrPhysicsSim& ldrSim) noexcept {
+    // push the ramped reading into the adc, then let the calibrator react
+    void tickPulse(LdrThreshCalibrator& calibrator, GpioStub& gpioStub, AdcOneshotStub& adcStub, TimeStub& timeStub, LdrPhysicsSim& ldrSim) noexcept {
         const bool laserOn = gpioStub.test_gpioGetLevel(LASER_PIN) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH);
         ldrSim.setPowerState(laserOn, timeStub.getMillis());
 
@@ -31,20 +33,13 @@ namespace {
         timeStub.setStubbedMillis(now);
         adcStub.test_setChannelValue(LDR_CHANNEL, ldrSim.getCurrentReading(now));
 
-        module.fixedUpdate();
+        calibrator.fixedUpdate();
     }
 
-    void runPulses(GateModule& module, GpioStub& gpioStub, AdcOneshotStub& adcStub, TimeStub& timeStub, LdrPhysicsSim& ldrSim, int count) noexcept {
+    void runPulses(LdrThreshCalibrator& calibrator, GpioStub& gpioStub, AdcOneshotStub& adcStub, TimeStub& timeStub, LdrPhysicsSim& ldrSim, int count) noexcept {
         for (int i = 0; i < count; ++i) {
-            tickPulse(module, gpioStub, adcStub, timeStub, ldrSim);
+            tickPulse(calibrator, gpioStub, adcStub, timeStub, ldrSim);
         }
-    }
-
-    void enterCalibration(GateModule& module, StateMachine& stateMachine) noexcept {
-        stateMachine.setState(STATE::DISARMED);
-        module.onStateChange();
-        stateMachine.setState(STATE::CALIBRATION_LDR_THRESH);
-        module.onStateChange();
     }
 }
 
@@ -62,6 +57,7 @@ TEST_CASE("LDR threshold calibration: converges on a physically plausible ambien
 
     GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
     REQUIRE(module.initialize());
+    LdrThreshCalibrator calibrator(module);
 
     // ambient ~800, laser hit ~3900 (both realistic for a 12-bit adc, max 4095), 150ms
     // rise/fall: well inside the 500ms pulse period so readings are always settled by the
@@ -69,15 +65,15 @@ TEST_CASE("LDR threshold calibration: converges on a physically plausible ambien
     randomStub.test_setSeed(1234);
     LdrPhysicsSim ldrSim(800, 3900, 150);
 
-    enterCalibration(module, stateMachine);
+    calibrator.begin();
 
-    // once both boundaries are found, GateModule drops back to DISARMED. that's our signal
-    // calibration is done
+    // once both boundaries are found, the calibrator concludes. that's our signal calibration
+    // is done
     bool reachedTerminalState = false;
     for (int batch = 0; batch < 60 && !reachedTerminalState; ++batch) {
-        runPulses(module, gpioStub, adcStub, timeStub, ldrSim, 32);
-        REQUIRE(stateMachine.getState() != STATE::FAULT);
-        if (stateMachine.getState() == STATE::DISARMED) {
+        runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
+        REQUIRE(calibrator.status() != LdrThreshCalibrator::Status::FAILED);
+        if (calibrator.status() == LdrThreshCalibrator::Status::CONCLUDED) {
             reachedTerminalState = true;
         }
     }
@@ -108,28 +104,29 @@ TEST_CASE("LDR threshold calibration: does not run forever", "[LdrThreshCalibrat
 
     GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
     REQUIRE(module.initialize());
+    LdrThreshCalibrator calibrator(module);
 
     // ambient is so dark that even CALIB_LDR_TRESH_MIN_THRESH (the homing floor) still
-    // correctly discriminates it from a laser hit - HOMING_LOWER should never see a bad
+    // correctly discriminates it from a laser hit. HOMING_LOWER should never see a bad
     // batch, so it never gets a reason to hand off to HOMING_UPPER. (the upper side can't
     // get stuck the same way: CALIB_LDR_TRESH_MAX_THRESH is the real 12-bit adc ceiling, so
     // a reading can never exceed it and homing_upper always eventually fails there.)
     randomStub.test_setSeed(1234);
     LdrPhysicsSim ldrSim(100, 3900, 150);
 
-    enterCalibration(module, stateMachine);
+    calibrator.begin();
 
     bool reachedTerminalState = false;
     for (int batch = 0; batch < 60 && !reachedTerminalState; ++batch) {
-        runPulses(module, gpioStub, adcStub, timeStub, ldrSim, 32);
-        REQUIRE(stateMachine.getState() != STATE::FAULT);
-        if (stateMachine.getState() == STATE::DISARMED) {
+        runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
+        REQUIRE(calibrator.status() != LdrThreshCalibrator::Status::FAILED);
+        if (calibrator.status() == LdrThreshCalibrator::Status::CONCLUDED) {
             reachedTerminalState = true;
         }
     }
 
     // if the lower boundary is never actually breached, calibration must still conclude
-    // once it hits the CALIB_LDR_TRESH_MIN_THRESH floor - not loop there forever
+    // once it hits the CALIB_LDR_TRESH_MIN_THRESH floor. not loop there forever
     REQUIRE(reachedTerminalState);
 }
 
@@ -147,17 +144,18 @@ TEST_CASE("LDR threshold calibration: faults immediately when ambient light alre
 
     GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
     REQUIRE(module.initialize());
+    LdrThreshCalibrator calibrator(module);
 
     // ambient already above the initial threshold, so it can't tell on from off even on the
     // first batch: no known-good value to fall back to, real failure
     randomStub.test_setSeed(1234);
     LdrPhysicsSim ldrSim(CALIB_LDR_THRESH_INITIAL_THRESH + 1000, 3900, 150);
 
-    enterCalibration(module, stateMachine);
-    runPulses(module, gpioStub, adcStub, timeStub, ldrSim, 32);
+    calibrator.begin();
+    runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
 
-    REQUIRE(stateMachine.getState() == STATE::FAULT);
-    REQUIRE(stateMachine.getLastFaultReason().find("calibration failed") != std::string::npos);
+    REQUIRE(calibrator.status() == LdrThreshCalibrator::Status::FAILED);
+    REQUIRE(calibrator.failureReason().find("calibration failed") != std::string::npos);
 }
 
 TEST_CASE("LDR threshold calibration: a rise time close to the pulse period causes misreads", "[LdrThreshCalibration]") {
@@ -174,16 +172,18 @@ TEST_CASE("LDR threshold calibration: a rise time close to the pulse period caus
 
     GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
     REQUIRE(module.initialize());
+    LdrThreshCalibrator calibrator(module);
 
-    // same ambient/lit split as the happy path, but fall time (900ms) is now longer than the
-    // pulse period. a reading right after turning the laser off hasn't dropped back below
-    // threshold yet, so it reads as a false positive.
+    // same ambient/lit split as the happy path, but fall time (900ms) now outlasts the pulse
+    // period, so readings land mid-ramp in both directions. some false positive, some false
+    // negative. mixed shape, so it gets caught by the direction check instead of being
+    // mistaken for a real boundary.
     randomStub.test_setSeed(1234);
     LdrPhysicsSim ldrSim(800, 3900, 900);
 
-    enterCalibration(module, stateMachine);
-    runPulses(module, gpioStub, adcStub, timeStub, ldrSim, 32);
+    calibrator.begin();
+    runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
 
-    REQUIRE(stateMachine.getState() == STATE::FAULT);
-    REQUIRE(stateMachine.getLastFaultReason().find("calibration failed") != std::string::npos);
+    REQUIRE(calibrator.status() == LdrThreshCalibrator::Status::FAILED);
+    REQUIRE(calibrator.failureReason().find("unexpected misread shape") != std::string::npos);
 }

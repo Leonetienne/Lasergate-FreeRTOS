@@ -16,11 +16,19 @@
 #include <optional>
 #include <utility>
 
+class LdrThreshCalibrator;
+class PulseFreqCalibrator;
+
 /**
  * Aggregates and drives a status led, a laser diode and a laser sensor into a module
  * that is able to detect objects interrupting the laser
  */
 class GateModule {
+    // calibrators need direct access to the hardware/pulse internals below.
+    // they must never mutate the state machine.
+    friend class LdrThreshCalibrator;
+    friend class PulseFreqCalibrator;
+
 public:
     GateModule(
         StateMachine& stateMachine,
@@ -95,16 +103,6 @@ private:
     void onStateUserAdjustingBeams() noexcept;
 
     /**
-     * Gets called once after state engine switches to CALIBRATION_LDR_THRESH
-     */
-    void onStateCalibrationLdrThresh() noexcept;
-
-    /**
-    * Gets called once after state engine switches to CALIBRATION_MODULATION_FREQUENCY
-    */
-    void onStateCalibrationModulationFrequency() noexcept;
-
-    /**
      * Gets called once after state engine switches to OBSERVING
      */
     void onStateObserving() noexcept;
@@ -128,36 +126,6 @@ private:
      * Gets called by update during state USER_ADJUSTING_BEAMS
      */
     void updateStateUserAdjustingBeams() noexcept;
-
-    /**
-     * Gets called by update during state CALIBRATION_LDR_THRESH
-     */
-    void updateStateCalibrationLdrThresh() noexcept;
-
-    /**
-    * Gets called once after state engine switches to CALIBRATION_MODULATION_FREQUENCY
-    */
-    void updateStateCalibrationModulationFrequency() noexcept;
-
-    /**
-     * Concludes LDR threshold calibration: computes the calibrated value from the homed
-     * lower/upper bounds, applies and persists it, resets calibration state, and moves the
-     * state machine to DISARMED (or FAULT on a persistence failure).
-     */
-    void wrapUpLdrThreshCalib() noexcept;
-
-    /**
-     * Concludes the HOMING_LOWER phase of LDR threshold calibration: stores the homed lower
-     * bound, resets the sensor to the initial threshold, and hands off to HOMING_UPPER.
-     */
-    void advanceLdrThreshCalib() noexcept;
-
-    /**
-     * Concludes laser pulse frequency calibration: applies and persists the last known-good
-     * frequency, resets calibration state, and moves the state machine to DISARMED (or FAULT
-     * if no known-good frequency was ever found, or on a persistence failure).
-     */
-    void wrapUpPulseFreqCalib() noexcept;
 
     /**
      * Gets called by update during state OBSERVING
@@ -215,19 +183,6 @@ private:
     time_t pulseTimer;
     PulseRingBuffer pulseHistory;
     uint16_t laserPulseFrequency = 0;
-
-    /* LDR Thresh calibration helpers */
-    uint16_t calib_ldr_lower_threshold = 0;
-    uint16_t calib_ldr_upper_threshold = 0;
-    uint16_t calib_ldr_last_good_threshold = 0;
-    enum class CALIB_LDR_STATE {
-        NONE,
-        HOMING_LOWER,
-        HOMING_UPPER
-    } calib_ldr_state = CALIB_LDR_STATE::NONE;
-
-    /* Laser pulse frequency calibration helpers */
-    uint16_t calib_freq_last_good_freq = 0;
 };
 
 

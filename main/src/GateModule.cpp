@@ -2,9 +2,6 @@
 #include "GateModuleConfig.h"
 #include "LaserPulseFreqCalibConfig.h"
 #include "LdrThreshCalibConfig.h"
-#include "compat/esp_log_macros.h"
-
-static const char* LOG_TAG = "GateModule";
 
 GateModule::GateModule(
     StateMachine& stateMachine,
@@ -106,12 +103,6 @@ void GateModule::fixedUpdate() noexcept {
         case STATE::USER_ADJUSTING_BEAMS:
             updateStateUserAdjustingBeams();
             break;
-        case STATE::CALIBRATION_LDR_THRESH:
-            updateStateCalibrationLdrThresh();
-            break;
-        case STATE::CALIBRATION_MODULATION_FREQUENCY:
-            updateStateCalibrationModulationFrequency();
-            break;
         case STATE::OBSERVING:
             updateStateObserving();
             break;
@@ -133,12 +124,6 @@ void GateModule::onStateChange() noexcept {
             break;
         case STATE::USER_ADJUSTING_BEAMS:
             onStateUserAdjustingBeams();
-            break;
-        case STATE::CALIBRATION_LDR_THRESH:
-            onStateCalibrationLdrThresh();
-            break;
-        case STATE::CALIBRATION_MODULATION_FREQUENCY:
-            onStateCalibrationModulationFrequency();
             break;
         case STATE::OBSERVING:
             onStateObserving();
@@ -199,243 +184,6 @@ void GateModule::updateStateUserAdjustingBeams() noexcept {
     }
     resetPulseTimer();
 }
-
-/**
- * When the system is calibrating its LDR thresholds, it is establishing which raw sensor readings
- * are to be identified as "laser off" and which are "laser on".
- * - It should pulse the laser at a conservative frequency
- * - Slowly ramp up the pulse frequency until LDR readings differ from actual state
- * - To prevent patters from influencing the calibration, the pulse modulation is random
- */
-void GateModule::onStateCalibrationLdrThresh() noexcept {
-    if (!isInitialized) return;
-
-    // Turn the laser diode off initially
-    if (!laserDiode.turnOn()) {
-        stateMachine.setState(STATE::FAULT, "GateModule::onStateCalibrationLdrThresh: failed to turn off laser diode");
-    }
-
-    // Turn the status led off, if it is configured
-    if (statusLed.isConfigured() && !statusLed.turnOff()) {
-        stateMachine.setState(STATE::FAULT, "GateModule::onStateCalibrationLdrThresh: failed to turn off status LED");
-    }
-
-    calib_ldr_state = CALIB_LDR_STATE::HOMING_LOWER;
-    calib_ldr_lower_threshold = 0;
-    calib_ldr_upper_threshold = 0;
-    calib_ldr_last_good_threshold = 0;
-    laserSensor.setThreshold(CALIB_LDR_THRESH_INITIAL_THRESH);
-
-    resetPulseTimer();
-    pulseHistory.reset();
-}
-
-/**
- * Calibrating LDR threshold:
- * - Home lower limit (just before false positives take over: ambient light becomes too bright)
- * - Home upper limit (just before false negatives take over: laser is not bright enough)
- * - Calibrated value is the somewhere on the established good value range
-*/
-void GateModule::updateStateCalibrationLdrThresh() noexcept {
-    if (!isInitialized) return;
-
-    // Run 32 pulses at initial threshold
-    if (i_time.getMillis() - pulseTimer > CALIB_LDR_TRESH_PULSE_FREQ) {
-        doPulseCycle();
-
-        // Is this batch completed?
-        if (pulseHistory.getSampleCount() == 32) {
-            // Check whether the result set for this batch is acceptable
-            if (isPulseBatchAcceptable().value_or(false)) {
-                // Value is still good.
-
-                // Store this known-good thresh
-                calib_ldr_last_good_threshold = laserSensor.getThreshold();
-
-                // Are we currently homing towards lower or upper boundary?
-                switch (calib_ldr_state) {
-                    case CALIB_LDR_STATE::HOMING_LOWER: {
-                        // If we have already reached the min threshold, hand off to homing upper.
-                        if (calib_ldr_last_good_threshold == CALIB_LDR_TRESH_MIN_THRESH) {
-                            advanceLdrThreshCalib();
-                        }
-                        // Else, reduce and check again
-                        else {
-                            const uint16_t step = std::max<uint16_t>(CALIB_LDR_TRESH_MIN_STEP_SIZE, static_cast<uint16_t>(
-                                static_cast<float>(calib_ldr_last_good_threshold - CALIB_LDR_TRESH_MIN_THRESH) * CALIB_LDR_TRESH_STEP_FACTOR
-                            ));
-                            laserSensor.setThreshold(std::max<uint16_t>(calib_ldr_last_good_threshold - step, CALIB_LDR_TRESH_MIN_THRESH));
-                        }
-                        break;
-                    }
-                    case CALIB_LDR_STATE::HOMING_UPPER: {
-                        // If we have already reached the max threshold, wrap up.
-                        if (calib_ldr_last_good_threshold == CALIB_LDR_TRESH_MAX_THRESH) {
-                            // This mutates the system state such that calibration is concluded.
-                            wrapUpLdrThreshCalib();
-                        }
-                        // Else, increase and check again
-                        else {
-                            const uint16_t step = std::max<uint16_t>(CALIB_LDR_TRESH_MIN_STEP_SIZE, static_cast<uint16_t>(
-                                static_cast<float>(CALIB_LDR_TRESH_MAX_THRESH - calib_ldr_last_good_threshold) * CALIB_LDR_TRESH_STEP_FACTOR
-                            ));
-                            laserSensor.setThreshold(std::min<uint16_t>(calib_ldr_last_good_threshold + step, CALIB_LDR_TRESH_MAX_THRESH));
-                        }
-                        break;
-                    }
-                    default:
-                        stateMachine.setState(STATE::FAULT, "GateModule::updateStateCalibrationLdrThresh: ended up in invalid state (CALIB_LDR_STATE::NONE) during incrementing/decrementing limit");
-                        break;
-                }
-            }
-            // Value is not good. Treat last known good threshold value as valid limit
-            else {
-                // Do we even have a good result?
-                if (calib_ldr_last_good_threshold == 0) {
-                    stateMachine.setState(STATE::FAULT, "GateModule::updateStateCalibrationLdrThresh: calibration failed! known_good_lower=" +
-                        std::to_string(calib_ldr_lower_threshold) + " known_good_higher=" + std::to_string(calib_ldr_upper_threshold) +
-                        " last_know_good=" + std::to_string(calib_ldr_last_good_threshold));
-                    return;
-                }
-
-                // Yes, we do.
-                switch (calib_ldr_state) {
-                    // Still in first step, store intermittent result and reset
-                    case CALIB_LDR_STATE::HOMING_LOWER: {
-                        advanceLdrThreshCalib();
-                        break;
-                    }
-                    // Already in second step: this concludes the calibration
-                    case CALIB_LDR_STATE::HOMING_UPPER: {
-                        wrapUpLdrThreshCalib();
-                        break;
-                    }
-                    default:
-                        stateMachine.setState(STATE::FAULT, "GateModule::updateStateCalibrationLdrThresh: ended up in invalid state (CALIB_LDR_STATE::NONE) during storing result");
-                        break;
-                }
-            }
-
-
-            // Reset for new batch
-            pulseHistory.reset();
-        }
-    }
-}
-
-void GateModule::advanceLdrThreshCalib() noexcept {
-    calib_ldr_lower_threshold = calib_ldr_last_good_threshold;
-    calib_ldr_last_good_threshold = 0;
-    laserSensor.setThreshold(CALIB_LDR_THRESH_INITIAL_THRESH);
-    calib_ldr_state = CALIB_LDR_STATE::HOMING_UPPER;
-}
-
-void GateModule::wrapUpLdrThreshCalib() noexcept {
-    calib_ldr_upper_threshold = calib_ldr_last_good_threshold;
-    // Compute calibrated value
-    const uint16_t calib_ldr_calibrated_thresh = static_cast<uint16_t>(
-        static_cast<float>(calib_ldr_lower_threshold) +
-        ((static_cast<float>(calib_ldr_upper_threshold) - static_cast<float>(calib_ldr_lower_threshold)) * CALIB_LDR_TRESH_TARGET_IN_RANGE)
-    );
-    laserSensor.setThreshold(calib_ldr_calibrated_thresh);
-    if (!settings.storeGateModuleLdrThreshold(settings_index, calib_ldr_calibrated_thresh)) {
-        stateMachine.setState(STATE::FAULT, "GateModule::wrapUpLdrThreshCalib: failed to persist calibrated ldr threshold for module");
-        return;
-    }
-    calib_ldr_lower_threshold = 0;
-    calib_ldr_upper_threshold = 0;
-    calib_ldr_last_good_threshold = 0;
-    calib_ldr_state = CALIB_LDR_STATE::NONE;
-    stateMachine.setState(STATE::DISARMED);
-}
-
-/**
- * Initializing freq calibration should
- * - turn everything off
- * - reset helpers
- * - clear ring puffer
- */
-void GateModule::onStateCalibrationModulationFrequency() noexcept {
-    if (!isInitialized) return;
-
-    // Turn the laser diode off initially
-    if (!laserDiode.turnOn()) {
-        stateMachine.setState(STATE::FAULT, "GateModule::onStateCalibrationModulationFrequency: failed to turn off laser diode");
-    }
-
-    // Turn the status led off, if it is configured
-    if (statusLed.isConfigured() && !statusLed.turnOff()) {
-        stateMachine.setState(STATE::FAULT, "GateModule::onStateCalibrationModulationFrequency: failed to turn off status LED");
-    }
-
-    calib_freq_last_good_freq = 0;
-    laserPulseFrequency = CALIB_PULSE_FREQ_MAX_FREQ;
-
-    resetPulseTimer();
-    pulseHistory.reset();
-}
-
-/**
- * Calibrating laser pulse frequency:
- * Let the laser pulse at known frequencies, lower them unless the readings become
- * inconsistent, store last known-good value as calibrated value
- */
-void GateModule::updateStateCalibrationModulationFrequency() noexcept {
-    if (!isInitialized) return;
-
-    // Run 32 pulses at initial frequency
-    if (i_time.getMillis() - pulseTimer > laserPulseFrequency) {
-        doPulseCycle();
-
-        // Is this batch completed?
-        if (pulseHistory.getSampleCount() == 32) {
-            // Check whether the result set for this batch is acceptable
-            if (isPulseBatchAcceptable().value_or(false)) {
-                // Value is still good.
-                // Store known-good freq, reduce and try again
-                calib_freq_last_good_freq = laserPulseFrequency;
-
-                // If we have already reached the min freq, wrap up.
-                if (calib_freq_last_good_freq == CALIB_PULSE_FREQ_MIN_FREQ) {
-                    // This mutates the system state such that the calibration is concluded.
-                    wrapUpPulseFreqCalib();
-                }
-                // Else, reduce and try again
-                else {
-                    const uint16_t step = std::max<uint16_t>(CALIB_PULSE_FREQ_MIN_STEP_SIZE, static_cast<uint16_t>(
-                       static_cast<float>(calib_freq_last_good_freq - CALIB_PULSE_FREQ_MIN_FREQ) * CALIB_PULSE_FREQ_STEP_FACTOR
-                   ));
-                    laserPulseFrequency = std::max<uint16_t>(calib_freq_last_good_freq - step, CALIB_PULSE_FREQ_MIN_FREQ);
-                }
-            }
-            // Value is not good.
-            else {
-                wrapUpPulseFreqCalib();
-            }
-
-
-            // Reset for new batch
-            pulseHistory.reset();
-        }
-    }
-}
-
-void GateModule::wrapUpPulseFreqCalib() noexcept {
-    // Treat the last good frequency as the final result.
-    // Do we even have a good result?
-    if (calib_freq_last_good_freq == 0) {
-        stateMachine.setState(STATE::FAULT, "GateModule::wrapUpPulseFreqCalib: calibration failed: reached unacceptable pulse batch before reaching any valid frequency");
-        return;
-    }
-    laserPulseFrequency = calib_freq_last_good_freq;
-    if (!settings.storeGateModuleLaserPulseFrequency(settings_index, calib_freq_last_good_freq)) {
-        stateMachine.setState(STATE::FAULT, "GateModule::wrapUpPulseFreqCalib: failed to persist calibrated laser pulse frequency for module");
-        return;
-    }
-    calib_freq_last_good_freq = 0;
-    stateMachine.setState(STATE::DISARMED);
-}
-
 
 void GateModule::onStateObserving() noexcept {
     if (!isInitialized) return;
