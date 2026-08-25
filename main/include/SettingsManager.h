@@ -5,6 +5,7 @@
 #include "compat/gpio_num_t.h"
 #include "MqttBrokerConfig.h"
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <string>
 
@@ -76,6 +77,20 @@ public:
      */
     bool storeGateModuleLdrGpioPin(std::size_t moduleIndex, gpio_num_t gpioPin) const noexcept;
     [[nodiscard]] std::expected<gpio_num_t, bool> retrieveGateModuleLdrGpioPin(std::size_t moduleIndex) const noexcept;
+
+    /**
+     * @param moduleIndex Index of the gate module (0-based)
+     * @return Success state
+     */
+    bool storeGateModuleLdrThreshold(std::size_t moduleIndex, uint16_t threshold) const noexcept;
+    [[nodiscard]] std::expected<uint16_t, bool> retrieveGateModuleLdrThreshold(std::size_t moduleIndex) const noexcept;
+
+    /**
+     * @param moduleIndex Index of the gate module (0-based)
+     * @return Success state
+     */
+    bool storeGateModuleLaserPulseFrequency(std::size_t moduleIndex, uint16_t pulseFrequency) const noexcept;
+    [[nodiscard]] std::expected<uint16_t, bool> retrieveGateModuleLaserPulseFrequency(std::size_t moduleIndex) const noexcept;
 
 private:
     INVS& i_nvs;

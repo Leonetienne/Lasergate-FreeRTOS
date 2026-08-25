@@ -131,3 +131,33 @@ std::expected<gpio_num_t, bool> SettingsManager::retrieveGateModuleLdrGpioPin(st
     }
     return std::unexpected(false);
 }
+
+bool SettingsManager::storeGateModuleLdrThreshold(std::size_t moduleIndex, uint16_t threshold) const noexcept {
+    char key[16];
+    snprintf(key, sizeof(key), "gm%zu_ldr_thresh", moduleIndex);
+    return i_nvs.setInt(key, static_cast<int32_t>(threshold));
+}
+
+std::expected<uint16_t, bool> SettingsManager::retrieveGateModuleLdrThreshold(std::size_t moduleIndex) const noexcept {
+    char key[16];
+    snprintf(key, sizeof(key), "gm%zu_ldr_thresh", moduleIndex);
+    if (int32_t buf{}; i_nvs.getInt(key, buf)) {
+        return static_cast<uint16_t>(buf);
+    }
+    return std::unexpected(false);
+}
+
+bool SettingsManager::storeGateModuleLaserPulseFrequency(std::size_t moduleIndex, uint16_t pulseFrequency) const noexcept {
+    char key[16];
+    snprintf(key, sizeof(key), "gm%zu_pulse_freq", moduleIndex);
+    return i_nvs.setInt(key, static_cast<int32_t>(pulseFrequency));
+}
+
+std::expected<uint16_t, bool> SettingsManager::retrieveGateModuleLaserPulseFrequency(std::size_t moduleIndex) const noexcept {
+    char key[16];
+    snprintf(key, sizeof(key), "gm%zu_pulse_freq", moduleIndex);
+    if (int32_t buf{}; i_nvs.getInt(key, buf)) {
+        return static_cast<uint16_t>(buf);
+    }
+    return std::unexpected(false);
+}
