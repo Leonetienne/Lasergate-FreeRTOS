@@ -70,7 +70,6 @@ protected:
     bool isInitialized = false;
 
     GpioDigitalWritePin gpioPin;
-    bool powerState = false;
 };
 
 

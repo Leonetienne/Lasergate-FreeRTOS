@@ -83,5 +83,5 @@ std::expected<bool, bool> Diode::getPowerState() const noexcept {
     if (!isInitialized) {
         return std::unexpected(false);
     }
-    return powerState;
+    return gpioPin.getState() == PIN_STATE_DIGITAL::HIGH;
 }
