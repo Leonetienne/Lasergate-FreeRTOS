@@ -22,7 +22,7 @@ TEST_CASE("LdrPhysicsSim: ramping on", "[LdrPhysicsSim]") {
     }
 
     SECTION("reading is partway between ambient and lit mid-ramp") {
-        const int reading = sim.getCurrentReading(1075); // halfway through the 150ms ramp
+        const uint16_t reading = sim.getCurrentReading(1075); // halfway through the 150ms ramp
         REQUIRE(reading > 800);
         REQUIRE(reading < 9000);
     }
@@ -46,7 +46,7 @@ TEST_CASE("LdrPhysicsSim: ramping off", "[LdrPhysicsSim]") {
     }
 
     SECTION("reading is partway between lit and ambient mid-ramp") {
-        const int reading = sim.getCurrentReading(1075);
+        const uint16_t reading = sim.getCurrentReading(1075);
         REQUIRE(reading > 800);
         REQUIRE(reading < 9000);
     }
@@ -67,7 +67,7 @@ TEST_CASE("LdrPhysicsSim: interrupting a ramp starts a new one from the current 
     LdrPhysicsSim sim(800, 9000, 150);
     sim.setPowerState(true, 0);
 
-    const int partialReading = sim.getCurrentReading(50); // 1/3 into the rise
+    const uint16_t partialReading = sim.getCurrentReading(50); // 1/3 into the rise
     REQUIRE(partialReading > 800);
     REQUIRE(partialReading < 9000);
 

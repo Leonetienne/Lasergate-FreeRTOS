@@ -10,7 +10,7 @@
  */
 class LdrPhysicsSim {
 public:
-    LdrPhysicsSim(int ambient, int lit, int64_t rampDurationMillis) noexcept;
+    LdrPhysicsSim(uint16_t ambient, uint16_t lit, int64_t rampDurationMillis) noexcept;
 
     /**
      * Informs the simulation that the laser's actual power state changed.
@@ -21,16 +21,16 @@ public:
     /**
      * @return The simulated raw LDR reading at the given time
      */
-    [[nodiscard]] int getCurrentReading(int64_t nowMillis) const noexcept;
+    [[nodiscard]] uint16_t getCurrentReading(int64_t nowMillis) const noexcept;
 
 private:
-    int ambientReading;
-    int litReading;
+    uint16_t ambientReading;
+    uint16_t litReading;
     int64_t rampMillis;
 
     bool laserOn = false;
     int64_t transitionStartMillis = 0;
-    int rampStartReading;
+    uint16_t rampStartReading;
 };
 
 #endif //LASERGATE_V2_LDRPHYSICSSIM_H

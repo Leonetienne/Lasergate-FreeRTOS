@@ -34,16 +34,16 @@ public:
     * Will read the value at an ADC channel
     * @returns the retrieved value or an error
     */
-    [[ nodiscard ]] std::expected<int, esp_err_t> readChannel(adc_channel_t adcChannel) const noexcept override;
+    [[ nodiscard ]] std::expected<uint16_t, esp_err_t> readChannel(adc_channel_t adcChannel) const noexcept override;
 
     /**
      * Will set a specific value to be present at a specific channel for testing purposes
      */
-    void test_setChannelValue(adc_channel_t adc_channel, int value) noexcept;
+    void test_setChannelValue(adc_channel_t adc_channel, uint16_t value) noexcept;
 
 private:
     std::unordered_set<adc_channel_t> registeredChannels;
-    std::unordered_map<adc_channel_t, int> inputValueMap;
+    std::unordered_map<adc_channel_t, uint16_t> inputValueMap;
 };
 
 

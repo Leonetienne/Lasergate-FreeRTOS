@@ -12,6 +12,7 @@ idf_component_register(SRCS
                        "src/GateModule.cpp"
                        "src/PulseRingBuffer.cpp"
                        "src/hal/IAdcOneshot.cpp"
+                       "src/hal/AdcGpioMapping.cpp"
                        "src/hal/IRandom.cpp"
                        "src/platform/GpioEsp32.cpp"
                        "src/platform/RandomEsp32.cpp"

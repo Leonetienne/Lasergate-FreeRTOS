@@ -72,7 +72,7 @@ public:
     /**
      * @return The laser sensor's currently active LDR threshold (as set by calibration, or the initial default)
      */
-    [[nodiscard]] int getLdrThreshold() const noexcept;
+    [[nodiscard]] uint16_t getLdrThreshold() const noexcept;
 
 private:
     /**
@@ -186,9 +186,9 @@ private:
     PulseRingBuffer pulseHistory;
 
     /* LDR Thresh calibration helpers */
-    int calib_ldr_lower_threshold = 0;
-    int calib_ldr_upper_threshold = 0;
-    int calib_ldr_last_good_threshold = 0;
+    uint16_t calib_ldr_lower_threshold = 0;
+    uint16_t calib_ldr_upper_threshold = 0;
+    uint16_t calib_ldr_last_good_threshold = 0;
     enum class CALIB_LDR_STATE {
         NONE,
         HOMING_LOWER,

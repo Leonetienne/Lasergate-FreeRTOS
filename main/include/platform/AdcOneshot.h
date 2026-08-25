@@ -27,7 +27,7 @@ public:
     * Will read the value at an ADC channel
     * @returns the retrieved value or an error
     */
-    [[ nodiscard ]] std::expected<int, esp_err_t> readChannel(adc_channel_t adcChannel) const noexcept override;
+    [[ nodiscard ]] std::expected<uint16_t, esp_err_t> readChannel(adc_channel_t adcChannel) const noexcept override;
 
 private:
     adc_oneshot_unit_handle_t adcHandle;

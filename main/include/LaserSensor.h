@@ -22,7 +22,7 @@ public:
      * Will initialize the sensor
      * @return Success state
      */
-    bool initialize(int desiredThreshold) noexcept;
+    bool initialize(uint16_t desiredThreshold) noexcept;
 
     /**
      * Will free all resources acquired by this object
@@ -41,8 +41,8 @@ public:
      */
     [[nodiscard]] bool isReady() const noexcept;
 
-    void setThreshold(int desiredThreshold) noexcept;
-    [[nodiscard]] int getThreshold() const noexcept;
+    void setThreshold(uint16_t desiredThreshold) noexcept;
+    [[nodiscard]] uint16_t getThreshold() const noexcept;
 
     /**
      * @return Whether the sensor senses light or unexpected<false> if uninitialized
@@ -52,7 +52,7 @@ public:
     /**
      * @return The raw reading of the LDR or unexpected<false> if uninitialized
      */
-    [[nodiscard]] std::expected<int, bool> getRawReading() const noexcept;
+    [[nodiscard]] std::expected<uint16_t, bool> getRawReading() const noexcept;
 
 private:
     bool isInitialized = false;
@@ -60,7 +60,7 @@ private:
     /**
      * Every adc read value above threshold is treated as HIGH / "laser hit".
      */
-    int threshold = 0;
+    uint16_t threshold = 0;
     AdcAnalogReadPin ldrPin;
 
 };

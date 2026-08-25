@@ -17,7 +17,7 @@ TEST_CASE("GateModule: lifecycle", "[GateModule]") {
 
     constexpr gpio_num_t laserPin = GPIO_NUM_16;
     constexpr gpio_num_t ledPin = GPIO_NUM_17;
-    constexpr gpio_num_t ldrPin = GPIO_NUM_34;
+    constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
 
     GateModule module(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
 
@@ -79,7 +79,7 @@ TEST_CASE("GateModule: status led is optional", "[GateModule]") {
     StateMachine stateMachine{};
 
     constexpr gpio_num_t laserPin = GPIO_NUM_16;
-    constexpr gpio_num_t ldrPin = GPIO_NUM_34;
+    constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
 
     GateModule module(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, GPIO_NUM_NC, ldrPin);
 
@@ -110,7 +110,7 @@ TEST_CASE("GateModule: state dispatch", "[GateModule]") {
 
     constexpr gpio_num_t laserPin = GPIO_NUM_16;
     constexpr gpio_num_t ledPin = GPIO_NUM_17;
-    constexpr gpio_num_t ldrPin = GPIO_NUM_34;
+    constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
 
     GateModule module(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
     REQUIRE(module.initialize());

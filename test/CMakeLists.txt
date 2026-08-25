@@ -66,6 +66,8 @@ add_executable(lasergate_tests
         ../main/include/LaserSensor.h
         ../main/src/GateModule.cpp
         ../main/include/GateModule.h
+        ../main/include/LdrThreshCalibConfig.h
+        ../main/include/GateModuleConfig.h
         ../main/src/Gate.cpp
         ../main/include/Gate.h
         ../main/src/PulseRingBuffer.cpp

@@ -10,7 +10,7 @@
 TEST_CASE("AdcAnalogReadPin: lifecycle", "[AdcAnalogReadPin]") {
     GpioPinRegister pr{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
-    constexpr gpio_num_t bindPin = GPIO_NUM_34;
+    constexpr gpio_num_t bindPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
     AdcAnalogReadPin pin(pr, adcStub, bindPin);
 
     SECTION("not ready by default") {

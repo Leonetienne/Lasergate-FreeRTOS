@@ -10,7 +10,7 @@ LaserSensor::~LaserSensor() noexcept {
     }
 }
 
-bool LaserSensor::initialize(int desiredThreshold) noexcept {
+bool LaserSensor::initialize(uint16_t desiredThreshold) noexcept {
     if (isInitialized) {
         return false;
     }
@@ -54,11 +54,11 @@ bool LaserSensor::isReady() const noexcept {
     return isInitialized;
 }
 
-void LaserSensor::setThreshold(int desiredThreshold) noexcept {
+void LaserSensor::setThreshold(uint16_t desiredThreshold) noexcept {
     threshold = desiredThreshold;
 }
 
-int LaserSensor::getThreshold() const noexcept {
+uint16_t LaserSensor::getThreshold() const noexcept {
     return threshold;
 }
 
@@ -75,10 +75,10 @@ std::expected<bool, bool> LaserSensor::sensesLight() const noexcept {
     return *rawReading > threshold;
 }
 
-std::expected<int, bool> LaserSensor::getRawReading() const noexcept {
+std::expected<uint16_t, bool> LaserSensor::getRawReading() const noexcept {
     if (!isInitialized) {
         return std::unexpected(false);
     }
 
-    return ldrPin.read().value_or(false);
+    return ldrPin.read().value_or(0);
 }

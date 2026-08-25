@@ -1,6 +1,6 @@
 #include "test/stubs/LdrPhysicsSim.h"
 
-LdrPhysicsSim::LdrPhysicsSim(int ambient, int lit, int64_t rampDurationMillis) noexcept :
+LdrPhysicsSim::LdrPhysicsSim(uint16_t ambient, uint16_t lit, int64_t rampDurationMillis) noexcept :
     ambientReading {ambient},
     litReading {lit},
     rampMillis {rampDurationMillis},
@@ -17,8 +17,8 @@ void LdrPhysicsSim::setPowerState(bool desiredPowerState, int64_t nowMillis) noe
     transitionStartMillis = nowMillis;
 }
 
-int LdrPhysicsSim::getCurrentReading(int64_t nowMillis) const noexcept {
-    const int target = laserOn ? litReading : ambientReading;
+uint16_t LdrPhysicsSim::getCurrentReading(int64_t nowMillis) const noexcept {
+    const uint16_t target = laserOn ? litReading : ambientReading;
 
     if (rampMillis <= 0) {
         return target;
@@ -33,5 +33,5 @@ int LdrPhysicsSim::getCurrentReading(int64_t nowMillis) const noexcept {
     }
 
     const double t = static_cast<double>(elapsed) / static_cast<double>(rampMillis);
-    return rampStartReading + static_cast<int>(static_cast<double>(target - rampStartReading) * t);
+    return static_cast<uint16_t>(rampStartReading + static_cast<int>(static_cast<double>(target - rampStartReading) * t));
 }

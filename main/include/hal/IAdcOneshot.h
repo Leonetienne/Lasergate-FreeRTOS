@@ -7,6 +7,7 @@
 
 #include "compat/adc_channel_t.h"
 #include "compat/esp_err_t.h"
+#include <cstdint>
 #include <expected>
 
 #include "compat/adc_unit_t.h"
@@ -35,7 +36,7 @@ public:
      * Will read the value at an ADC channel
      * @returns the retrieved value or an error
      */
-    [[ nodiscard ]] virtual std::expected<int, esp_err_t> readChannel(const adc_channel_t adcChannel) const noexcept = 0;
+    [[ nodiscard ]] virtual std::expected<uint16_t, esp_err_t> readChannel(const adc_channel_t adcChannel) const noexcept = 0;
 
     /**
      * @returns whether this ADC driver wrapper is fully initialized and ready

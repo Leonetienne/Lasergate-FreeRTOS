@@ -20,18 +20,21 @@ TEST_CASE("Gate: lifecycle", "[Gate]") {
     SettingsManager settings(nvs);
     StateMachine stateMachine{};
 
-    REQUIRE(settings.storeGateModuleLaserGpioPin(0, GPIO_NUM_1));
-    REQUIRE(settings.storeGateModuleLedGpioPin(0, GPIO_NUM_2));
-    REQUIRE(settings.storeGateModuleLdrGpioPin(0, GPIO_NUM_34));
-    REQUIRE(settings.storeGateModuleLaserGpioPin(1, GPIO_NUM_3));
-    REQUIRE(settings.storeGateModuleLedGpioPin(1, GPIO_NUM_4));
-    REQUIRE(settings.storeGateModuleLdrGpioPin(1, GPIO_NUM_35));
-    REQUIRE(settings.storeGateModuleLaserGpioPin(2, GPIO_NUM_5));
-    REQUIRE(settings.storeGateModuleLedGpioPin(2, GPIO_NUM_6));
-    REQUIRE(settings.storeGateModuleLdrGpioPin(2, GPIO_NUM_36));
-    REQUIRE(settings.storeGateModuleLaserGpioPin(3, GPIO_NUM_7));
-    REQUIRE(settings.storeGateModuleLedGpioPin(3, GPIO_NUM_8));
-    REQUIRE(settings.storeGateModuleLdrGpioPin(3, GPIO_NUM_37));
+    // ldr pins must stay within GPIO_NUM_1-10 (ADC_UNIT_1, ch0-9 on esp32-s3) since all 4
+    // modules share one AdcOneshotStub bound to ADC_UNIT_1; laser/led are plain digital pins
+    // so they're kept clear of the ADC1/ADC2 ranges (GPIO_NUM_1-20) to avoid pin collisions
+    REQUIRE(settings.storeGateModuleLaserGpioPin(0, GPIO_NUM_41));
+    REQUIRE(settings.storeGateModuleLedGpioPin(0, GPIO_NUM_42));
+    REQUIRE(settings.storeGateModuleLdrGpioPin(0, GPIO_NUM_1));
+    REQUIRE(settings.storeGateModuleLaserGpioPin(1, GPIO_NUM_43));
+    REQUIRE(settings.storeGateModuleLedGpioPin(1, GPIO_NUM_44));
+    REQUIRE(settings.storeGateModuleLdrGpioPin(1, GPIO_NUM_2));
+    REQUIRE(settings.storeGateModuleLaserGpioPin(2, GPIO_NUM_45));
+    REQUIRE(settings.storeGateModuleLedGpioPin(2, GPIO_NUM_46));
+    REQUIRE(settings.storeGateModuleLdrGpioPin(2, GPIO_NUM_3));
+    REQUIRE(settings.storeGateModuleLaserGpioPin(3, GPIO_NUM_47));
+    REQUIRE(settings.storeGateModuleLedGpioPin(3, GPIO_NUM_48));
+    REQUIRE(settings.storeGateModuleLdrGpioPin(3, GPIO_NUM_4));
 
     Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
 
@@ -104,13 +107,13 @@ TEST_CASE("Gate: initializes only the configured modules", "[Gate]") {
     StateMachine stateMachine{};
 
     // only module 0 is configured, the other 3 stay GPIO_NUM_NC
-    REQUIRE(settings.storeGateModuleLaserGpioPin(0, GPIO_NUM_1));
-    REQUIRE(settings.storeGateModuleLedGpioPin(0, GPIO_NUM_2));
-    REQUIRE(settings.storeGateModuleLdrGpioPin(0, GPIO_NUM_34));
+    REQUIRE(settings.storeGateModuleLaserGpioPin(0, GPIO_NUM_41));
+    REQUIRE(settings.storeGateModuleLedGpioPin(0, GPIO_NUM_42));
+    REQUIRE(settings.storeGateModuleLdrGpioPin(0, GPIO_NUM_1));
 
     Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
 
     REQUIRE(gate.initialize());
     REQUIRE(gate.isReady());
-    REQUIRE(pr.isPinBound(GPIO_NUM_1));
+    REQUIRE(pr.isPinBound(GPIO_NUM_41));
 }

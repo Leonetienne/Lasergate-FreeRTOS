@@ -35,7 +35,7 @@ esp_err_t AdcOneshotStub::registerChannel(const adc_channel_t adcChannel) noexce
     return ESP_OK;
 }
 
-std::expected<int, esp_err_t> AdcOneshotStub::readChannel(const adc_channel_t adcChannel) const noexcept {
+std::expected<uint16_t, esp_err_t> AdcOneshotStub::readChannel(const adc_channel_t adcChannel) const noexcept {
     if (!isAdcChannelOnCurrentUnit(adcChannel)) {
         return std::unexpected(ESP_ERR_INVALID_ARG);
     }
@@ -50,6 +50,6 @@ std::expected<int, esp_err_t> AdcOneshotStub::readChannel(const adc_channel_t ad
     return inputValueMap.at(adcChannel);
 }
 
-void AdcOneshotStub::test_setChannelValue(const adc_channel_t adc_channel, int value) noexcept {
+void AdcOneshotStub::test_setChannelValue(const adc_channel_t adc_channel, uint16_t value) noexcept {
     inputValueMap[adc_channel] = value;
 }

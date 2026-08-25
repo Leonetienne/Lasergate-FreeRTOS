@@ -21,7 +21,7 @@ TEST_CASE("LaserSensor: isConfigured", "[LaserSensor]") {
 TEST_CASE("LaserSensor: lifecycle", "[LaserSensor]") {
     GpioPinRegister pr{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
-    constexpr gpio_num_t bindPin = GPIO_NUM_34;
+    constexpr gpio_num_t bindPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
     LaserSensor sensor{pr, adcStub, bindPin};
 
     REQUIRE(adcStub.initialize() == ESP_OK);

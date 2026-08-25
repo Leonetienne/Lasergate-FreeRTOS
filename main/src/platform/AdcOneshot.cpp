@@ -52,13 +52,13 @@ esp_err_t AdcOneshot::registerChannel(adc_channel_t adcChannel) noexcept
     return ESP_OK;
 }
 
-std::expected<int, esp_err_t> AdcOneshot::readChannel(adc_channel_t adcChannel) const noexcept
+std::expected<uint16_t, esp_err_t> AdcOneshot::readChannel(adc_channel_t adcChannel) const noexcept
 {
-    int raw = 0;
+    int raw = 0; // adc_oneshot_read() only accepts an int* out param
     if (const esp_err_t err = adc_oneshot_read(this->adcHandle, adcChannel, &raw); err != ESP_OK) {
         return err;
     }
     else {
-        return raw;
+        return static_cast<uint16_t>(raw); // 12-bit reading, always fits
     }
 }

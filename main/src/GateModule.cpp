@@ -1,14 +1,6 @@
 #include "../include/GateModule.h"
-
-constexpr uint8_t ALLOWED_MISREADS_PER_BATCH = 1; // Allow for this many misreads in a pulse batch to be still considered healthy
-
-constexpr int   CALIB_LDR_TRESH_PULSE_FREQ      = 500; // ms
-constexpr int   CALIB_LDR_THRESH_INITIAL_THRESH = 3000; // MUST satisfy CALIB_LDR_TRESH_MIN_THRESH << CALIB_LDR_INITIAL_LDR_THRESH << CALIB_LDR_TRESH_MAX_THRESH
-constexpr int   CALIB_LDR_TRESH_MIN_THRESH      = 500; // lower limit of plausible values
-constexpr int   CALIB_LDR_TRESH_MAX_THRESH      = 20000;  // upper limit of plausible values
-constexpr float CALIB_LDR_TRESH_STEP_FACTOR     = 0.2f; // reduce by 20% each iteration
-constexpr float CALIB_LDR_TRESH_TARGET_IN_RANGE = 0.75f; // calibration target is position 75% of valid range
-constexpr int   CALIB_LDR_TRESH_MIN_STEP_SIZE   = 50;  // prevent super slow or stuck calibration
+#include "GateModuleConfig.h"
+#include "LdrThreshCalibConfig.h"
 
 GateModule::GateModule(
     StateMachine& stateMachine,
@@ -147,7 +139,7 @@ void GateModule::onStateChange() noexcept {
     }
 }
 
-int GateModule::getLdrThreshold() const noexcept {
+uint16_t GateModule::getLdrThreshold() const noexcept {
     return laserSensor.getThreshold();
 }
 
@@ -245,18 +237,18 @@ void GateModule::updateStateCalibrationLdrThresh() noexcept {
                 switch (calib_ldr_state) {
                     case CALIB_LDR_STATE::HOMING_LOWER: {
                         // Reduce and check again
-                        const int step = std::max(CALIB_LDR_TRESH_MIN_STEP_SIZE, static_cast<int>(
+                        const int step = std::max<int>(CALIB_LDR_TRESH_MIN_STEP_SIZE, static_cast<int>(
                             static_cast<float>(calib_ldr_last_good_threshold - CALIB_LDR_TRESH_MIN_THRESH) * CALIB_LDR_TRESH_STEP_FACTOR
                         ));
-                        laserSensor.setThreshold(std::max(calib_ldr_last_good_threshold - step, CALIB_LDR_TRESH_MIN_THRESH));
+                        laserSensor.setThreshold(std::max<int>(calib_ldr_last_good_threshold - step, CALIB_LDR_TRESH_MIN_THRESH));
                         break;
                     }
                     case CALIB_LDR_STATE::HOMING_UPPER: {
                         // Increase and check again
-                        const int step = std::max(CALIB_LDR_TRESH_MIN_STEP_SIZE, static_cast<int>(
+                        const int step = std::max<int>(CALIB_LDR_TRESH_MIN_STEP_SIZE, static_cast<int>(
                             static_cast<float>(CALIB_LDR_TRESH_MAX_THRESH - calib_ldr_last_good_threshold) * CALIB_LDR_TRESH_STEP_FACTOR
                         ));
-                        laserSensor.setThreshold(std::min(calib_ldr_last_good_threshold + step, CALIB_LDR_TRESH_MAX_THRESH));
+                        laserSensor.setThreshold(std::min<int>(calib_ldr_last_good_threshold + step, CALIB_LDR_TRESH_MAX_THRESH));
                         break;
                     }
                     default:

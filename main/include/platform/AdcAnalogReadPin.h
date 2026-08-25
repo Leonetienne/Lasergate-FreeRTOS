@@ -46,7 +46,7 @@ public:
     /**
      * @return The current value at the pin
      */
-    [[nodiscard]] std::expected<int, esp_err_t> read() const noexcept;
+    [[nodiscard]] std::expected<uint16_t, esp_err_t> read() const noexcept;
 
 private:
     GpioPinRegister& pinRegister;

@@ -73,7 +73,7 @@ bool AdcAnalogReadPin::free() noexcept {
     return true;
 }
 
-std::expected<int, esp_err_t> AdcAnalogReadPin::read() const noexcept {
+std::expected<uint16_t, esp_err_t> AdcAnalogReadPin::read() const noexcept {
     if (!i_adcOneshot.isReady()) {
         return std::unexpected(ESP_ERR_INVALID_STATE);
     }

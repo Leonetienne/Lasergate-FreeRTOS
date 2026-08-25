@@ -74,7 +74,7 @@ bool Gate::initialize() noexcept {
     for (GateModule& module : modules) {
         if (module.isConfigured() && !module.initialize()) {
             success = false;
-            stateMachine.setLastFaultReason("gate module initialization failed");
+            stateMachine.setState(STATE::FAULT, "Gate::initialize: gate module initialization failed");
         }
     }
 
@@ -95,7 +95,7 @@ bool Gate::free() noexcept {
     for (GateModule& module : modules) {
         if (module.isConfigured() && !module.free()) {
             success = false;
-            stateMachine.setLastFaultReason("gate module freeing failed");
+            stateMachine.setState(STATE::FAULT, "Gate::free: gate module freeing failed");
         }
     }
 
