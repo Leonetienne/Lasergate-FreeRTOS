@@ -1,12 +1,14 @@
 #include <catch2/catch_test_macros.hpp>
 #include "GateModule.h"
 #include "GpioPinRegister.h"
+#include "SettingsManager.h"
 #include "StateMachine.h"
-#include "test/stubs/GpioStub.h"
 #include "test/stubs/AdcOneshotStub.h"
+#include "test/stubs/GpioStub.h"
+#include "test/stubs/LdrPhysicsSim.h"
+#include "test/stubs/NVSStub.h"
 #include "test/stubs/RandomStub.h"
 #include "test/stubs/TimeStub.h"
-#include "test/stubs/LdrPhysicsSim.h"
 #include "LdrThreshCalibConfig.h"
 
 // separate file on purpose. this calibration logic will move out of GateModule at
@@ -54,8 +56,11 @@ TEST_CASE("LDR threshold calibration: converges on a physically plausible ambien
     RandomStub randomStub{};
     TimeStub timeStub{};
     StateMachine stateMachine{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("test"));
+    SettingsManager settings(nvs);
 
-    GateModule module(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
+    GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
     REQUIRE(module.initialize());
 
     // ambient ~800, laser hit ~3900 (both realistic for a 12-bit adc, max 4095), 150ms
@@ -84,6 +89,9 @@ TEST_CASE("LDR threshold calibration: converges on a physically plausible ambien
     REQUIRE(calibratedThreshold > 800);
     REQUIRE(calibratedThreshold < 3900);
     REQUIRE(calibratedThreshold != CALIB_LDR_THRESH_INITIAL_THRESH);
+
+    // and it must have persisted, so a reboot doesn't lose it
+    REQUIRE(settings.retrieveGateModuleLdrThreshold(0).value_or(0) == calibratedThreshold);
 }
 
 TEST_CASE("LDR threshold calibration: faults immediately when ambient light already swamps the initial threshold", "[LdrThreshCalibration]") {
@@ -94,8 +102,11 @@ TEST_CASE("LDR threshold calibration: faults immediately when ambient light alre
     RandomStub randomStub{};
     TimeStub timeStub{};
     StateMachine stateMachine{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("test"));
+    SettingsManager settings(nvs);
 
-    GateModule module(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
+    GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
     REQUIRE(module.initialize());
 
     // ambient already above the initial threshold, so it can't tell on from off even on the
@@ -118,8 +129,11 @@ TEST_CASE("LDR threshold calibration: a rise time close to the pulse period caus
     RandomStub randomStub{};
     TimeStub timeStub{};
     StateMachine stateMachine{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("test"));
+    SettingsManager settings(nvs);
 
-    GateModule module(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
+    GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, LASER_PIN, LED_PIN, LDR_PIN);
     REQUIRE(module.initialize());
 
     // same ambient/lit split as the happy path, but fall time (900ms) is now longer than the

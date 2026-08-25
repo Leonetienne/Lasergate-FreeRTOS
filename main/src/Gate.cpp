@@ -13,6 +13,8 @@ Gate::Gate(
     modules {
         GateModule(
             stateMachine,
+            settings,
+            0,
             gpioPinRegister,
             i_gpio,
             i_adcOneshot,
@@ -24,6 +26,8 @@ Gate::Gate(
         ),
         GateModule(
             stateMachine,
+            settings,
+            1,
             gpioPinRegister,
             i_gpio,
             i_adcOneshot,
@@ -35,6 +39,8 @@ Gate::Gate(
         ),
         GateModule(
             stateMachine,
+            settings,
+            2,
             gpioPinRegister,
             i_gpio,
             i_adcOneshot,
@@ -46,6 +52,8 @@ Gate::Gate(
         ),
         GateModule(
             stateMachine,
+            settings,
+            3,
             gpioPinRegister,
             i_gpio,
             i_adcOneshot,

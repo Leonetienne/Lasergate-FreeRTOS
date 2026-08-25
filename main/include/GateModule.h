@@ -6,11 +6,13 @@
 #include "LightEmittingDiode.h"
 #include "LaserSensor.h"
 #include "PulseRingBuffer.h"
+#include "SettingsManager.h"
 #include "StateMachine.h"
 #include "hal/IAdcOneshot.h"
 #include "hal/IGpio.h"
 #include "hal/IRandom.h"
 #include "hal/ITime.h"
+#include <cstddef>
 #include <optional>
 #include <utility>
 
@@ -22,6 +24,8 @@ class GateModule {
 public:
     GateModule(
         StateMachine& stateMachine,
+        SettingsManager& settings,
+        std::size_t settingsIndex,
         GpioPinRegister& pinRegister,
         IGpio& i_gpio,
         IAdcOneshot& i_adcOneshot,
@@ -70,9 +74,14 @@ public:
     void onStateChange() noexcept;
 
     /**
-     * @return The laser sensor's currently active LDR threshold (as set by calibration, or the initial default)
+     * @return The laser sensor's currently active LDR threshold
      */
     [[nodiscard]] uint16_t getLdrThreshold() const noexcept;
+
+    /**
+     * @return The laser currently active pulse frequency (ms delay)
+     */
+    [[nodiscard]] uint16_t getPulseFrequency() const noexcept;
 
 private:
     /**
@@ -175,6 +184,8 @@ private:
     bool isInitialized = false;
 
     StateMachine& stateMachine;
+    SettingsManager& settings;
+    std::size_t settings_index;
     IRandom& i_random;
     ITime& i_time;
     LaserDiode laserDiode;
@@ -184,6 +195,7 @@ private:
     time_t pulseTimer;
     bool isInitialPulse = true;
     PulseRingBuffer pulseHistory;
+    uint16_t laserPulseFrequency = 0;
 
     /* LDR Thresh calibration helpers */
     uint16_t calib_ldr_lower_threshold = 0;

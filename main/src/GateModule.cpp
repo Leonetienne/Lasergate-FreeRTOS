@@ -1,9 +1,15 @@
 #include "../include/GateModule.h"
 #include "GateModuleConfig.h"
+#include "LaserPulseFreqCalibConfig.h"
 #include "LdrThreshCalibConfig.h"
+#include "compat/esp_log_macros.h"
+
+static const char* LOG_TAG = "GateModule";
 
 GateModule::GateModule(
     StateMachine& stateMachine,
+    SettingsManager& settings,
+    std::size_t settingsIndex,
     GpioPinRegister& pinRegister,
     IGpio& i_gpio,
     IAdcOneshot& i_adcOneshot,
@@ -14,6 +20,8 @@ GateModule::GateModule(
     gpio_num_t ldrPin
 ) noexcept:
     stateMachine {stateMachine},
+    settings {settings},
+    settings_index {settingsIndex},
     i_random {i_random},
     i_time {i_time},
     laserDiode {pinRegister, i_gpio, laserPin},
@@ -46,9 +54,13 @@ bool GateModule::initialize() noexcept {
     if (!laserDiode.initialize()) {
         success = false;
     }
-    if (!laserSensor.initialize(CALIB_LDR_THRESH_INITIAL_THRESH)) {
+
+    const uint16_t ldrThreshold = settings.retrieveGateModuleLdrThreshold(settings_index).value_or(CALIB_LDR_THRESH_INITIAL_THRESH);
+    if (!laserSensor.initialize(ldrThreshold)) {
         success = false;
     }
+
+    laserPulseFrequency = settings.retrieveGateModuleLaserPulseFrequency(settings_index).value_or(CALIB_PULSE_FREQ_MAX_FREQ);
 
     resetPulseTimer();
     pulseHistory.reset();
@@ -141,6 +153,10 @@ void GateModule::onStateChange() noexcept {
 
 uint16_t GateModule::getLdrThreshold() const noexcept {
     return laserSensor.getThreshold();
+}
+
+uint16_t GateModule::getPulseFrequency() const noexcept {
+    return laserPulseFrequency;
 }
 
 void GateModule::onStateFault() noexcept {
@@ -286,6 +302,9 @@ void GateModule::updateStateCalibrationLdrThresh() noexcept {
                             ((static_cast<float>(calib_ldr_upper_threshold) - static_cast<float>(calib_ldr_lower_threshold)) * CALIB_LDR_TRESH_TARGET_IN_RANGE)
                         );
                         laserSensor.setThreshold(calib_ldr_calibrated_thresh);
+                        if (!settings.storeGateModuleLdrThreshold(settings_index, static_cast<uint16_t>(calib_ldr_calibrated_thresh))) {
+                            ESP_LOGW(LOG_TAG, "failed to persist calibrated ldr threshold for module %zu", settings_index);
+                        }
                         calib_ldr_state = CALIB_LDR_STATE::NONE;
                         stateMachine.setState(STATE::DISARMED);
                         break;
