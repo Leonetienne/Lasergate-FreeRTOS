@@ -53,14 +53,17 @@ void System::initialize() noexcept {
     wireEthernetCallbacks();
     stateMachine.setOnStateChange([this]() { onStateChange(); });
 
+    if (i_adcOneshot.initialize() != ESP_OK) {
+        stateMachine.setState(STATE::FAULT, "System::initialize: adcOneshot.initialize() failed");
+    }
     if (!gate.initialize()) {
-        ESP_LOGW(LOG_TAG, "gate.initialize() failed");
+        stateMachine.setState(STATE::FAULT, "System::initialize: gate.initialize() failed");
     }
     if (!i_ethernetMan.begin()) {
-        ESP_LOGW(LOG_TAG, "ethernetMan.begin() failed");
+        stateMachine.setState(STATE::FAULT, "System::initialize: ethernetMan.begin() failed");
     }
     if (!i_httpServer.begin()) {
-        ESP_LOGW(LOG_TAG, "httpServer.begin() failed");
+        stateMachine.setState(STATE::FAULT, "System::initialize: httpServer.begin() failed");
     }
 
     // esp_mqtt_client reconnects automatically until it succeeds, so it's fine
