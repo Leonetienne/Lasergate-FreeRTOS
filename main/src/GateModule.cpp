@@ -147,6 +147,10 @@ void GateModule::onStateChange() noexcept {
     }
 }
 
+int GateModule::getLdrThreshold() const noexcept {
+    return laserSensor.getThreshold();
+}
+
 void GateModule::onStateFault() noexcept {
     if (!isInitialized) return;
     laserDiode.turnOff();

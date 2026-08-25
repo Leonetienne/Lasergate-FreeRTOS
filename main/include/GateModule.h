@@ -69,6 +69,11 @@ public:
      */
     void onStateChange() noexcept;
 
+    /**
+     * @return The laser sensor's currently active LDR threshold (as set by calibration, or the initial default)
+     */
+    [[nodiscard]] int getLdrThreshold() const noexcept;
+
 private:
     /**
      * Gets called once after state engine switches to FAULT
