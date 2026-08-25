@@ -136,7 +136,7 @@ bool System::free() noexcept {
         success = false;
     }
 
-    // httpServer may already be stopped (e.g. ethernet never came up) - that's fine
+    // httpServer may already be stopped (e.g. ethernet never came up). that's fine
     i_httpServer.free();
 
     if (gate.isReady() && !gate.free()) {

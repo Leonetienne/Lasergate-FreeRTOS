@@ -44,7 +44,7 @@ public:
 private:
     /**
      * Static esp-idf event callback. Runs on the esp-mqtt client task, i.e.
-     * concurrently with System::update()/getState() on the app task - the
+     * concurrently with System::update()/getState() on the app task. the
      * connection state/callbacks are intentionally not synchronized beyond the
      * esp-mqtt client's own locks.
      */
@@ -61,7 +61,7 @@ private:
     MqttConnectionState state = MqttConnectionState::Disconnected;
     esp_mqtt_client_handle_t client = nullptr;
 
-    // esp_mqtt_client_config_t only stores pointers into these - keep them alive for the connection's lifetime
+    // esp_mqtt_client_config_t only stores pointers into these. keep them alive for the connection's lifetime
     std::string brokerUri;
     std::string username;
     std::string password;
