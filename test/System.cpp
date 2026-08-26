@@ -1,67 +1,32 @@
 #include <catch2/catch_test_macros.hpp>
-#include "System.h"
-#include "GpioPinRegister.h"
-#include "StateMachine.h"
-#include "SettingsManager.h"
-#include "test/stubs/GpioStub.h"
-#include "test/stubs/TimeStub.h"
-#include "test/stubs/NVSStub.h"
-#include "test/stubs/MqttStub.h"
-#include "test/stubs/EthernetManagerStub.h"
-#include "test/stubs/HttpServerStub.h"
-#include "test/stubs/AdcOneshotStub.h"
-#include "test/stubs/RandomStub.h"
+#include "test/stubs/SystemStub.h"
 
 TEST_CASE("System: init", "[System]") {
-    GpioPinRegister pr{};
-    GpioStub gpioStub{};
-    AdcOneshotStub adcStub(ADC_UNIT_1);
-    RandomStub randomStub{};
-    TimeStub timeStub{};
-    NVSStub nvs{};
-    REQUIRE(nvs.begin("system"));
-    StateMachine stateMachine{};
-    SettingsManager settings(nvs);
-    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
-    EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
-    HttpServerStub httpServerStub;
-
-    System system(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
+    SystemStub stub;
+    System& system = stub.buildSystem();
 
     SECTION("connects to mqtt when a broker is configured") {
-        REQUIRE(settings.storeMqttBrokerConfig({"mqtt://broker.example", "user", "pass"}));
+        REQUIRE(stub.settings.storeMqttBrokerConfig({"mqtt://broker.example", "user", "pass"}));
 
         system.initialize();
 
-        REQUIRE(mqttStub.getBeginCallCount() == 1);
-        REQUIRE(mqttStub.getLastConnectOptions().brokerUri == "mqtt://broker.example");
-        REQUIRE(mqttStub.getLastConnectOptions().username == "user");
-        REQUIRE(mqttStub.getLastConnectOptions().password == "pass");
-        REQUIRE(mqttStub.getLastConnectOptions().lwtMessage == "Offline");
+        REQUIRE(stub.mqtt.getBeginCallCount() == 1);
+        REQUIRE(stub.mqtt.getLastConnectOptions().brokerUri == "mqtt://broker.example");
+        REQUIRE(stub.mqtt.getLastConnectOptions().username == "user");
+        REQUIRE(stub.mqtt.getLastConnectOptions().password == "pass");
+        REQUIRE(stub.mqtt.getLastConnectOptions().lwtMessage == "Offline");
     }
 
     SECTION("does not connect to mqtt without a configured broker") {
         system.initialize();
 
-        REQUIRE(mqttStub.getBeginCallCount() == 0);
+        REQUIRE(stub.mqtt.getBeginCallCount() == 0);
     }
 }
 
 TEST_CASE("System: free", "[System]") {
-    GpioPinRegister pr{};
-    GpioStub gpioStub{};
-    AdcOneshotStub adcStub(ADC_UNIT_1);
-    RandomStub randomStub{};
-    TimeStub timeStub{};
-    NVSStub nvs{};
-    REQUIRE(nvs.begin("system"));
-    StateMachine stateMachine{};
-    SettingsManager settings(nvs);
-    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
-    EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
-    HttpServerStub httpServerStub;
-
-    System system(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
+    SystemStub stub;
+    System& system = stub.buildSystem();
 
     SECTION("fails before init") {
         REQUIRE_FALSE(system.free());
@@ -72,7 +37,7 @@ TEST_CASE("System: free", "[System]") {
 
         REQUIRE(system.free());
 
-        REQUIRE_FALSE(mqttStub.isReady());
+        REQUIRE_FALSE(stub.mqtt.isReady());
     }
 
     SECTION("fails when called twice") {
@@ -83,80 +48,56 @@ TEST_CASE("System: free", "[System]") {
 }
 
 TEST_CASE("System: onMqttConnected publishes availability", "[System]") {
-    GpioPinRegister pr{};
-    GpioStub gpioStub{};
-    AdcOneshotStub adcStub(ADC_UNIT_1);
-    RandomStub randomStub{};
-    TimeStub timeStub{};
-    NVSStub nvs{};
-    REQUIRE(nvs.begin("system"));
-    StateMachine stateMachine{};
-    SettingsManager settings(nvs);
-    MqttStub mqttStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
-    EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
-    HttpServerStub httpServerStub;
-
-    System system(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
+    SystemStub stub;
+    System& system = stub.buildSystem();
 
     SECTION("publishes Online on the lwt topic") {
-        REQUIRE(settings.storeMqttBrokerConfig({"mqtt://broker.example", "", ""}));
-        REQUIRE(settings.storeMqttNodeId("lasergate-01"));
+        REQUIRE(stub.settings.storeMqttBrokerConfig({"mqtt://broker.example", "", ""}));
+        REQUIRE(stub.settings.storeMqttNodeId("lasergate-01"));
 
         system.initialize();
-        mqttStub.simulateConnected();
+        stub.mqtt.simulateConnected();
 
-        REQUIRE(mqttStub.getPublishedMessages().size() == 1);
-        REQUIRE(mqttStub.getPublishedMessages()[0].topic == "tele/lasergate/lasergate-01/LWT");
-        REQUIRE(mqttStub.getPublishedMessages()[0].payload == "Online");
-        REQUIRE(mqttStub.getPublishedMessages()[0].qos == 1);
-        REQUIRE(mqttStub.getPublishedMessages()[0].retain == true);
+        REQUIRE(stub.mqtt.getPublishedMessages().size() == 1);
+        REQUIRE(stub.mqtt.getPublishedMessages()[0].topic == "tele/lasergate/lasergate-01/LWT");
+        REQUIRE(stub.mqtt.getPublishedMessages()[0].payload == "Online");
+        REQUIRE(stub.mqtt.getPublishedMessages()[0].qos == 1);
+        REQUIRE(stub.mqtt.getPublishedMessages()[0].retain == true);
     }
 
     SECTION("publishes nothing when no broker is configured") {
         system.initialize();
-        mqttStub.simulateConnected();
+        stub.mqtt.simulateConnected();
 
-        REQUIRE(mqttStub.getPublishedMessages().empty());
+        REQUIRE(stub.mqtt.getPublishedMessages().empty());
     }
 }
 
 TEST_CASE("System: update polls the mqtt activity led pulse", "[System]") {
-    GpioPinRegister pr{};
-    GpioStub gpioStub{};
-    AdcOneshotStub adcStub(ADC_UNIT_1);
-    RandomStub randomStub{};
-    TimeStub timeStub{};
-    NVSStub nvs{};
-    REQUIRE(nvs.begin("system"));
-    timeStub.setStubbedMillis(0);
-    StateMachine stateMachine{};
-    SettingsManager settings(nvs);
-    MqttStub mqttStub(GPIO_NUM_3, gpioStub, pr, timeStub);
-    EthernetManagerStub ethernetStub(GPIO_NUM_NC, gpioStub, pr, timeStub);
-    HttpServerStub httpServerStub;
-
-    System system(stateMachine, pr, gpioStub, adcStub, randomStub, timeStub, nvs, settings, mqttStub, ethernetStub, httpServerStub);
+    SystemStub stub(GPIO_NUM_3, GPIO_NUM_NC);
+    stub.time.setStubbedMillis(0);
+    System& system = stub.buildSystem();
     system.initialize();
 
     SECTION("turns the led back on 100ms after a publish, regardless of system state") {
-        mqttStub.publish("stat/lasergate/0", "ON", 1, true);
-        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        stub.mqtt.publish("stat/lasergate/0", "ON", 1, true);
+        REQUIRE(stub.gpio.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
 
-        timeStub.setStubbedMillis(99);
+        stub.time.setStubbedMillis(99);
         system.update();
-        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        REQUIRE(stub.gpio.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
 
-        timeStub.setStubbedMillis(100);
+        stub.time.setStubbedMillis(100);
         system.update();
-        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        REQUIRE(stub.gpio.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
     SECTION("turns the led back on 100ms after a received message") {
-        mqttStub.simulateMessage("cmnd/lasergate/x/0/POWER", "ON");
-        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        stub.mqtt.simulateMessage("cmnd/lasergate/x/0/POWER", "ON");
+        REQUIRE(stub.gpio.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
 
-        timeStub.setStubbedMillis(100);
+        stub.time.setStubbedMillis(100);
         system.update();
-        REQUIRE(gpioStub.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        REQUIRE(stub.gpio.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 }
