@@ -42,10 +42,12 @@ void LdrThreshCalibrator::fixedUpdate() noexcept {
 
     // Run 32 pulses at the current threshold
     if (module.i_time.getMillis() - module.pulseTimer > CALIB_LDR_TRESH_PULSE_FREQ) {
-        module.doPulseCycle();
+        if (!module.doPulseCycle()) {
+            return;
+        }
 
         // Is this batch completed?
-        if (module.pulseHistory.getSampleCount() == 32) {
+        if (module.pulseHistory.isSaturated()) {
             onBatchComplete();
             module.pulseHistory.reset();
         }

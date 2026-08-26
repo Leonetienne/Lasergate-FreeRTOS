@@ -39,10 +39,12 @@ void PulseFreqCalibrator::fixedUpdate() noexcept {
 
     // Run 32 pulses at the current frequency
     if (module.i_time.getMillis() - module.pulseTimer > frequency) {
-        module.doPulseCycle();
+        if (!module.doPulseCycle()) {
+            return;
+        }
 
         // Is this batch completed?
-        if (module.pulseHistory.getSampleCount() == 32) {
+        if (module.pulseHistory.isSaturated()) {
             onBatchComplete();
             module.pulseHistory.reset();
         }
