@@ -1,5 +1,4 @@
 #include "PulseRingBuffer.h"
-
 #include <bit>
 
 void PulseRingBuffer::insertResult(bool sensorDetectedOn, bool laserActuallyOn) noexcept {
@@ -42,4 +41,16 @@ uint8_t PulseRingBuffer::getFalseNegativeCount() const noexcept {
 
 uint8_t PulseRingBuffer::getSampleCount() const noexcept {
     return sampleCount;
+}
+
+bool PulseRingBuffer::isSaturated() const noexcept {
+    return getSampleCount() >= 32;
+}
+
+bool PulseRingBuffer::at(const uint8_t index) const noexcept {
+    constexpr uint8_t bufferBits = static_cast<uint8_t>(sizeof(sensedBuffer) * 8);
+    const uint8_t slot = static_cast<uint8_t>((ringBufferPointer + bufferBits - 1 - (index % bufferBits)) % bufferBits);
+    const uint32_t mask = 1u << slot;
+
+    return ((sensedBuffer ^ expectedBuffer) & mask) == 0;
 }

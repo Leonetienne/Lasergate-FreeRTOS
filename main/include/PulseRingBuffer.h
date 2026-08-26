@@ -52,6 +52,18 @@ public:
      */
     [[nodiscard]] uint8_t getSampleCount() const noexcept;
 
+    /**
+     * @return Shorthand for getSampleCount() >= 32
+     */
+    [[nodiscard]] bool isSaturated() const noexcept;
+
+    /**
+     * @param index How many pulses back to look, with 0 being the most recently inserted result.
+     * Wraps around (modulo 32) for values >= 32.
+     * @return True if the sensor reading matched the actual laser state for that pulse, false otherwise.
+     */
+    [[nodiscard]] bool at(const uint8_t index) const noexcept;
+
 private:
     // Each bit records what the sensor detected for one pulse
     uint32_t sensedBuffer = 0xFFFFFFFF;
