@@ -104,6 +104,80 @@ TEST_CASE("PulseRingBuffer: insertResult", "[PulseRingBuffer]") {
     }
 }
 
+TEST_CASE("PulseRingBuffer: isSaturated", "[PulseRingBuffer]") {
+    PulseRingBuffer buffer;
+
+    SECTION("false initially, since no samples have been recorded") {
+        REQUIRE_FALSE(buffer.isSaturated());
+    }
+
+    SECTION("stays false while fewer than 32 samples have been recorded") {
+        for (int i = 0; i < 31; ++i) {
+            buffer.insertResult(true, true);
+        }
+        REQUIRE(buffer.getSampleCount() == 31);
+        REQUIRE_FALSE(buffer.isSaturated());
+    }
+
+    SECTION("becomes true once 32 samples have been recorded") {
+        for (int i = 0; i < 32; ++i) {
+            buffer.insertResult(true, true);
+        }
+        REQUIRE(buffer.getSampleCount() == 32);
+        REQUIRE(buffer.isSaturated());
+    }
+
+    SECTION("stays true once the sample count caps at 32, regardless of mismatches") {
+        for (int i = 0; i < 40; ++i) {
+            buffer.insertResult(true, false);
+        }
+        REQUIRE(buffer.getSampleCount() == 32);
+        REQUIRE(buffer.isSaturated());
+    }
+}
+
+TEST_CASE("PulseRingBuffer: at", "[PulseRingBuffer]") {
+    PulseRingBuffer buffer;
+
+    SECTION("true initially, since every default slot counts as a match") {
+        REQUIRE(buffer.at(0));
+        REQUIRE(buffer.at(31));
+    }
+
+    SECTION("reflects the most recently inserted matching result") {
+        buffer.insertResult(true, true);
+        REQUIRE(buffer.at(0));
+    }
+
+    SECTION("reflects the most recently inserted mismatched result") {
+        buffer.insertResult(true, false);
+        REQUIRE_FALSE(buffer.at(0));
+    }
+
+    SECTION("untouched slots still report the default matched state") {
+        buffer.insertResult(true, true);
+        REQUIRE(buffer.at(5));
+    }
+
+    SECTION("older results shift to higher indices as new ones are inserted") {
+        buffer.insertResult(true, false);  // becomes the second-most-recent result
+        buffer.insertResult(true, true);   // most recent result
+
+        REQUIRE(buffer.at(0));
+        REQUIRE_FALSE(buffer.at(1));
+    }
+
+    SECTION("index wraps around modulo 32") {
+        buffer.insertResult(true, false); // written to slot 0
+        for (int i = 0; i < 31; ++i) {
+            buffer.insertResult(true, true); // fills the remaining 31 slots
+        }
+
+        REQUIRE_FALSE(buffer.at(31));
+        REQUIRE_FALSE(buffer.at(31 + 32));
+    }
+}
+
 TEST_CASE("PulseRingBuffer: reset", "[PulseRingBuffer]") {
     PulseRingBuffer buffer;
 
