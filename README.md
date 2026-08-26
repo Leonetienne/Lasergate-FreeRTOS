@@ -10,20 +10,22 @@ This is a hobby project I'm building in my spare time, not a finished product. F
 **Work in progress.** What exists right now:
 
 - Firmware scaffolding on ESP-IDF/FreeRTOS, targeting the ESP32-S3
-- A basic application architecture (state machine, settings storage, HTTP API/web UI, HAL layers for GPIO, ADC, Ethernet, MQTT),
-- with unit tests for the hardware abstraction layer
+- Application architecture in place: state machine, settings storage, HTTP API/web UI, HAL layers for GPIO, ADC, Ethernet, MQTT
+- The actual module logic: laser pulsing, pattern verification on the LDR side, and a gate class that ties several modules together
+- Modules calibrate themselves against ambient light rather than needing manual tuning.
+- Both self-calibration routines (LDR threshold, pulse frequency) persist their results to NVS, so a module doesn't have to recalibrate after every reboot
+- Decent unit test coverage by now, not just the HAL stuff, the module/gate/calibration logic gets exercised too, against a small physics-sim stub on the host
 - Mechanical prototypes for the sensor modules
 - A first electronics prototype: ESP32-S3 with a PoE HAT, breadboarded laser/LDR module
 
 ## How it's meant to work
 
 Each sensor is a laser/LDR pair, called a module. A gate is made up of however many modules you need to cover an opening.
+The main limit is the number of available GPIO (and ADC-capable) pins on the development board. Currently capped to four modules.
 
 The laser is pulsed with a pseudo-random pattern instead of just being on or off, and the receiving LDR checks the incoming signal against the expected pattern
 rather than reading a plain brightness threshold. That should make the thing harder to fool with a flashlight or a well-timed hand wave than a basic light barrier would be. A long, narrow black tube in front of each LDR blocks stray light from the sides so the sensor mostly only sees its own laser.
-
-Modules are meant to calibrate themselves to ambient light rather than needing manual tuning, and the trigger condition
-(how many modules need to be blocked at once, and for how long) is meant to be configurable per gate.
+The alarm trigger condition (how many modules need to be blocked at once, and for how long) is meant to be configurable.
 
 ## Interfaces
 
