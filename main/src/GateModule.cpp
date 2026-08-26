@@ -1,7 +1,10 @@
-#include "../include/GateModule.h"
+#include "GateModule.h"
 #include "GateModuleConfig.h"
 #include "LaserPulseFreqCalibConfig.h"
 #include "LdrThreshCalibConfig.h"
+#include "compat/esp_log_macros.h"
+
+static const char* LOG_TAG = "GateModule";
 
 GateModule::GateModule(
     StateMachine& stateMachine,
@@ -162,11 +165,12 @@ void GateModule::onStateUserAdjustingBeams() noexcept {
     // Turn the laser diode on (it stays that way)
     if (!laserDiode.turnOn()) {
         stateMachine.setState(STATE::FAULT, "GateModule::onStateUserAdjustingBeams: failed to turn on laser diode");
+        return;
     }
 
     // Turn the status led off, if it is configured
     if (statusLed.isConfigured() && !statusLed.turnOff()) {
-        stateMachine.setState(STATE::FAULT, "GateModule::onStateUserAdjustingBeams: failed to turn off status LED");
+        ESP_LOGW(LOG_TAG, "failed to set status led state during onStateUserAdjustingBeams");
     }
 }
 
@@ -180,13 +184,63 @@ void GateModule::updateStateUserAdjustingBeams() noexcept {
             stateMachine.setState(STATE::FAULT, "GateModule::updateStateUserAdjustingBeams: failed to read laser sensor value");
             return;
         }
-        statusLed.setPowerState(*reading);
+
+        if (!statusLed.setPowerState(*reading)) {
+            ESP_LOGW(LOG_TAG, "failed to set status led state during updateStateUserAdjustingBeams");
+        }
     }
     resetPulseTimer();
 }
 
+/**
+ * Beginning observing should turn lasers off and status leds on initially.
+ * Also reset pulse helpers.
+ */
 void GateModule::onStateObserving() noexcept {
     if (!isInitialized) return;
+
+    // Turn the laser diode off initially
+    if (!laserDiode.turnOff()) {
+        stateMachine.setState(STATE::FAULT, "GateModule::onStateObserving: failed to turn off laser diode");
+        return;
+    }
+
+    // Turn the status led on initially; after the ring puffer saturates, it mirrors the last pulse reading value, misread being HIGH
+    if (statusLed.isConfigured() && !statusLed.turnOn()) {
+        ESP_LOGW(LOG_TAG, "failed to turn on status LED during onStateObserving");
+    }
+
+    pulseHistory.reset();
+    resetPulseTimer();
+}
+
+/**
+ * Pulse the laser and record to pulseHistory.
+ * Turn status LED off after ring puffer is saturated and blink status LED on misreads.
+ * Alarm state can't be raised by a single module as the decision to raise an alarm depends
+ * on multiple modules simultaneously.
+ * Gate is supposed to check isPulseBatchAcceptable() and raise alarm state themselves.
+ */
+void GateModule::updateStateObserving() noexcept {
+    if (!isInitialized) return;
+
+    // Run 32 pulses at the current frequency
+    if (i_time.getMillis() - pulseTimer > laserPulseFrequency) {
+        if (!doPulseCycle()) {
+            return;
+        }
+
+        // Don't do anything until the ring puffer is saturated (reaching a meaningful state)
+        if (pulseHistory.isSaturated()) {
+            // Status led should mirror the last pulse reading value, misread being HIGH
+            if (
+                statusLed.isConfigured() &&
+                !statusLed.setPowerState(!pulseHistory.at(0))
+            ) {
+                ESP_LOGW(LOG_TAG, "failed to set status led state during updateStateObserving");
+            }
+        }
+    }
 }
 
 void GateModule::onStateAlarm() noexcept {
@@ -201,10 +255,6 @@ void GateModule::updateStateFault() noexcept {
     if (!isInitialized) return;
 }
 
-void GateModule::updateStateObserving() noexcept {
-    if (!isInitialized) return;
-}
-
 void GateModule::updateStateAlarm() noexcept {
     if (!isInitialized) return;
 }
@@ -213,9 +263,13 @@ void GateModule::updateStateDisarmed() noexcept {
     if (!isInitialized) return;
 }
 
-void GateModule::applyPulseTarget() noexcept {
-    if (!isInitialized) return;
-    laserDiode.setPowerState(i_random.getNextBit());
+bool GateModule::applyPulseTarget() noexcept {
+    if (!isInitialized) return false;
+    if (!laserDiode.setPowerState(i_random.getNextBit())) {
+        stateMachine.setState(STATE::FAULT, "GateModule::applyPulseTarget: failed to set laser power state");
+        return false;
+    }
+    return true;
 }
 
 void GateModule::resetPulseTimer() noexcept {
@@ -237,23 +291,28 @@ std::optional<std::pair<bool, bool>> GateModule::readPulseState() const noexcept
     return std::make_pair(*sensorReading, *laserState);
 }
 
-void GateModule::doPulseCycle() noexcept {
+bool GateModule::doPulseCycle() noexcept {
     // The LDR needs some time to pull up after initial light hit.
     // This is why the pulse frequency is critical.
     // This implies that we must pulse like this:
     // SET_STATE -> DELAY -> VERIFY -> ...
     // Since the verify method is delay-guarded, the verification must happen before setting state
 
-    if (const auto pulseState = readPulseState(); pulseState.has_value()) {
-        pulseHistory.insertResult(pulseState->first, pulseState->second);
+    const auto pulseState = readPulseState();
+    if (!pulseState.has_value()) return false;
+
+    pulseHistory.insertResult(pulseState->first, pulseState->second);
+    if (!applyPulseTarget()) {
+        return false;
     }
-    applyPulseTarget();
     resetPulseTimer();
+
+    return true;
 }
 
 std::optional<bool> GateModule::isPulseBatchAcceptable() const noexcept {
     if (!isInitialized) return std::nullopt;
-    if (pulseHistory.getSampleCount() != 32) return std::nullopt;
+    if (!pulseHistory.isSaturated()) return std::nullopt;
 
     return pulseHistory.getFailureCount() <= ALLOWED_MISREADS_PER_BATCH;
 }

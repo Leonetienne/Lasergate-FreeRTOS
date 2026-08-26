@@ -91,6 +91,11 @@ public:
      */
     [[nodiscard]] uint16_t getPulseFrequency() const noexcept;
 
+    /**
+     * @return Whether pulseHistory holds a batch that's good enough to be considered healthy (Num of misreads within tolerance)
+     */
+    [[nodiscard]] std::optional<bool> isPulseBatchAcceptable() const noexcept;
+
 private:
     /**
      * Gets called once after state engine switches to FAULT
@@ -144,8 +149,9 @@ private:
 
     /**
      * Will set decide a new pulse laser state and apply it to the laser diode
+     * @return success state (false as no-opt on call on uninitialized object; false with FAULT raised when acting upon laser power state fails)
      */
-    void applyPulseTarget() noexcept;
+    bool applyPulseTarget() noexcept;
 
     /**
      * Resets the current monotonic millis timer
@@ -160,14 +166,9 @@ private:
 
     /**
      * Will complete a whole pulse cycle: verify, record, set new state
+     * @return success state (if false, FAULT state was already raised)
      */
-    void doPulseCycle() noexcept;
-
-    /**
-     * @return Whether pulseHistory holds a batch that's good enough to be considered healthy (Num of misreads within tolerance)
-     */
-    [[nodiscard]] std::optional<bool> isPulseBatchAcceptable() const noexcept;
-
+    bool doPulseCycle() noexcept;
 
     bool isInitialized = false;
 
