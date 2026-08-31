@@ -104,17 +104,17 @@ TEST_CASE("StateMachine", "[StateMachine]") {
         REQUIRE_FALSE(stateMachine.getLastFaultReason().empty());
     }
 
-    SECTION("ALARM -> ALARM is the sole self-transition in the table and still fires the callback") {
+    SECTION("ALARM -> OBSERVING is a valid transition and fires the callback") {
         stateMachine.setState(STATE::OBSERVING);
         stateMachine.setState(STATE::ALARM);
 
         int callCount = 0;
         stateMachine.setOnStateChange([&callCount]() { ++callCount; });
 
-        stateMachine.setState(STATE::ALARM);
+        stateMachine.setState(STATE::OBSERVING);
 
         REQUIRE(callCount == 1);
-        REQUIRE(stateMachine.getState() == STATE::ALARM);
+        REQUIRE(stateMachine.getState() == STATE::OBSERVING);
     }
 
     SECTION("any other same-state request (no self-loop in the table) is treated as invalid and escalates to FAULT") {
@@ -145,11 +145,11 @@ TEST_CASE("StateMachine", "[StateMachine]") {
         const std::map<S, std::set<S>> allowed {
             {S::INITIALIZING, {S::DISARMED, S::OBSERVING, S::FAULT, S::SHUTTING_DOWN}},
             {S::USER_ADJUSTING_BEAMS, {S::DISARMED, S::FAULT, S::SHUTTING_DOWN}},
-            {S::CALIBRATION_LDR_THRESH, {S::DISARMED, S::CALIBRATION_MODULATION_FREQUENCY, S::FAULT, S::SHUTTING_DOWN}},
+            {S::CALIBRATION_LDR_THRESH, {S::DISARMED, S::FAULT, S::SHUTTING_DOWN}},
             {S::CALIBRATION_MODULATION_FREQUENCY, {S::DISARMED, S::FAULT, S::SHUTTING_DOWN}},
             {S::DISARMED, {S::USER_ADJUSTING_BEAMS, S::CALIBRATION_LDR_THRESH, S::CALIBRATION_MODULATION_FREQUENCY, S::FAULT, S::OBSERVING, S::SHUTTING_DOWN}},
             {S::OBSERVING, {S::DISARMED, S::ALARM, S::FAULT, S::SHUTTING_DOWN}},
-            {S::ALARM, {S::DISARMED, S::ALARM, S::FAULT, S::SHUTTING_DOWN}},
+            {S::ALARM, {S::DISARMED, S::OBSERVING, S::FAULT, S::SHUTTING_DOWN}},
             {S::FAULT, {S::SHUTTING_DOWN}},
             {S::SHUTTING_DOWN, {S::FAULT}},
         };
