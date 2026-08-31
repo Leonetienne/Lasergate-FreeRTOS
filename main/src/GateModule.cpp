@@ -153,12 +153,6 @@ uint16_t GateModule::getPulseFrequency() const noexcept {
     return laserPulseFrequency;
 }
 
-void GateModule::onStateFault() noexcept {
-    if (!isInitialized) return;
-    laserDiode.turnOff();
-    statusLed.turnOff();
-}
-
 /**
  * When the user is adjusting the beams, the user is turning screws by hand until the laser
  * is pointing directly on the LDR. The desired behavior to aid the user is:
@@ -250,10 +244,14 @@ void GateModule::updateStateObserving() noexcept {
 }
 
 /**
- * During alarm, blink the status led with 500ms on/off, being on initially
+ * During alarm, blink the status led on/off, being on initially
  */
 void GateModule::onStateAlarm() noexcept {
     if (!isInitialized) return;
+
+    if (!laserDiode.turnOff()) {
+        ESP_LOGW(LOG_TAG, "failed to turn off laser diode during onStateAlarm");
+    }
 
     // Turn the status led on, if it is configured
     if (statusLed.isConfigured() && !statusLed.turnOn()) {
@@ -273,28 +271,56 @@ void GateModule::updateStateAlarm() noexcept {
         if (i_time.getMillis() - pulseTimer > ALARM_STATE_STATUS_LED_BLINK_INTERVAL) {
             resetPulseTimer();
 
-            const auto lastPowerState = statusLed.getPowerState();
-            if (!lastPowerState.has_value()) {
-                ESP_LOGW(LOG_TAG, "failed to toggle status led state during updateStateAlarm (get prev state failed)");
-            }
-            if (!statusLed.setPowerState(!*lastPowerState)) {
-                ESP_LOGW(LOG_TAG, "failed to set status led state during updateStateAlarm (set new state failed)");
+            if (!statusLed.toggle()) {
+                ESP_LOGW(LOG_TAG, "failed to toggle status led state during updateStateAlarm");
             }
         }
     }
 }
 
 /**
- * During alarm, blink the status leds with 500ms on/off
+ *  * During fault, blink the status led on/off, being on initially
  */
+void GateModule::onStateFault() noexcept {
+    if (!isInitialized) return;
+
+    if (!laserDiode.turnOff()) {
+        ESP_LOGW(LOG_TAG, "failed to turn off laser diode during onStateFault");
+    }
+
+    // Turn the status led on, if it is configured
+    if (statusLed.isConfigured() && !statusLed.turnOn()) {
+        ESP_LOGW(LOG_TAG, "failed to set status led state during onStateFault");
+    }
+
+    // To simplify, we'll just use the pulseTimer to time the status led
+    resetPulseTimer();
+    pulseHistory.reset();
+}
+
+
+void GateModule::updateStateFault() noexcept {
+    if (!isInitialized) return;
+
+    if (statusLed.isConfigured()) {
+        // To simplify, we'll just use the pulseTimer to time the status led
+        if (i_time.getMillis() - pulseTimer > FAULT_STATE_STATUS_LED_BLINK_INTERVAL) {
+            resetPulseTimer();
+
+            if (!statusLed.toggle()) {
+                ESP_LOGW(LOG_TAG, "failed to toggle status led state during updateStateFault");
+            }
+        }
+    }
+}
+
 void GateModule::onStateDisarmed() noexcept {
     if (!isInitialized) return;
 }
 
-void GateModule::updateStateFault() noexcept {
-    if (!isInitialized) return;
-}
-
+/**
+ * No need to do anything during disarmed state
+ */
 void GateModule::updateStateDisarmed() noexcept {
     if (!isInitialized) return;
 }

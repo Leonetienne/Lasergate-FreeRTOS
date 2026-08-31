@@ -55,6 +55,38 @@ TEMPLATE_TEST_CASE("Diode: isConfigured", "[Diode]", LaserDiode, LightEmittingDi
     }
 }
 
+TEMPLATE_TEST_CASE("Diode: toggle", "[Diode]", LaserDiode, LightEmittingDiode) {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    constexpr gpio_num_t bindPin = GPIO_NUM_19;
+    TestType diode{pr, gpioStub, bindPin};
+    REQUIRE(diode.initialize());
+
+    SECTION("flips off to on") {
+        REQUIRE(diode.turnOff());
+        REQUIRE(diode.toggle());
+        REQUIRE(gpioStub.test_gpioGetLevel(bindPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+
+    SECTION("flips on to off") {
+        REQUIRE(diode.turnOn());
+        REQUIRE(diode.toggle());
+        REQUIRE(gpioStub.test_gpioGetLevel(bindPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("flips back and forth across repeated calls") {
+        REQUIRE(diode.turnOff());
+        REQUIRE(diode.toggle());
+        REQUIRE(diode.toggle());
+        REQUIRE(gpioStub.test_gpioGetLevel(bindPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("fails when uninitialized") {
+        REQUIRE(diode.free());
+        REQUIRE_FALSE(diode.toggle());
+    }
+}
+
 TEST_CASE("Diode: heterogeneous collection of concrete diodes", "[Diode]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};

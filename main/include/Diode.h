@@ -66,6 +66,12 @@ public:
      */
     [[nodiscard]] virtual std::expected<bool, bool> getPowerState() const noexcept;
 
+    /**
+     * Flips the diode's power state (on -> off, off -> on).
+     * @return Success state (false if uninitialized, or reading/writing the state failed)
+     */
+    virtual bool toggle() noexcept;
+
 protected:
     bool isInitialized = false;
 

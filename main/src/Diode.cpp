@@ -1,4 +1,7 @@
 #include "../include/Diode.h"
+#include "compat/esp_log_macros.h"
+
+static const char* LOG_TAG = "Diode";
 
 Diode::Diode(GpioPinRegister& pinRegister, IGpio& i_gpio, gpio_num_t pinNum) noexcept :
     gpioPin { pinRegister, i_gpio, pinNum }
@@ -84,4 +87,23 @@ std::expected<bool, bool> Diode::getPowerState() const noexcept {
         return std::unexpected(false);
     }
     return gpioPin.getState() == PIN_STATE_DIGITAL::HIGH;
+}
+
+bool Diode::toggle() noexcept {
+    if (!isInitialized) {
+        return false;
+    }
+
+    const auto currentState = getPowerState();
+    if (!currentState.has_value()) {
+        ESP_LOGW(LOG_TAG, "toggle: failed to read current power state");
+        return false;
+    }
+
+    if (!setPowerState(!*currentState)) {
+        ESP_LOGW(LOG_TAG, "toggle: failed to set new power state");
+        return false;
+    }
+
+    return true;
 }

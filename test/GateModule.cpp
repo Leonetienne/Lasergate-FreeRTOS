@@ -417,6 +417,24 @@ TEST_CASE("GateModule: ALARM status led behaviour", "[GateModule]") {
         REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 
+    SECTION("turns the laser diode off upon entering ALARM") {
+        constexpr adc_channel_t ldrChannel = ADC_CHANNEL_6;
+        constexpr uint16_t threshold = CALIB_LDR_THRESH_INITIAL_THRESH;
+        constexpr uint16_t pulseFrequency = CALIB_PULSE_FREQ_MAX_FREQ;
+        stub.random.test_setSeed(1234);
+
+        // onStateObserving already turns the laser off on entry, so pulse in OBSERVING
+        // until the laser happens to land on, giving ALARM something to actually turn off
+        for (int i = 0; i < 64 && stub.gpio.test_gpioGetLevel(laserPin) != static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH); ++i) {
+            tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+        }
+        REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+        stub.stateMachine.setState(STATE::ALARM);
+
+        REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
     SECTION("status led stays on before the blink interval elapses") {
         stub.stateMachine.setState(STATE::ALARM);
 
