@@ -275,121 +275,119 @@ TEST_CASE("GateModule: OBSERVING status led behaviour", "[GateModule]") {
     constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
     constexpr adc_channel_t ldrChannel = ADC_CHANNEL_6;
 
-    // goes through System/Gate module 0 instead of a bare GateModule, so init wires
-    // onStateChange and the adc stub for us
     SystemStub stub;
     REQUIRE(stub.settings.storeGateModuleLaserGpioPin(0, laserPin));
-    REQUIRE(stub.settings.storeGateModuleLedGpioPin(0, ledPin));
     REQUIRE(stub.settings.storeGateModuleLdrGpioPin(0, ldrPin));
-
-    System& system = stub.buildSystem();
-    system.initialize();
 
     // module 0 never stores a calibrated threshold/frequency, so it falls back to these
     constexpr uint16_t threshold = CALIB_LDR_THRESH_INITIAL_THRESH;
     constexpr uint16_t pulseFrequency = CALIB_PULSE_FREQ_MAX_FREQ;
 
-    stub.random.test_setSeed(1234);
+    SECTION("status led is optional") {
+        // no led pin stored, stays GPIO_NUM_NC / unconfigured
+        System& system = stub.buildSystem();
+        system.initialize();
 
-    // USER_ADJUSTING_BEAMS leaves the laser on, so bounce through it first
-    stub.stateMachine.setState(STATE::DISARMED);
-    stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
-    stub.stateMachine.setState(STATE::DISARMED);
-    stub.stateMachine.setState(STATE::OBSERVING);
+        stub.random.test_setSeed(1234);
 
-    SECTION("turns the laser off and the status led on entry") {
-        REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
-    }
-
-    SECTION("status led stays on through the warm-up window, before the ring buffer saturates") {
-        for (int i = 0; i < 31; ++i) {
-            tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
-        }
-
-        REQUIRE(stub.stateMachine.getState() == STATE::OBSERVING);
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
-    }
-
-    SECTION("status led turns off once a full clean batch has been observed") {
-        for (int i = 0; i < 32; ++i) {
-            tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
-        }
-
-        REQUIRE(stub.stateMachine.getState() == STATE::OBSERVING);
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
-    }
-
-    SECTION("status led turns back on immediately when the latest pulse misreads") {
-        for (int i = 0; i < 32; ++i) {
-            tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
-        }
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
-
-        tickMisreadPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
-
-        REQUIRE(stub.stateMachine.getState() == STATE::OBSERVING);
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
-    }
-
-    SECTION("status led goes back off on the next clean pulse after a misread blip") {
-        for (int i = 0; i < 32; ++i) {
-            tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
-        }
-        tickMisreadPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
-
-        tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
-
-        REQUIRE(stub.stateMachine.getState() == STATE::OBSERVING);
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
-    }
-
-    SECTION("re-entering OBSERVING resets the warm-up window, even after saturating once") {
-        for (int i = 0; i < 32; ++i) {
-            tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
-        }
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
-
+        // USER_ADJUSTING_BEAMS leaves the laser on, so entering OBSERVING from there gives it
+        // something to actually turn off
+        stub.stateMachine.setState(STATE::DISARMED);
+        stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
+        REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
         stub.stateMachine.setState(STATE::DISARMED);
         stub.stateMachine.setState(STATE::OBSERVING);
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
 
-        // one clean pulse isn't enough to re-saturate the buffer
-        tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        // status led has no pin, this shouldn't touch or fault on it
+        for (int i = 0; i < 40; ++i) {
+            tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+        }
+        tickMisreadPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+
+        REQUIRE(stub.stateMachine.getState() == STATE::OBSERVING);
+        REQUIRE_FALSE(stub.gpioPinRegister.isPinBound(GPIO_NUM_NC));
     }
-}
 
-TEST_CASE("GateModule: OBSERVING status led is optional", "[GateModule]") {
-    constexpr gpio_num_t laserPin = GPIO_NUM_16;
-    constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
-    constexpr adc_channel_t ldrChannel = ADC_CHANNEL_6;
+    SECTION("with a configured status led") {
+        REQUIRE(stub.settings.storeGateModuleLedGpioPin(0, ledPin));
 
-    SystemStub stub;
-    REQUIRE(stub.settings.storeGateModuleLaserGpioPin(0, laserPin));
-    REQUIRE(stub.settings.storeGateModuleLdrGpioPin(0, ldrPin));
-    // no led pin stored, stays GPIO_NUM_NC / unconfigured
+        // goes through System/Gate module 0 instead of a bare GateModule, so init wires
+        // onStateChange and the adc stub for us
+        System& system = stub.buildSystem();
+        system.initialize();
 
-    System& system = stub.buildSystem();
-    system.initialize();
+        stub.random.test_setSeed(1234);
 
-    constexpr uint16_t threshold = CALIB_LDR_THRESH_INITIAL_THRESH;
-    constexpr uint16_t pulseFrequency = CALIB_PULSE_FREQ_MAX_FREQ;
+        // USER_ADJUSTING_BEAMS leaves the laser on, so bounce through it first
+        stub.stateMachine.setState(STATE::DISARMED);
+        stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
+        stub.stateMachine.setState(STATE::DISARMED);
+        stub.stateMachine.setState(STATE::OBSERVING);
 
-    stub.random.test_setSeed(1234);
+        SECTION("turns the laser off and the status led on entry") {
+            REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        }
 
-    stub.stateMachine.setState(STATE::DISARMED);
-    stub.stateMachine.setState(STATE::OBSERVING);
+        SECTION("status led stays on through the warm-up window, before the ring buffer saturates") {
+            for (int i = 0; i < 31; ++i) {
+                tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+            }
 
-    // status led has no pin, this shouldn't touch or fault on it
-    for (int i = 0; i < 40; ++i) {
-        tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+            REQUIRE(stub.stateMachine.getState() == STATE::OBSERVING);
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        }
+
+        SECTION("status led turns off once a full clean batch has been observed") {
+            for (int i = 0; i < 32; ++i) {
+                tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+            }
+
+            REQUIRE(stub.stateMachine.getState() == STATE::OBSERVING);
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        }
+
+        SECTION("status led turns back on immediately when the latest pulse misreads") {
+            for (int i = 0; i < 32; ++i) {
+                tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+            }
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
+            tickMisreadPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+
+            REQUIRE(stub.stateMachine.getState() == STATE::OBSERVING);
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        }
+
+        SECTION("status led goes back off on the next clean pulse after a misread blip") {
+            for (int i = 0; i < 32; ++i) {
+                tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+            }
+            tickMisreadPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+            tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+
+            REQUIRE(stub.stateMachine.getState() == STATE::OBSERVING);
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        }
+
+        SECTION("re-entering OBSERVING resets the warm-up window, even after saturating once") {
+            for (int i = 0; i < 32; ++i) {
+                tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+            }
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
+            stub.stateMachine.setState(STATE::DISARMED);
+            stub.stateMachine.setState(STATE::OBSERVING);
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+            // one clean pulse isn't enough to re-saturate the buffer
+            tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        }
     }
-    tickMisreadPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
-
-    REQUIRE(stub.stateMachine.getState() == STATE::OBSERVING);
-    REQUIRE_FALSE(stub.gpioPinRegister.isPinBound(GPIO_NUM_NC));
 }
 
 TEST_CASE("GateModule: ALARM status led behaviour", "[GateModule]") {
@@ -397,100 +395,109 @@ TEST_CASE("GateModule: ALARM status led behaviour", "[GateModule]") {
     constexpr gpio_num_t ledPin = GPIO_NUM_17;
     constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
 
-    // goes through System/Gate module 0 instead of a bare GateModule, so init wires
-    // onStateChange and the adc stub for us
     SystemStub stub;
     REQUIRE(stub.settings.storeGateModuleLaserGpioPin(0, laserPin));
-    REQUIRE(stub.settings.storeGateModuleLedGpioPin(0, ledPin));
     REQUIRE(stub.settings.storeGateModuleLdrGpioPin(0, ldrPin));
 
-    System& system = stub.buildSystem();
-    system.initialize();
+    SECTION("status led is optional") {
+        // no led pin stored, stays GPIO_NUM_NC / unconfigured
+        System& system = stub.buildSystem();
+        system.initialize();
 
-    // ALARM is only reachable from OBSERVING
-    stub.stateMachine.setState(STATE::DISARMED);
-    stub.stateMachine.setState(STATE::OBSERVING);
+        // ALARM is only reachable from OBSERVING
+        stub.stateMachine.setState(STATE::DISARMED);
+        stub.stateMachine.setState(STATE::OBSERVING);
 
-    SECTION("turns the status led on upon entering ALARM") {
-        stub.stateMachine.setState(STATE::ALARM);
-
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
-    }
-
-    SECTION("turns the laser diode off upon entering ALARM") {
+        // onStateObserving already turns the laser off on entry, so pulse in OBSERVING
+        // until the laser happens to land on, giving ALARM something to actually turn off
         constexpr adc_channel_t ldrChannel = ADC_CHANNEL_6;
         constexpr uint16_t threshold = CALIB_LDR_THRESH_INITIAL_THRESH;
         constexpr uint16_t pulseFrequency = CALIB_PULSE_FREQ_MAX_FREQ;
         stub.random.test_setSeed(1234);
-
-        // onStateObserving already turns the laser off on entry, so pulse in OBSERVING
-        // until the laser happens to land on, giving ALARM something to actually turn off
         for (int i = 0; i < 64 && stub.gpio.test_gpioGetLevel(laserPin) != static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH); ++i) {
             tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
         }
         REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
 
         stub.stateMachine.setState(STATE::ALARM);
-
         REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
+        // status led has no pin, this shouldn't touch or fault on it across several blink cycles
+        for (int i = 0; i < 5; ++i) {
+            stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+            system.update();
+        }
+
+        REQUIRE(stub.stateMachine.getState() == STATE::ALARM);
+        REQUIRE_FALSE(stub.gpioPinRegister.isPinBound(GPIO_NUM_NC));
     }
 
-    SECTION("status led stays on before the blink interval elapses") {
-        stub.stateMachine.setState(STATE::ALARM);
+    SECTION("with a configured status led") {
+        REQUIRE(stub.settings.storeGateModuleLedGpioPin(0, ledPin));
 
-        stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL - 1);
-        system.update();
+        // goes through System/Gate module 0 instead of a bare GateModule, so init wires
+        // onStateChange and the adc stub for us
+        System& system = stub.buildSystem();
+        system.initialize();
 
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        // ALARM is only reachable from OBSERVING
+        stub.stateMachine.setState(STATE::DISARMED);
+        stub.stateMachine.setState(STATE::OBSERVING);
+
+        SECTION("turns the status led on upon entering ALARM") {
+            stub.stateMachine.setState(STATE::ALARM);
+
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        }
+
+        SECTION("turns the laser diode off upon entering ALARM") {
+            constexpr adc_channel_t ldrChannel = ADC_CHANNEL_6;
+            constexpr uint16_t threshold = CALIB_LDR_THRESH_INITIAL_THRESH;
+            constexpr uint16_t pulseFrequency = CALIB_PULSE_FREQ_MAX_FREQ;
+            stub.random.test_setSeed(1234);
+
+            // onStateObserving already turns the laser off on entry, so pulse in OBSERVING
+            // until the laser happens to land on, giving ALARM something to actually turn off
+            for (int i = 0; i < 64 && stub.gpio.test_gpioGetLevel(laserPin) != static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH); ++i) {
+                tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
+            }
+            REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+            stub.stateMachine.setState(STATE::ALARM);
+
+            REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        }
+
+        SECTION("status led stays on before the blink interval elapses") {
+            stub.stateMachine.setState(STATE::ALARM);
+
+            stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL - 1);
+            system.update();
+
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        }
+
+        SECTION("status led turns off once the blink interval elapses") {
+            stub.stateMachine.setState(STATE::ALARM);
+
+            stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+            system.update();
+
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        }
+
+        SECTION("status led blinks back on after a second interval") {
+            stub.stateMachine.setState(STATE::ALARM);
+
+            stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+            system.update();
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
+            stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+            system.update();
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        }
     }
-
-    SECTION("status led turns off once the blink interval elapses") {
-        stub.stateMachine.setState(STATE::ALARM);
-
-        stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL + 1);
-        system.update();
-
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
-    }
-
-    SECTION("status led blinks back on after a second interval") {
-        stub.stateMachine.setState(STATE::ALARM);
-
-        stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL + 1);
-        system.update();
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
-
-        stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL + 1);
-        system.update();
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
-    }
-}
-
-TEST_CASE("GateModule: ALARM status led is optional", "[GateModule]") {
-    constexpr gpio_num_t laserPin = GPIO_NUM_16;
-    constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
-
-    SystemStub stub;
-    REQUIRE(stub.settings.storeGateModuleLaserGpioPin(0, laserPin));
-    REQUIRE(stub.settings.storeGateModuleLdrGpioPin(0, ldrPin));
-    // no led pin stored, stays GPIO_NUM_NC / unconfigured
-
-    System& system = stub.buildSystem();
-    system.initialize();
-
-    // ALARM is only reachable from OBSERVING
-    stub.stateMachine.setState(STATE::DISARMED);
-    stub.stateMachine.setState(STATE::OBSERVING);
-    stub.stateMachine.setState(STATE::ALARM);
-
-    // status led has no pin, this shouldn't touch or fault on it across several blink cycles
-    for (int i = 0; i < 5; ++i) {
-        stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL + 1);
-        system.update();
-    }
-
-    REQUIRE(stub.stateMachine.getState() == STATE::ALARM);
-    REQUIRE_FALSE(stub.gpioPinRegister.isPinBound(GPIO_NUM_NC));
 }
 
 TEST_CASE("GateModule: FAULT status led behaviour", "[GateModule]") {
@@ -500,85 +507,148 @@ TEST_CASE("GateModule: FAULT status led behaviour", "[GateModule]") {
 
     SystemStub stub;
     REQUIRE(stub.settings.storeGateModuleLaserGpioPin(0, laserPin));
-    REQUIRE(stub.settings.storeGateModuleLedGpioPin(0, ledPin));
     REQUIRE(stub.settings.storeGateModuleLdrGpioPin(0, ldrPin));
 
-    System& system = stub.buildSystem();
-    system.initialize();
+    SECTION("status led is optional") {
+        // no led pin stored, stays GPIO_NUM_NC / unconfigured
+        System& system = stub.buildSystem();
+        system.initialize();
 
-    // USER_ADJUSTING_BEAMS leaves the laser on, so entering FAULT from there gives it
-    // something to actually turn off
-    stub.stateMachine.setState(STATE::DISARMED);
-    stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
-    REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        // USER_ADJUSTING_BEAMS leaves the laser on, so entering FAULT from there gives it
+        // something to actually turn off
+        stub.stateMachine.setState(STATE::DISARMED);
+        stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
+        REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
 
-    SECTION("turns the laser diode off upon entering FAULT") {
         stub.stateMachine.setState(STATE::FAULT);
-
         REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
+        // status led has no pin, this shouldn't touch or fault on it across several blink cycles
+        for (int i = 0; i < 5; ++i) {
+            stub.time.setStubbedMillis(stub.time.getMillis() + FAULT_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+            system.update();
+        }
+
+        REQUIRE(stub.stateMachine.getState() == STATE::FAULT);
+        REQUIRE_FALSE(stub.gpioPinRegister.isPinBound(GPIO_NUM_NC));
     }
 
-    SECTION("turns the status led on upon entering FAULT") {
-        stub.stateMachine.setState(STATE::FAULT);
+    SECTION("with a configured status led") {
+        REQUIRE(stub.settings.storeGateModuleLedGpioPin(0, ledPin));
 
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
-    }
+        System& system = stub.buildSystem();
+        system.initialize();
 
-    SECTION("status led stays on before the blink interval elapses") {
-        stub.stateMachine.setState(STATE::FAULT);
+        // USER_ADJUSTING_BEAMS leaves the laser on, so entering FAULT from there gives it
+        // something to actually turn off
+        stub.stateMachine.setState(STATE::DISARMED);
+        stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
+        REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
 
-        stub.time.setStubbedMillis(stub.time.getMillis() + FAULT_STATE_STATUS_LED_BLINK_INTERVAL - 1);
-        system.update();
+        SECTION("turns the laser diode off upon entering FAULT") {
+            stub.stateMachine.setState(STATE::FAULT);
 
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
-    }
+            REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        }
 
-    SECTION("status led turns off once the blink interval elapses") {
-        stub.stateMachine.setState(STATE::FAULT);
+        SECTION("turns the status led on upon entering FAULT") {
+            stub.stateMachine.setState(STATE::FAULT);
 
-        stub.time.setStubbedMillis(stub.time.getMillis() + FAULT_STATE_STATUS_LED_BLINK_INTERVAL + 1);
-        system.update();
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        }
 
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
-    }
+        SECTION("status led stays on before the blink interval elapses") {
+            stub.stateMachine.setState(STATE::FAULT);
 
-    SECTION("status led blinks back on after a second interval") {
-        stub.stateMachine.setState(STATE::FAULT);
+            stub.time.setStubbedMillis(stub.time.getMillis() + FAULT_STATE_STATUS_LED_BLINK_INTERVAL - 1);
+            system.update();
 
-        stub.time.setStubbedMillis(stub.time.getMillis() + FAULT_STATE_STATUS_LED_BLINK_INTERVAL + 1);
-        system.update();
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        }
 
-        stub.time.setStubbedMillis(stub.time.getMillis() + FAULT_STATE_STATUS_LED_BLINK_INTERVAL + 1);
-        system.update();
-        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        SECTION("status led turns off once the blink interval elapses") {
+            stub.stateMachine.setState(STATE::FAULT);
+
+            stub.time.setStubbedMillis(stub.time.getMillis() + FAULT_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+            system.update();
+
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        }
+
+        SECTION("status led blinks back on after a second interval") {
+            stub.stateMachine.setState(STATE::FAULT);
+
+            stub.time.setStubbedMillis(stub.time.getMillis() + FAULT_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+            system.update();
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
+            stub.time.setStubbedMillis(stub.time.getMillis() + FAULT_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+            system.update();
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        }
     }
 }
 
-TEST_CASE("GateModule: FAULT status led is optional", "[GateModule]") {
+TEST_CASE("GateModule: DISARMED behaviour", "[GateModule]") {
     constexpr gpio_num_t laserPin = GPIO_NUM_16;
+    constexpr gpio_num_t ledPin = GPIO_NUM_17;
     constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
 
     SystemStub stub;
     REQUIRE(stub.settings.storeGateModuleLaserGpioPin(0, laserPin));
     REQUIRE(stub.settings.storeGateModuleLdrGpioPin(0, ldrPin));
-    // no led pin stored, stays GPIO_NUM_NC / unconfigured
 
-    System& system = stub.buildSystem();
-    system.initialize();
+    SECTION("status led is optional") {
+        // no led pin stored, stays GPIO_NUM_NC / unconfigured
+        System& system = stub.buildSystem();
+        system.initialize();
 
-    stub.stateMachine.setState(STATE::DISARMED);
-    stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
-    stub.stateMachine.setState(STATE::FAULT);
+        // USER_ADJUSTING_BEAMS leaves the laser on, so entering DISARMED from there gives it
+        // something to actually turn off
+        stub.stateMachine.setState(STATE::DISARMED);
+        stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
+        REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
 
-    // status led has no pin, this shouldn't touch or fault on it across several blink cycles
-    for (int i = 0; i < 5; ++i) {
-        stub.time.setStubbedMillis(stub.time.getMillis() + FAULT_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+        stub.stateMachine.setState(STATE::DISARMED);
+        REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
         system.update();
+
+        REQUIRE(stub.stateMachine.getState() == STATE::DISARMED);
+        REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        REQUIRE_FALSE(stub.gpioPinRegister.isPinBound(GPIO_NUM_NC));
     }
 
-    REQUIRE(stub.stateMachine.getState() == STATE::FAULT);
-    REQUIRE_FALSE(stub.gpioPinRegister.isPinBound(GPIO_NUM_NC));
+    SECTION("with a configured status led") {
+        REQUIRE(stub.settings.storeGateModuleLedGpioPin(0, ledPin));
+
+        System& system = stub.buildSystem();
+        system.initialize();
+
+        // USER_ADJUSTING_BEAMS leaves the laser on, so entering DISARMED from there gives it
+        // something to actually turn off
+        stub.stateMachine.setState(STATE::DISARMED);
+        stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
+        REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+        stub.stateMachine.setState(STATE::DISARMED);
+
+        SECTION("turns the laser off and the status led on") {
+            REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        }
+
+        SECTION("state doesn't change across update calls") {
+            for (int i = 0; i < 5; ++i) {
+                stub.time.setStubbedMillis(stub.time.getMillis() + 1000);
+                system.update();
+            }
+
+            REQUIRE(stub.stateMachine.getState() == STATE::DISARMED);
+            REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+            REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+        }
+    }
 }
 
 TEST_CASE("GateModule: isPulseBatchAcceptable", "[GateModule]") {
