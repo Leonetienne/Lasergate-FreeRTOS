@@ -109,6 +109,9 @@ void GateModule::fixedUpdate() noexcept {
         case STATE::OBSERVING:
             updateStateObserving();
             break;
+        case STATE::ALARM:
+            updateStateAlarm();
+            break;
         case STATE::DISARMED:
             updateStateDisarmed();
 
@@ -130,6 +133,9 @@ void GateModule::onStateChange() noexcept {
             break;
         case STATE::OBSERVING:
             onStateObserving();
+            break;
+        case STATE::ALARM:
+            onStateAlarm();
             break;
         case STATE::DISARMED:
             onStateDisarmed();
@@ -243,19 +249,49 @@ void GateModule::updateStateObserving() noexcept {
     }
 }
 
+/**
+ * During alarm, blink the status led with 500ms on/off, being on initially
+ */
 void GateModule::onStateAlarm() noexcept {
     if (!isInitialized) return;
+
+    // Turn the status led on, if it is configured
+    if (statusLed.isConfigured() && !statusLed.turnOn()) {
+        ESP_LOGW(LOG_TAG, "failed to set status led state during onStateAlarm");
+    }
+
+    // To simplify, we'll just use the pulseTimer to time the status led
+    resetPulseTimer();
+    pulseHistory.reset();
 }
 
+void GateModule::updateStateAlarm() noexcept {
+    if (!isInitialized) return;
+
+    if (statusLed.isConfigured()) {
+        // To simplify, we'll just use the pulseTimer to time the status led
+        if (i_time.getMillis() - pulseTimer > ALARM_STATE_STATUS_LED_BLINK_INTERVAL) {
+            resetPulseTimer();
+
+            const auto lastPowerState = statusLed.getPowerState();
+            if (!lastPowerState.has_value()) {
+                ESP_LOGW(LOG_TAG, "failed to toggle status led state during updateStateAlarm (get prev state failed)");
+            }
+            if (!statusLed.setPowerState(!*lastPowerState)) {
+                ESP_LOGW(LOG_TAG, "failed to set status led state during updateStateAlarm (set new state failed)");
+            }
+        }
+    }
+}
+
+/**
+ * During alarm, blink the status leds with 500ms on/off
+ */
 void GateModule::onStateDisarmed() noexcept {
     if (!isInitialized) return;
 }
 
 void GateModule::updateStateFault() noexcept {
-    if (!isInitialized) return;
-}
-
-void GateModule::updateStateAlarm() noexcept {
     if (!isInitialized) return;
 }
 
