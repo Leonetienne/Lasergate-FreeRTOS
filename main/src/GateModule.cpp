@@ -314,8 +314,20 @@ void GateModule::updateStateFault() noexcept {
     }
 }
 
+/**
+ * When disarming, turn laser off and statu led on
+ */
 void GateModule::onStateDisarmed() noexcept {
     if (!isInitialized) return;
+
+    if (!laserDiode.turnOff()) {
+        ESP_LOGW(LOG_TAG, "failed to turn off laser diode during onStateDisarmed");
+    }
+
+    // Turn the status led on, if it is configured
+    if (statusLed.isConfigured() && !statusLed.turnOn()) {
+        ESP_LOGW(LOG_TAG, "failed to set status led state during onStateDisarmed");
+    }
 }
 
 /**
