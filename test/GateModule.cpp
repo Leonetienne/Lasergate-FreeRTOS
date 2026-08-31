@@ -392,6 +392,89 @@ TEST_CASE("GateModule: OBSERVING status led is optional", "[GateModule]") {
     REQUIRE_FALSE(stub.gpioPinRegister.isPinBound(GPIO_NUM_NC));
 }
 
+TEST_CASE("GateModule: ALARM status led behaviour", "[GateModule]") {
+    constexpr gpio_num_t laserPin = GPIO_NUM_16;
+    constexpr gpio_num_t ledPin = GPIO_NUM_17;
+    constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
+
+    // goes through System/Gate module 0 instead of a bare GateModule, so init wires
+    // onStateChange and the adc stub for us
+    SystemStub stub;
+    REQUIRE(stub.settings.storeGateModuleLaserGpioPin(0, laserPin));
+    REQUIRE(stub.settings.storeGateModuleLedGpioPin(0, ledPin));
+    REQUIRE(stub.settings.storeGateModuleLdrGpioPin(0, ldrPin));
+
+    System& system = stub.buildSystem();
+    system.initialize();
+
+    // ALARM is only reachable from OBSERVING
+    stub.stateMachine.setState(STATE::DISARMED);
+    stub.stateMachine.setState(STATE::OBSERVING);
+
+    SECTION("turns the status led on upon entering ALARM") {
+        stub.stateMachine.setState(STATE::ALARM);
+
+        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+
+    SECTION("status led stays on before the blink interval elapses") {
+        stub.stateMachine.setState(STATE::ALARM);
+
+        stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL - 1);
+        system.update();
+
+        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+
+    SECTION("status led turns off once the blink interval elapses") {
+        stub.stateMachine.setState(STATE::ALARM);
+
+        stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+        system.update();
+
+        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+    }
+
+    SECTION("status led blinks back on after a second interval") {
+        stub.stateMachine.setState(STATE::ALARM);
+
+        stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+        system.update();
+        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
+        stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+        system.update();
+        REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+    }
+}
+
+TEST_CASE("GateModule: ALARM status led is optional", "[GateModule]") {
+    constexpr gpio_num_t laserPin = GPIO_NUM_16;
+    constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
+
+    SystemStub stub;
+    REQUIRE(stub.settings.storeGateModuleLaserGpioPin(0, laserPin));
+    REQUIRE(stub.settings.storeGateModuleLdrGpioPin(0, ldrPin));
+    // no led pin stored, stays GPIO_NUM_NC / unconfigured
+
+    System& system = stub.buildSystem();
+    system.initialize();
+
+    // ALARM is only reachable from OBSERVING
+    stub.stateMachine.setState(STATE::DISARMED);
+    stub.stateMachine.setState(STATE::OBSERVING);
+    stub.stateMachine.setState(STATE::ALARM);
+
+    // status led has no pin, this shouldn't touch or fault on it across several blink cycles
+    for (int i = 0; i < 5; ++i) {
+        stub.time.setStubbedMillis(stub.time.getMillis() + ALARM_STATE_STATUS_LED_BLINK_INTERVAL + 1);
+        system.update();
+    }
+
+    REQUIRE(stub.stateMachine.getState() == STATE::ALARM);
+    REQUIRE_FALSE(stub.gpioPinRegister.isPinBound(GPIO_NUM_NC));
+}
+
 TEST_CASE("GateModule: isPulseBatchAcceptable", "[GateModule]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
