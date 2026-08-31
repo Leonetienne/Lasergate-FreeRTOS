@@ -38,7 +38,7 @@ bool StateMachine::isTransitionAllowed(STATE from, STATE to) noexcept {
             return to == STATE::DISARMED || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
 
         case STATE::CALIBRATION_LDR_THRESH:
-            return to == STATE::DISARMED || to == STATE::CALIBRATION_MODULATION_FREQUENCY || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
+            return to == STATE::DISARMED || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
 
         case STATE::CALIBRATION_MODULATION_FREQUENCY:
             return to == STATE::DISARMED || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
@@ -50,7 +50,7 @@ bool StateMachine::isTransitionAllowed(STATE from, STATE to) noexcept {
             return to == STATE::DISARMED || to == STATE::ALARM || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
 
         case STATE::ALARM:
-            return to == STATE::DISARMED || to == STATE::ALARM || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
+            return to == STATE::DISARMED || to == STATE::OBSERVING || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
 
         case STATE::FAULT:
             return to == STATE::SHUTTING_DOWN;
