@@ -275,11 +275,11 @@ void Gate::recalculateLongestBatchTime() noexcept {
         }
     }
 
-    // Fallback: 5000s which is pretty conservative
+    // Fallback value.
     if (longestBatchTime == 0) {
-        longestBatchTime = 4900;
+        longestBatchTime = LEANIENT_ALARM_DELAY_FALLBACK_MS - LEANIENT_ALARM_DELAY_LEEWAY_MS;
     }
 
     // Add 100ms leeway, to make sure the old batch did definitely clear
-    longestBatchTime += 100;
+    longestBatchTime += LEANIENT_ALARM_DELAY_LEEWAY_MS;
 }
