@@ -14,7 +14,7 @@ This is a hobby project I'm building in my spare time, not a finished product. F
 - The actual module logic: laser pulsing, pattern verification on the LDR side, and a gate class that ties several modules together
 - Modules calibrate themselves against ambient light rather than needing manual tuning.
 - Both self-calibration routines (LDR threshold, pulse frequency) persist their results to NVS, so a module doesn't have to recalibrate after every reboot
-- Decent unit test coverage by now, not just the HAL stuff, the module/gate/calibration logic gets exercised too, against a small physics-sim stub on the host
+- Decent unit test coverage by now, not just the low-level hardware wrappers, the module/gate/calibration logic gets exercised too, all running on a dev machine with no hardware attached
 - Mechanical prototypes for the sensor modules
 - A first electronics prototype: ESP32-S3 with a PoE HAT, breadboarded laser/LDR module
 
