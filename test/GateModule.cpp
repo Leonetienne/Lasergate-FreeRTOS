@@ -282,6 +282,7 @@ TEST_CASE("GateModule: OBSERVING status led behaviour", "[GateModule]") {
     // module 0 never stores a calibrated threshold/frequency, so it falls back to these
     constexpr uint16_t threshold = CALIB_LDR_THRESH_INITIAL_THRESH;
     constexpr uint16_t pulseFrequency = CALIB_PULSE_FREQ_MAX_FREQ;
+    constexpr auto bufferSize = static_cast<int>(PulseRingBuffer::getBufferSize());
 
     SECTION("status led is optional") {
         // no led pin stored, stays GPIO_NUM_NC / unconfigured
@@ -300,7 +301,7 @@ TEST_CASE("GateModule: OBSERVING status led behaviour", "[GateModule]") {
         REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
 
         // status led has no pin, this shouldn't touch or fault on it
-        for (int i = 0; i < 40; ++i) {
+        for (int i = 0; i < bufferSize + 8; ++i) {
             tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
         }
         tickMisreadPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
@@ -331,7 +332,7 @@ TEST_CASE("GateModule: OBSERVING status led behaviour", "[GateModule]") {
         }
 
         SECTION("status led stays on through the warm-up window, before the ring buffer saturates") {
-            for (int i = 0; i < 31; ++i) {
+            for (int i = 0; i < bufferSize - 1; ++i) {
                 tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
             }
 
@@ -340,7 +341,7 @@ TEST_CASE("GateModule: OBSERVING status led behaviour", "[GateModule]") {
         }
 
         SECTION("status led turns off once a full clean batch has been observed") {
-            for (int i = 0; i < 32; ++i) {
+            for (int i = 0; i < bufferSize; ++i) {
                 tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
             }
 
@@ -349,7 +350,7 @@ TEST_CASE("GateModule: OBSERVING status led behaviour", "[GateModule]") {
         }
 
         SECTION("status led turns back on immediately when the latest pulse misreads") {
-            for (int i = 0; i < 32; ++i) {
+            for (int i = 0; i < bufferSize; ++i) {
                 tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
             }
             REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
@@ -361,7 +362,7 @@ TEST_CASE("GateModule: OBSERVING status led behaviour", "[GateModule]") {
         }
 
         SECTION("status led goes back off on the next clean pulse after a misread blip") {
-            for (int i = 0; i < 32; ++i) {
+            for (int i = 0; i < bufferSize; ++i) {
                 tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
             }
             tickMisreadPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
@@ -374,7 +375,7 @@ TEST_CASE("GateModule: OBSERVING status led behaviour", "[GateModule]") {
         }
 
         SECTION("re-entering OBSERVING resets the warm-up window, even after saturating once") {
-            for (int i = 0; i < 32; ++i) {
+            for (int i = 0; i < bufferSize; ++i) {
                 tickCleanPulse(stub, system, laserPin, ldrChannel, threshold, pulseFrequency);
             }
             REQUIRE(stub.gpio.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
@@ -651,6 +652,59 @@ TEST_CASE("GateModule: DISARMED behaviour", "[GateModule]") {
     }
 }
 
+TEST_CASE("GateModule: getBatchTime", "[GateModule]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
+    StateMachine stateMachine{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("test"));
+    SettingsManager settings(nvs);
+
+    constexpr gpio_num_t laserPin = GPIO_NUM_16;
+    constexpr gpio_num_t ledPin = GPIO_NUM_17;
+    constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
+
+    SECTION("nullopt before the module is initialized") {
+        GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
+        REQUIRE_FALSE(module.getBatchTime().has_value());
+    }
+
+    SECTION("nullopt when the module is initialized but not configured") {
+        GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, GPIO_NUM_NC, ledPin, ldrPin);
+        REQUIRE(module.initialize());
+        REQUIRE_FALSE(module.isConfigured());
+        REQUIRE_FALSE(module.getBatchTime().has_value());
+    }
+
+    SECTION("nullopt when the assigned pulse frequency is 0") {
+        REQUIRE(settings.storeGateModuleLaserPulseFrequency(0, 0));
+
+        GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
+        REQUIRE(module.initialize());
+        REQUIRE(module.getPulseFrequency() == 0);
+        REQUIRE_FALSE(module.getBatchTime().has_value());
+    }
+
+    SECTION("buffer size times the fallback (max/most conservative) frequency when nothing is stored yet") {
+        GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
+        REQUIRE(module.initialize());
+
+        REQUIRE(module.getBatchTime() == PulseRingBuffer::getBufferSize() * CALIB_PULSE_FREQ_MAX_FREQ);
+    }
+
+    SECTION("buffer size times a previously calibrated frequency") {
+        REQUIRE(settings.storeGateModuleLaserPulseFrequency(0, 123));
+
+        GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
+        REQUIRE(module.initialize());
+
+        REQUIRE(module.getBatchTime() == PulseRingBuffer::getBufferSize() * 123);
+    }
+}
+
 TEST_CASE("GateModule: isPulseBatchAcceptable", "[GateModule]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
@@ -679,16 +733,18 @@ TEST_CASE("GateModule: isPulseBatchAcceptable", "[GateModule]") {
     stateMachine.setState(STATE::OBSERVING);
     module.onStateChange();
 
-    SECTION("stays unresolved before 30 clean readings saturate the batch") {
-        for (int i = 0; i < 30; ++i) {
+    constexpr auto bufferSize = static_cast<int>(PulseRingBuffer::getBufferSize());
+
+    SECTION("stays unresolved before bufferSize clean readings saturate the batch") {
+        for (int i = 0; i < bufferSize - 1; ++i) {
             tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
         }
 
         REQUIRE_FALSE(module.isPulseBatchAcceptable().has_value());
     }
 
-    SECTION("clears once 32 clean readings saturate the batch") {
-        for (int i = 0; i < 32; ++i) {
+    SECTION("clears once bufferSize clean readings saturate the batch") {
+        for (int i = 0; i < bufferSize; ++i) {
             tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
         }
 
@@ -699,7 +755,7 @@ TEST_CASE("GateModule: isPulseBatchAcceptable", "[GateModule]") {
         for (int i = 0; i < ALLOWED_MISREADS_PER_BATCH; ++i) {
             tickMisreadPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
         }
-        for (int i = 0; i < 32 - ALLOWED_MISREADS_PER_BATCH; ++i) {
+        for (int i = 0; i < bufferSize - ALLOWED_MISREADS_PER_BATCH; ++i) {
             tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
         }
 
@@ -710,7 +766,7 @@ TEST_CASE("GateModule: isPulseBatchAcceptable", "[GateModule]") {
         for (int i = 0; i < ALLOWED_MISREADS_PER_BATCH + 1; ++i) {
             tickMisreadPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
         }
-        for (int i = 0; i < 31 - ALLOWED_MISREADS_PER_BATCH; ++i) {
+        for (int i = 0; i < bufferSize - 1 - ALLOWED_MISREADS_PER_BATCH; ++i) {
             tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
         }
 
@@ -721,13 +777,13 @@ TEST_CASE("GateModule: isPulseBatchAcceptable", "[GateModule]") {
         for (int i = 0; i < ALLOWED_MISREADS_PER_BATCH + 1; ++i) {
             tickMisreadPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
         }
-        for (int i = 0; i < 31 - ALLOWED_MISREADS_PER_BATCH; ++i) {
+        for (int i = 0; i < bufferSize - 1 - ALLOWED_MISREADS_PER_BATCH; ++i) {
             tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
         }
         REQUIRE(module.isPulseBatchAcceptable() == false);
 
-        // ring buffer is 32 wide, so 32 more clean pulses fully push the misreads out
-        for (int i = 0; i < 32; ++i) {
+        // bufferSize more clean pulses fully push the misreads out of the ring buffer
+        for (int i = 0; i < bufferSize; ++i) {
             tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
         }
 

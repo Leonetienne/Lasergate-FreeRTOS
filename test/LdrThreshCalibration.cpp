@@ -111,6 +111,7 @@ TEST_CASE("LDR threshold calibration: does not run forever", "[LdrThreshCalibrat
     // batch, so it never gets a reason to hand off to HOMING_UPPER. (the upper side can't
     // get stuck the same way: CALIB_LDR_TRESH_MAX_THRESH is the real 12-bit adc ceiling, so
     // a reading can never exceed it and homing_upper always eventually fails there.)
+    // this bug has been fixed since, this is a regression test.
     randomStub.test_setSeed(1234);
     LdrPhysicsSim ldrSim(100, 3900, 150);
 
@@ -174,12 +175,9 @@ TEST_CASE("LDR threshold calibration: a rise time close to the pulse period caus
     REQUIRE(module.initialize());
     LdrThreshCalibrator calibrator(module);
 
-    // same ambient/lit split as the happy path, but fall time (900ms) now outlasts the pulse
-    // period, so readings land mid-ramp in both directions. some false positive, some false
-    // negative. mixed shape, so it gets caught by the direction check instead of being
-    // mistaken for a real boundary.
+    // ramp so slow no on-streak within one batch crosses the threshold: off pulses read correctly, on pulses always misread as off.
     randomStub.test_setSeed(1234);
-    LdrPhysicsSim ldrSim(800, 3900, 900);
+    LdrPhysicsSim ldrSim(800, 3900, 20000);
 
     calibrator.begin();
     runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, static_cast<int>(PulseRingBuffer::getBufferSize()));

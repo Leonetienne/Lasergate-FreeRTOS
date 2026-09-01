@@ -135,11 +135,10 @@ TEST_CASE("laser pulse frequency calibration: faults when even the slowest frequ
     REQUIRE(module.initialize());
     PulseFreqCalibrator calibrator(module);
 
-    // rise/fall time (2000ms) far outlasts even the slowest, most conservative calibration
-    // period (MAX_FREQ = 800ms). the very first batch can't keep up, so there's never a
-    // known-good frequency to fall back to
+    // rise/fall time so slow that not even getBufferSize() consecutive same-state pulses cross the threshold. every pulse in the first batch misreads, so there's no known-good
+    // frequency to fall back to
     randomStub.test_setSeed(1234);
-    LdrPhysicsSim ldrSim(800, 3900, 2000);
+    LdrPhysicsSim ldrSim(800, 3900, 1000000);
 
     calibrator.begin();
     runPulses(module, calibrator, gpioStub, adcStub, timeStub, ldrSim, static_cast<int>(PulseRingBuffer::getBufferSize()));

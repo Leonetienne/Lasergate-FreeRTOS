@@ -103,9 +103,9 @@ TEST_CASE("Gate: LDR calibration waits for all configured modules before conclud
 
     enterCalibration(stateMachine, gate, STATE::CALIBRATION_LDR_THRESH);
 
-    // run past the point where module1 alone would have concluded (empirically ~640 ticks)
-    // but well short of module0's completion (~830 ticks)
-    for (int i = 0; i < 700; ++i) {
+    // run past the point where module1 alone would have concluded (empirically ~160 ticks)
+    // but well short of module0's completion (~207 ticks)
+    for (int i = 0; i < 185; ++i) {
         tickLdrPulse(gate, gpioStub, adcStub, timeStub, sim0, sim1);
         REQUIRE(stateMachine.getState() != STATE::FAULT);
     }
