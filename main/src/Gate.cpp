@@ -1,4 +1,5 @@
-#include "../include/Gate.h"
+#include "Gate.h"
+#include "GateConfig.h"
 #include <string>
 
 Gate::Gate(
@@ -76,7 +77,8 @@ Gate::Gate(
         PulseFreqCalibrator(modules[1]),
         PulseFreqCalibrator(modules[2]),
         PulseFreqCalibrator(modules[3])
-    }
+    },
+    i_time {i_time}
 { }
 
 Gate::~Gate() noexcept {
@@ -130,6 +132,7 @@ bool Gate::isReady() const noexcept {
 }
 
 void Gate::fixedUpdate() noexcept {
+    // Update gatemodule calibrators if in calibration state
     if (stateMachine.getState() == STATE::CALIBRATION_LDR_THRESH) {
         bool allDone = true;
         for (std::size_t i = 0; i < modules.size(); ++i) {
@@ -174,9 +177,46 @@ void Gate::fixedUpdate() noexcept {
         return;
     }
 
+    // Update gatemodule fixedUpdate hook
     for (GateModule& module : modules) {
         if (module.isReady()) {
             module.fixedUpdate();
+        }
+    }
+
+    if (stateMachine.getState() == STATE::OBSERVING) {
+        // Update alarm invariants
+        // Count how many gates are interrupted
+        uint8_t numInterruptedGateModules = 0;
+        for (GateModule& module : modules) {
+            // We default to pulse batch acceptance to true because we need the warmup phase
+            // to not raise any interruptions, as during the warmup phase readings from the pulse ring puffer are meaningless.
+            // read errors already raise either fault or misreads which are both forwarded to clients (either as alarm or fault).
+            if (module.isReady() && !module.isPulseBatchAcceptable().value_or(true)) {
+                numInterruptedGateModules++;
+            }
+        }
+
+        // Reset alarm invariant if no modules are interrupted
+        if (numInterruptedGateModules == 0) {
+            resetLenientAlarmState();
+        }
+        // Handle lenient state: numInterruptedGateModules <= ALLOWED_SHORT_TERM_INTERRUPTED_GATES
+        else if (numInterruptedGateModules <= ALLOWED_SHORT_TERM_INTERRUPTED_GATES) {
+            // Initialize lenient alarm state if it is not already
+            if (!lenientAlarmActive) {
+                startLenientAlarmState();
+            }
+            // If it is, raise actual alarm state, if the lenient phase persisted long enough
+            else if (i_time.getMillis() - lenientAlarmTimeout >= longestBatchTime) {
+                resetLenientAlarmState();
+                stateMachine.setState(STATE::ALARM);
+            }
+        }
+        // Raise alarm state immediately if numInterruptedGateModules > ALLOWED_SHORT_TERM_DISRUPTED_GATES
+        else if (numInterruptedGateModules > ALLOWED_SHORT_TERM_INTERRUPTED_GATES) {
+            resetLenientAlarmState();
+            stateMachine.setState(STATE::ALARM);
         }
     }
 }
@@ -197,12 +237,49 @@ void Gate::onStateChange() noexcept {
                 }
             }
             break;
+        case STATE::OBSERVING:
+            resetLenientAlarmState();
+            recalculateLongestBatchTime();
+            break;
         default:
-            for (GateModule& module : modules) {
-                if (module.isReady()) {
-                    module.onStateChange();
-                }
-            }
             break;
     }
+
+    for (GateModule& module : modules) {
+        if (module.isReady()) {
+            module.onStateChange();
+        }
+    }
+}
+
+void Gate::startLenientAlarmState() noexcept {
+    lenientAlarmActive = true;
+    lenientAlarmTimeout = i_time.getMillis();
+}
+
+void Gate::resetLenientAlarmState() noexcept {
+    lenientAlarmActive = false;
+    lenientAlarmTimeout = 0;
+}
+
+void Gate::recalculateLongestBatchTime() noexcept {
+    longestBatchTime = 0;
+    for (GateModule& module : modules) {
+        if (module.isReady()) {
+            const auto batchTime = module.getBatchTime();
+            if (batchTime.has_value()) {
+                if (*batchTime > longestBatchTime) {
+                    longestBatchTime = *batchTime;
+                }
+            }
+        }
+    }
+
+    // Fallback: 5000s which is pretty conservative
+    if (longestBatchTime == 0) {
+        longestBatchTime = 4900;
+    }
+
+    // Add 100ms leeway, to make sure the old batch did definitely clear
+    longestBatchTime += 100;
 }

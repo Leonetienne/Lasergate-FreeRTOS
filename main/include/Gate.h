@@ -14,8 +14,11 @@
 #include <array>
 
 /**
- * A gate aggregates 4 gate modules into a single gate. Reads each module's
+ * A gate aggregates four gate modules into a single gate. Reads each module's
  * gpio pins from settings at construction time.
+ * The gate raises alarm state if any of the following conditions is met:
+ * - Less than or equal n; n>=1, gatemodules are interrupted for more than x ms
+ * - More than n gatemodules are interrupted for any amount of time
  */
 class Gate {
 public:
@@ -64,6 +67,15 @@ public:
     void onStateChange() noexcept;
 
 private:
+    void resetLenientAlarmState() noexcept;
+    void startLenientAlarmState() noexcept;
+
+    /**
+     * Will set longestBatchTime to the duration in ms the slowest pulsing
+     * module requires to complete a batch.
+     */
+    void recalculateLongestBatchTime() noexcept;
+
     bool isInitialized = false;
 
     StateMachine& stateMachine;
@@ -71,6 +83,12 @@ private:
     std::array<GateModule, MODULE_COUNT> modules;
     std::array<LdrThreshCalibrator, MODULE_COUNT> ldrCalibrators;
     std::array<PulseFreqCalibrator, MODULE_COUNT> freqCalibrators;
+
+    ITime& i_time;
+
+    time_t lenientAlarmTimeout;
+    bool lenientAlarmActive = false;
+    uint16_t longestBatchTime = 0;
 };
 
 #endif //LASERGATE_TESTS_GATE_H

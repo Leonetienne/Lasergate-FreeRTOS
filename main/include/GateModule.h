@@ -96,6 +96,11 @@ public:
      */
     [[nodiscard]] std::optional<bool> isPulseBatchAcceptable() const noexcept;
 
+    /**
+     * @return The amount in ms the module takes to completely a pulse batch, or std::nullopt if the gate is not ready or does not have a pulse frequency assigned yet
+     */
+    [[nodiscard]] std::optional<uint16_t> getBatchTime() const noexcept;
+
 private:
     /**
      * Gets called once after state engine switches to FAULT

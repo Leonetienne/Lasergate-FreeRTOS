@@ -4,8 +4,6 @@
 #include "LdrThreshCalibConfig.h"
 #include "compat/esp_log_macros.h"
 
-static const char* LOG_TAG = "GateModule";
-
 GateModule::GateModule(
     StateMachine& stateMachine,
     SettingsManager& settings,
@@ -389,4 +387,12 @@ std::optional<bool> GateModule::isPulseBatchAcceptable() const noexcept {
     if (!pulseHistory.isSaturated()) return std::nullopt;
 
     return pulseHistory.getFailureCount() <= ALLOWED_MISREADS_PER_BATCH;
+}
+
+std::optional<uint16_t> GateModule::getBatchTime() const noexcept {
+    if (!isInitialized || !isConfigured() || laserPulseFrequency == 0) {
+        return std::nullopt;
+    }
+
+    return PulseRingBuffer::getBufferSize() * laserPulseFrequency;
 }
