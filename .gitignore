@@ -4,3 +4,4 @@ cmake-debug-build/
 .idea/
 managed_components/
 main_.cpp
+sdkconfig.old
