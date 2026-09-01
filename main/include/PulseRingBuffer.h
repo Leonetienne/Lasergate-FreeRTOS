@@ -1,10 +1,11 @@
 #ifndef LASERGATE_TESTS_PULSERINGBUFFER_H
 #define LASERGATE_TESTS_PULSERINGBUFFER_H
 
+#include <cstddef>
 #include <cstdint>
 
 /**
- * Tracks a rolling window of the last 32 laser pulse verification results in a ring buffer,
+ * Tracks a rolling window of the last getBufferSize() laser pulse verification results in a ring buffer,
  * recording both what the sensor detected and what the laser was actually set to.
  */
 class PulseRingBuffer {
@@ -25,41 +26,43 @@ public:
 
     /**
      * @return The number of mismatched pulses currently recorded in the ring buffer.
-     * Not meaningful until getSampleCount() reaches 32.
+     * Not meaningful until getSampleCount() reaches getBufferSize().
      */
     [[nodiscard]] uint8_t getFailureCount() const noexcept;
 
     /**
      * @return The number of matched pulses currently recorded in the ring buffer.
-     * Not meaningful until getSampleCount() reaches 32.
+     * Not meaningful until getSampleCount() reaches getBufferSize().
      */
     [[nodiscard]] uint8_t getSuccessCount() const noexcept;
 
     /**
      * @return The number of pulses where the sensor detected the laser as on, but it was actually off.
-     * Not meaningful until getSampleCount() reaches 32.
+     * Not meaningful until getSampleCount() reaches getBufferSize().
      */
     [[nodiscard]] uint8_t getFalsePositiveCount() const noexcept;
 
     /**
      * @return The number of pulses where the sensor detected the laser as off, but it was actually on.
-     * Not meaningful until getSampleCount() reaches 32.
+     * Not meaningful until getSampleCount() reaches getBufferSize().
      */
     [[nodiscard]] uint8_t getFalseNegativeCount() const noexcept;
 
     /**
-     * @return The number of real results recorded since the last reset, capped at 32.
+     * @return The number of real results recorded since the last reset, capped at getBufferSize().
      */
     [[nodiscard]] uint8_t getSampleCount() const noexcept;
 
     /**
-     * @return Shorthand for getSampleCount() >= 32
+     * @return Shorthand for getSampleCount() >= getBufferSize()
      */
     [[nodiscard]] bool isSaturated() const noexcept;
 
+    [[nodiscard]] static constexpr std::size_t getBufferSize() noexcept { return sizeof(sensedBuffer) * 8; }
+
     /**
      * @param index How many pulses back to look, with 0 being the most recently inserted result.
-     * Wraps around (modulo 32) for values >= 32.
+     * Wraps around (modulo getBufferSize()) for values >= getBufferSize().
      * @return True if the sensor reading matched the actual laser state for that pulse, false otherwise.
      */
     [[nodiscard]] bool at(const uint8_t index) const noexcept;

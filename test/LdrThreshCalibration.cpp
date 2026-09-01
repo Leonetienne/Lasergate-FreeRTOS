@@ -71,7 +71,7 @@ TEST_CASE("LDR threshold calibration: converges on a physically plausible ambien
     // is done
     bool reachedTerminalState = false;
     for (int batch = 0; batch < 60 && !reachedTerminalState; ++batch) {
-        runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
+        runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, static_cast<int>(PulseRingBuffer::getBufferSize()));
         REQUIRE(calibrator.status() != LdrThreshCalibrator::Status::FAILED);
         if (calibrator.status() == LdrThreshCalibrator::Status::CONCLUDED) {
             reachedTerminalState = true;
@@ -118,7 +118,7 @@ TEST_CASE("LDR threshold calibration: does not run forever", "[LdrThreshCalibrat
 
     bool reachedTerminalState = false;
     for (int batch = 0; batch < 60 && !reachedTerminalState; ++batch) {
-        runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
+        runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, static_cast<int>(PulseRingBuffer::getBufferSize()));
         REQUIRE(calibrator.status() != LdrThreshCalibrator::Status::FAILED);
         if (calibrator.status() == LdrThreshCalibrator::Status::CONCLUDED) {
             reachedTerminalState = true;
@@ -152,7 +152,7 @@ TEST_CASE("LDR threshold calibration: faults immediately when ambient light alre
     LdrPhysicsSim ldrSim(CALIB_LDR_THRESH_INITIAL_THRESH + 1000, 3900, 150);
 
     calibrator.begin();
-    runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
+    runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, static_cast<int>(PulseRingBuffer::getBufferSize()));
 
     REQUIRE(calibrator.status() == LdrThreshCalibrator::Status::FAILED);
     REQUIRE(calibrator.failureReason().find("calibration failed") != std::string::npos);
@@ -182,7 +182,7 @@ TEST_CASE("LDR threshold calibration: a rise time close to the pulse period caus
     LdrPhysicsSim ldrSim(800, 3900, 900);
 
     calibrator.begin();
-    runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
+    runPulses(calibrator, gpioStub, adcStub, timeStub, ldrSim, static_cast<int>(PulseRingBuffer::getBufferSize()));
 
     REQUIRE(calibrator.status() == LdrThreshCalibrator::Status::FAILED);
     REQUIRE(calibrator.failureReason().find("unexpected misread shape") != std::string::npos);

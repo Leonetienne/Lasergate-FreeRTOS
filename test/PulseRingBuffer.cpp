@@ -9,7 +9,7 @@ TEST_CASE("PulseRingBuffer: initial state", "[PulseRingBuffer]") {
     }
 
     SECTION("all slots count as successes") {
-        REQUIRE(buffer.getSuccessCount() == 32);
+        REQUIRE(buffer.getSuccessCount() == PulseRingBuffer::getBufferSize());
     }
 
     SECTION("no false positives recorded") {
@@ -31,21 +31,21 @@ TEST_CASE("PulseRingBuffer: insertResult", "[PulseRingBuffer]") {
     SECTION("a matched 'on' pulse records no failure") {
         buffer.insertResult(true, true);
         REQUIRE(buffer.getFailureCount() == 0);
-        REQUIRE(buffer.getSuccessCount() == 32);
+        REQUIRE(buffer.getSuccessCount() == PulseRingBuffer::getBufferSize());
         REQUIRE(buffer.getSampleCount() == 1);
     }
 
     SECTION("a matched 'off' pulse records no failure") {
         buffer.insertResult(false, false);
         REQUIRE(buffer.getFailureCount() == 0);
-        REQUIRE(buffer.getSuccessCount() == 32);
+        REQUIRE(buffer.getSuccessCount() == PulseRingBuffer::getBufferSize());
         REQUIRE(buffer.getSampleCount() == 1);
     }
 
     SECTION("sensor detected on, but laser was actually off, records a false positive") {
         buffer.insertResult(true, false);
         REQUIRE(buffer.getFailureCount() == 1);
-        REQUIRE(buffer.getSuccessCount() == 31);
+        REQUIRE(buffer.getSuccessCount() == PulseRingBuffer::getBufferSize() - 1);
         REQUIRE(buffer.getFalsePositiveCount() == 1);
         REQUIRE(buffer.getFalseNegativeCount() == 0);
         REQUIRE(buffer.getSampleCount() == 1);
@@ -54,7 +54,7 @@ TEST_CASE("PulseRingBuffer: insertResult", "[PulseRingBuffer]") {
     SECTION("sensor detected off, but laser was actually on, records a false negative") {
         buffer.insertResult(false, true);
         REQUIRE(buffer.getFailureCount() == 1);
-        REQUIRE(buffer.getSuccessCount() == 31);
+        REQUIRE(buffer.getSuccessCount() == PulseRingBuffer::getBufferSize() - 1);
         REQUIRE(buffer.getFalsePositiveCount() == 0);
         REQUIRE(buffer.getFalseNegativeCount() == 1);
         REQUIRE(buffer.getSampleCount() == 1);
@@ -67,40 +67,40 @@ TEST_CASE("PulseRingBuffer: insertResult", "[PulseRingBuffer]") {
         buffer.insertResult(true, false);  // false positive
 
         REQUIRE(buffer.getFailureCount() == 3);
-        REQUIRE(buffer.getSuccessCount() == 29);
+        REQUIRE(buffer.getSuccessCount() == PulseRingBuffer::getBufferSize() - 3);
         REQUIRE(buffer.getFalsePositiveCount() == 2);
         REQUIRE(buffer.getFalseNegativeCount() == 1);
         REQUIRE(buffer.getSampleCount() == 4);
     }
 
-    SECTION("sample count caps at 32") {
-        for (int i = 0; i < 40; ++i) {
+    SECTION("sample count caps at PulseRingBuffer::getBufferSize()") {
+        for (std::size_t i = 0; i < PulseRingBuffer::getBufferSize() + 8; ++i) {
             buffer.insertResult(true, true);
         }
 
-        REQUIRE(buffer.getSampleCount() == 32);
+        REQUIRE(buffer.getSampleCount() == PulseRingBuffer::getBufferSize());
     }
 
     SECTION("wrapping around the ring buffer overwrites the oldest entries") {
-        // Fill all 32 slots with false positives
-        for (int i = 0; i < 32; ++i) {
+        // Fill all PulseRingBuffer::getBufferSize() slots with false positives
+        for (std::size_t i = 0; i < PulseRingBuffer::getBufferSize(); ++i) {
             buffer.insertResult(true, false);
         }
-        REQUIRE(buffer.getFailureCount() == 32);
+        REQUIRE(buffer.getFailureCount() == PulseRingBuffer::getBufferSize());
         REQUIRE(buffer.getSuccessCount() == 0);
-        REQUIRE(buffer.getFalsePositiveCount() == 32);
+        REQUIRE(buffer.getFalsePositiveCount() == PulseRingBuffer::getBufferSize());
         REQUIRE(buffer.getFalseNegativeCount() == 0);
 
         // Overwrite the first 5 slots with matches
-        for (int i = 0; i < 5; ++i) {
+        for (std::size_t i = 0; i < 5; ++i) {
             buffer.insertResult(true, true);
         }
 
-        REQUIRE(buffer.getFailureCount() == 27);
+        REQUIRE(buffer.getFailureCount() == PulseRingBuffer::getBufferSize() - 5);
         REQUIRE(buffer.getSuccessCount() == 5);
-        REQUIRE(buffer.getFalsePositiveCount() == 27);
+        REQUIRE(buffer.getFalsePositiveCount() == PulseRingBuffer::getBufferSize() - 5);
         REQUIRE(buffer.getFalseNegativeCount() == 0);
-        REQUIRE(buffer.getSampleCount() == 32);
+        REQUIRE(buffer.getSampleCount() == PulseRingBuffer::getBufferSize());
     }
 }
 
@@ -111,27 +111,27 @@ TEST_CASE("PulseRingBuffer: isSaturated", "[PulseRingBuffer]") {
         REQUIRE_FALSE(buffer.isSaturated());
     }
 
-    SECTION("stays false while fewer than 32 samples have been recorded") {
-        for (int i = 0; i < 31; ++i) {
+    SECTION("stays false while fewer than PulseRingBuffer::getBufferSize() samples have been recorded") {
+        for (std::size_t i = 0; i < PulseRingBuffer::getBufferSize() - 1; ++i) {
             buffer.insertResult(true, true);
         }
-        REQUIRE(buffer.getSampleCount() == 31);
+        REQUIRE(buffer.getSampleCount() == PulseRingBuffer::getBufferSize() - 1);
         REQUIRE_FALSE(buffer.isSaturated());
     }
 
-    SECTION("becomes true once 32 samples have been recorded") {
-        for (int i = 0; i < 32; ++i) {
+    SECTION("becomes true once PulseRingBuffer::getBufferSize() samples have been recorded") {
+        for (std::size_t i = 0; i < PulseRingBuffer::getBufferSize(); ++i) {
             buffer.insertResult(true, true);
         }
-        REQUIRE(buffer.getSampleCount() == 32);
+        REQUIRE(buffer.getSampleCount() == PulseRingBuffer::getBufferSize());
         REQUIRE(buffer.isSaturated());
     }
 
-    SECTION("stays true once the sample count caps at 32, regardless of mismatches") {
-        for (int i = 0; i < 40; ++i) {
+    SECTION("stays true once the sample count caps at PulseRingBuffer::getBufferSize(), regardless of mismatches") {
+        for (std::size_t i = 0; i < PulseRingBuffer::getBufferSize() + 8; ++i) {
             buffer.insertResult(true, false);
         }
-        REQUIRE(buffer.getSampleCount() == 32);
+        REQUIRE(buffer.getSampleCount() == PulseRingBuffer::getBufferSize());
         REQUIRE(buffer.isSaturated());
     }
 }
@@ -141,7 +141,7 @@ TEST_CASE("PulseRingBuffer: at", "[PulseRingBuffer]") {
 
     SECTION("true initially, since every default slot counts as a match") {
         REQUIRE(buffer.at(0));
-        REQUIRE(buffer.at(31));
+        REQUIRE(buffer.at(PulseRingBuffer::getBufferSize() - 1));
     }
 
     SECTION("reflects the most recently inserted matching result") {
@@ -167,31 +167,34 @@ TEST_CASE("PulseRingBuffer: at", "[PulseRingBuffer]") {
         REQUIRE_FALSE(buffer.at(1));
     }
 
-    SECTION("index wraps around modulo 32") {
+    SECTION("index wraps around modulo PulseRingBuffer::getBufferSize()") {
         buffer.insertResult(true, false); // written to slot 0
-        for (int i = 0; i < 31; ++i) {
-            buffer.insertResult(true, true); // fills the remaining 31 slots
+        for (std::size_t i = 0; i < PulseRingBuffer::getBufferSize() - 1; ++i) {
+            buffer.insertResult(true, true); // fills the remaining slots
         }
 
-        REQUIRE_FALSE(buffer.at(31));
-        REQUIRE_FALSE(buffer.at(31 + 32));
+        REQUIRE_FALSE(buffer.at(PulseRingBuffer::getBufferSize() - 1));
+        REQUIRE_FALSE(buffer.at((PulseRingBuffer::getBufferSize() - 1) + PulseRingBuffer::getBufferSize()));
     }
 }
 
 TEST_CASE("PulseRingBuffer: reset", "[PulseRingBuffer]") {
     PulseRingBuffer buffer;
 
-    for (int i = 0; i < 6; ++i) {
+    const std::size_t falsePositives = PulseRingBuffer::getBufferSize() / 4;
+    const std::size_t falseNegatives = PulseRingBuffer::getBufferSize() / 8;
+
+    for (std::size_t i = 0; i < falsePositives; ++i) {
         buffer.insertResult(true, false); // false positive
     }
-    for (int i = 0; i < 4; ++i) {
+    for (std::size_t i = 0; i < falseNegatives; ++i) {
         buffer.insertResult(false, true); // false negative
     }
-    REQUIRE(buffer.getFailureCount() == 10);
-    REQUIRE(buffer.getSuccessCount() == 22);
-    REQUIRE(buffer.getFalsePositiveCount() == 6);
-    REQUIRE(buffer.getFalseNegativeCount() == 4);
-    REQUIRE(buffer.getSampleCount() == 10);
+    REQUIRE(buffer.getFailureCount() == falsePositives + falseNegatives);
+    REQUIRE(buffer.getSuccessCount() == PulseRingBuffer::getBufferSize() - (falsePositives + falseNegatives));
+    REQUIRE(buffer.getFalsePositiveCount() == falsePositives);
+    REQUIRE(buffer.getFalseNegativeCount() == falseNegatives);
+    REQUIRE(buffer.getSampleCount() == falsePositives + falseNegatives);
 
     buffer.reset();
 
@@ -200,7 +203,7 @@ TEST_CASE("PulseRingBuffer: reset", "[PulseRingBuffer]") {
     }
 
     SECTION("resets recorded successes to full") {
-        REQUIRE(buffer.getSuccessCount() == 32);
+        REQUIRE(buffer.getSuccessCount() == PulseRingBuffer::getBufferSize());
     }
 
     SECTION("clears recorded false positives") {

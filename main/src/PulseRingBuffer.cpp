@@ -8,10 +8,10 @@ void PulseRingBuffer::insertResult(bool sensorDetectedOn, bool laserActuallyOn) 
     expectedBuffer = laserActuallyOn ? (expectedBuffer | mask) : (expectedBuffer & ~mask);
 
     ++ringBufferPointer;
-    if (ringBufferPointer >= static_cast<uint8_t>(sizeof(sensedBuffer) * 8)) {
+    if (ringBufferPointer >= static_cast<uint8_t>(getBufferSize())) {
         ringBufferPointer = 0;
     }
-    if (sampleCount < 32) {
+    if (sampleCount < getBufferSize()) {
         ++sampleCount;
     }
 }
@@ -44,11 +44,11 @@ uint8_t PulseRingBuffer::getSampleCount() const noexcept {
 }
 
 bool PulseRingBuffer::isSaturated() const noexcept {
-    return getSampleCount() >= 32;
+    return getSampleCount() >= getBufferSize();
 }
 
 bool PulseRingBuffer::at(const uint8_t index) const noexcept {
-    constexpr uint8_t bufferBits = static_cast<uint8_t>(sizeof(sensedBuffer) * 8);
+    constexpr uint8_t bufferBits = static_cast<uint8_t>(getBufferSize());
     const uint8_t slot = static_cast<uint8_t>((ringBufferPointer + bufferBits - 1 - (index % bufferBits)) % bufferBits);
     const uint32_t mask = 1u << slot;
 
