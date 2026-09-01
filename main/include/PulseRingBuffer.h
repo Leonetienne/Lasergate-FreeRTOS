@@ -69,9 +69,9 @@ public:
 
 private:
     // Each bit records what the sensor detected for one pulse
-    uint32_t sensedBuffer = 0xFFFFFFFF;
+    uint8_t sensedBuffer = 0xFF;
     // Each bit records what the laser was actually set to for one pulse
-    uint32_t expectedBuffer = 0xFFFFFFFF;
+    uint8_t expectedBuffer = 0xFF;
     uint8_t ringBufferPointer = 0;
     uint8_t sampleCount = 0;
 };
