@@ -67,7 +67,7 @@ TEST_CASE("laser pulse frequency calibration: converges on the fastest frequency
 
     bool reachedTerminalState = false;
     for (int batch = 0; batch < 60 && !reachedTerminalState; ++batch) {
-        runPulses(module, calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
+        runPulses(module, calibrator, gpioStub, adcStub, timeStub, ldrSim, static_cast<int>(PulseRingBuffer::getBufferSize()));
         REQUIRE(calibrator.status() != PulseFreqCalibrator::Status::FAILED);
         if (calibrator.status() == PulseFreqCalibrator::Status::CONCLUDED) {
             reachedTerminalState = true;
@@ -107,7 +107,7 @@ TEST_CASE("laser pulse frequency calibration: does not hang forever", "[LaserPul
 
     bool reachedTerminalState = false;
     for (int batch = 0; batch < 60 && !reachedTerminalState; ++batch) {
-        runPulses(module, calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
+        runPulses(module, calibrator, gpioStub, adcStub, timeStub, ldrSim, static_cast<int>(PulseRingBuffer::getBufferSize()));
         REQUIRE(calibrator.status() != PulseFreqCalibrator::Status::FAILED);
         if (calibrator.status() == PulseFreqCalibrator::Status::CONCLUDED) {
             reachedTerminalState = true;
@@ -142,7 +142,7 @@ TEST_CASE("laser pulse frequency calibration: faults when even the slowest frequ
     LdrPhysicsSim ldrSim(800, 3900, 2000);
 
     calibrator.begin();
-    runPulses(module, calibrator, gpioStub, adcStub, timeStub, ldrSim, 32);
+    runPulses(module, calibrator, gpioStub, adcStub, timeStub, ldrSim, static_cast<int>(PulseRingBuffer::getBufferSize()));
 
     REQUIRE(calibrator.status() == PulseFreqCalibrator::Status::FAILED);
     REQUIRE(calibrator.failureReason().find("calibration failed") != std::string::npos);
@@ -170,7 +170,7 @@ TEST_CASE("laser pulse frequency calibration: resets to the max (safest) frequen
 
     // a clean, fast-settling signal lets one batch pass and the period shrink away from the default
     LdrPhysicsSim cleanSim(800, 3900, 10);
-    runPulses(module, calibrator, gpioStub, adcStub, timeStub, cleanSim, 32);
+    runPulses(module, calibrator, gpioStub, adcStub, timeStub, cleanSim, static_cast<int>(PulseRingBuffer::getBufferSize()));
     REQUIRE(calibrator.status() != PulseFreqCalibrator::Status::FAILED);
     REQUIRE(module.getPulseFrequency() < CALIB_PULSE_FREQ_MAX_FREQ);
 
