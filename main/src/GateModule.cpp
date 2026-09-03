@@ -174,7 +174,7 @@ void GateModule::onStateUserAdjustingBeams() noexcept {
 
     // Turn the status led off, if it is configured
     if (statusLed.isConfigured() && !statusLed.turnOff()) {
-        ESP_LOGW(LOG_TAG, "failed to set status led state during onStateUserAdjustingBeams");
+        ESP_LOGW(LOG_TAG, "GateModule::onStateUserAdjustingBeams: failed to set status led state during onStateUserAdjustingBeams");
     }
 }
 
@@ -190,7 +190,7 @@ void GateModule::updateStateUserAdjustingBeams() noexcept {
         }
 
         if (!statusLed.setPowerState(*reading)) {
-            ESP_LOGW(LOG_TAG, "failed to set status led state during updateStateUserAdjustingBeams");
+            ESP_LOGW(LOG_TAG, "GateModule::updateStateUserAdjustingBeams: failed to set status led state during updateStateUserAdjustingBeams");
         }
     }
     resetPulseTimer();
@@ -211,7 +211,7 @@ void GateModule::onStateObserving() noexcept {
 
     // Turn the status led on initially; after the ring puffer saturates, it mirrors the last pulse reading value, misread being HIGH
     if (statusLed.isConfigured() && !statusLed.turnOn()) {
-        ESP_LOGW(LOG_TAG, "failed to turn on status LED during onStateObserving");
+        ESP_LOGW(LOG_TAG, "GateModule::onStateObserving: failed to turn on status LED during onStateObserving");
     }
 
     pulseHistory.reset();
@@ -240,7 +240,7 @@ void GateModule::updateStateObserving() noexcept {
                 statusLed.isConfigured() &&
                 !statusLed.setPowerState(!pulseHistory.at(0))
             ) {
-                ESP_LOGW(LOG_TAG, "failed to set status led state during updateStateObserving");
+                ESP_LOGW(LOG_TAG, "GateModule::updateStateObserving: failed to set status led state during updateStateObserving");
             }
         }
     }
@@ -258,7 +258,7 @@ void GateModule::onStateAlarm() noexcept {
 
     // Turn the status led on, if it is configured
     if (statusLed.isConfigured() && !statusLed.turnOn()) {
-        ESP_LOGW(LOG_TAG, "failed to set status led state during onStateAlarm");
+        ESP_LOGW(LOG_TAG, "GateModule::onStateAlarm: failed to set status led state during onStateAlarm");
     }
 
     // To simplify, we'll just use the pulseTimer to time the status led
@@ -275,7 +275,7 @@ void GateModule::updateStateAlarm() noexcept {
             resetPulseTimer();
 
             if (!statusLed.toggle()) {
-                ESP_LOGW(LOG_TAG, "failed to toggle status led state during updateStateAlarm");
+                ESP_LOGW(LOG_TAG, "GateModule::updateStateAlarm: failed to toggle status led state during updateStateAlarm");
             }
         }
     }
@@ -294,7 +294,7 @@ void GateModule::onStateDiagnosticSignalTestRun() noexcept {
 
     // Turn the status led off, if it is configured
     if (statusLed.isConfigured() && !statusLed.turnOff()) {
-        ESP_LOGW(LOG_TAG, "failed to turn status led off during onStateAlarm");
+        ESP_LOGW(LOG_TAG, "GateModule::onStateDiagnosticSignalTestRun: failed to turn status led off during onStateAlarm");
     }
 
     diagnosticSignalTestRunNumMisreads = 0;
@@ -339,12 +339,12 @@ void GateModule::onStateFault() noexcept {
 
     if (!laserDiode.turnOff()) {
         // Just a warning, since we're already in fault mode
-        ESP_LOGW(LOG_TAG, "failed to turn off laser diode during onStateFault");
+        ESP_LOGW(LOG_TAG, "GateModule::onStateFault: failed to turn off laser diode during onStateFault");
     }
 
     // Turn the status led on, if it is configured
     if (statusLed.isConfigured() && !statusLed.turnOn()) {
-        ESP_LOGW(LOG_TAG, "failed to turn status led off during onStateFault");
+        ESP_LOGW(LOG_TAG, "GateModule::onStateFault: failed to turn status led off during onStateFault");
     }
 
     // To simplify, we'll just use the pulseTimer to time the status led
@@ -362,7 +362,7 @@ void GateModule::updateStateFault() noexcept {
             resetPulseTimer();
 
             if (!statusLed.toggle()) {
-                ESP_LOGW(LOG_TAG, "failed to toggle status led state during updateStateFault");
+                ESP_LOGW(LOG_TAG, "GateModule::updateStateFault: failed to toggle status led state during updateStateFault");
             }
         }
     }
@@ -381,7 +381,7 @@ void GateModule::onStateDisarmed() noexcept {
 
     // Turn the status led on, if it is configured
     if (statusLed.isConfigured() && !statusLed.turnOn()) {
-        ESP_LOGW(LOG_TAG, "failed to set status led state during onStateDisarmed");
+        ESP_LOGW(LOG_TAG, "GateModule::onStateDisarmed: failed to set status led state during onStateDisarmed");
     }
 }
 
