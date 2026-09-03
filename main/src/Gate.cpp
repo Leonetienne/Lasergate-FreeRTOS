@@ -217,6 +217,22 @@ void Gate::fixedUpdate() noexcept {
             stateMachine.setState(STATE::ALARM);
         }
     }
+    else if (stateMachine.getState() == STATE::DIAGNOSTIC_SIGNAL_TEST_RUN) {
+        // Terminate the state when all modules have finished their self-test
+        bool allDone = true;
+
+        for (GateModule& module : modules) {
+            // This value should really always have a value since we gated the only case in which it would have none (initialized and state == DIAGNOSTIC_SIGNAL_TEST_RUN)
+            // Should a bug cause thwart this assumption, let the test conclude anyway, to prevent system hang-up.
+            if (module.isReady() && !module.isDiagnosticSignalTestRunFinished().value_or(true)) {
+                allDone = false;
+            }
+        }
+
+        if (allDone) {
+            stateMachine.setState(STATE::DISARMED);
+        }
+    }
 }
 
 void Gate::onStateChange() noexcept {

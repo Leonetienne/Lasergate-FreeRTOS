@@ -102,9 +102,16 @@ public:
     [[nodiscard]] std::optional<uint16_t> getBatchTime() const noexcept;
 
     /**
-     * @return How many misreads happened during the last DIAGNOSTIC_SIGNAL_TEST_RUN run (0 if no such run occurred), std::nullopt if uninitialized
+     * @return How many misreads happened during the last DIAGNOSTIC_SIGNAL_TEST_RUN run
+     * (0 if no such run occurred), std::nullopt if uninitialized or if the run is not yet finished
      */
     [[nodiscard]] std::optional<uint16_t> getLastDiagnosticRunSignalError() const noexcept;
+
+    /**
+     * @return Whether this module finished an ongoing DIAGNOSTIC_SIGNAL_TEST_RUN.
+     * std::nullopt if uninitialized
+     */
+    [[nodiscard]] std::optional<bool> isDiagnosticSignalTestRunFinished() const noexcept;
 
 private:
     /**

@@ -304,10 +304,14 @@ void GateModule::onStateDiagnosticSignalTestRun() noexcept {
 /**
  * Pulse the laser and record to pulseHistory.
  * After each batch increment failure count.
- * After reaching the final batch, fall back to DISARMED.
+ * After reaching the final batch, stop.
  */
 void GateModule::updateStateDiagnosticSignalTestRun() noexcept {
     if (!isInitialized) return;
+
+    // Do nothing if we're done
+    if (diagnosticSignalTestRunNumBatchesRun >= DIAGNOSTIC_SIGNAL_TEST_NUM_BATCHES)
+        return;
 
     // Run a batch worth of pulses at the current frequency
     if (i_time.getMillis() - pulseTimer > laserPulseFrequency) {
@@ -324,8 +328,16 @@ void GateModule::updateStateDiagnosticSignalTestRun() noexcept {
             pulseHistory.reset();
 
             // Have we finished all batches?
-            if (diagnosticSignalTestRunNumBatchesRun++ >= DIAGNOSTIC_SIGNAL_TEST_NUM_BATCHES) {
-                stateMachine.setState(STATE::DISARMED);
+            if (++diagnosticSignalTestRunNumBatchesRun >= DIAGNOSTIC_SIGNAL_TEST_NUM_BATCHES) {
+                // Turn laser off and status led on
+                if (!laserDiode.turnOff()) {
+                    stateMachine.setState(STATE::FAULT, "GateModule::updateStateDiagnosticSignalTestRun: failed to turn off laser diode after finishing");
+                }
+
+                // Turn the status led off, if it is configured
+                if (statusLed.isConfigured() && !statusLed.turnOn()) {
+                    ESP_LOGW(LOG_TAG, "GateModule::updateStateDiagnosticSignalTestRun: failed to turn status led on after finishing");
+                }
             }
         }
     }
@@ -456,5 +468,12 @@ std::optional<uint16_t> GateModule::getBatchTime() const noexcept {
 
 std::optional<uint16_t> GateModule::getLastDiagnosticRunSignalError() const noexcept {
     if (!isInitialized) return std::nullopt;
+    if (!isDiagnosticSignalTestRunFinished().value_or(false)) return std::nullopt;
     return diagnosticSignalTestRunNumMisreads;
+}
+
+std::optional<bool> GateModule::isDiagnosticSignalTestRunFinished() const noexcept {
+    if (!isInitialized) return std::nullopt;
+
+    return diagnosticSignalTestRunNumBatchesRun >= DIAGNOSTIC_SIGNAL_TEST_NUM_BATCHES;
 }
