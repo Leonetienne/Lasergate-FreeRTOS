@@ -222,7 +222,6 @@ void GateModule::onStateObserving() noexcept {
 void GateModule::updateStateObserving() noexcept {
     if (!isInitialized) return;
 
-    // Run a batch worth of pulses at the current frequency
     if (i_time.getMillis() - pulseTimer > laserPulseFrequency) {
         if (!doPulseCycle()) {
             return;
