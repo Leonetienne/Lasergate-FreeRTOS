@@ -101,6 +101,11 @@ public:
      */
     [[nodiscard]] std::optional<uint16_t> getBatchTime() const noexcept;
 
+    /**
+     * @return How many misreads happened during the last DIAGNOSTIC_SIGNAL_TEST_RUN run (0 if no such run occurred), std::nullopt if uninitialized
+     */
+    [[nodiscard]] std::optional<uint16_t> getLastDiagnosticRunSignalError() const noexcept;
+
 private:
     /**
      * Gets called once after state engine switches to FAULT
@@ -121,6 +126,11 @@ private:
      * Gets called once after state engine switches to ALARM
      */
     void onStateAlarm() noexcept;
+
+    /**
+     * Gets called once after state engine switches to DIAGNOSTIC_SIGNAL_TEST_RUN
+     */
+    void onStateDiagnosticSignalTestRun() noexcept;
 
     /**
      * Gets called once after state engine switches to DISARMED
@@ -146,6 +156,11 @@ private:
      * Gets called by update during state ALARM
      */
     void updateStateAlarm() noexcept;
+
+    /**
+     * Gets called by update during state DIAGNOSTIC_SIGNAL_TEST_RUN
+     */
+    void updateStateDiagnosticSignalTestRun() noexcept;
 
     /**
       * Gets called by update during state DISARMED
@@ -189,6 +204,8 @@ private:
     time_t pulseTimer;
     PulseRingBuffer pulseHistory;
     uint16_t laserPulseFrequency = 0;
+    uint16_t diagnosticSignalTestRunNumMisreads = 0;
+    uint8_t diagnosticSignalTestRunNumBatchesRun = 0;
 };
 
 

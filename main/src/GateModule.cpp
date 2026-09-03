@@ -110,6 +110,9 @@ void GateModule::fixedUpdate() noexcept {
         case STATE::ALARM:
             updateStateAlarm();
             break;
+        case STATE::DIAGNOSTIC_SIGNAL_TEST_RUN:
+            updateStateDiagnosticSignalTestRun();
+            break;
         case STATE::DISARMED:
             updateStateDisarmed();
 
@@ -134,6 +137,9 @@ void GateModule::onStateChange() noexcept {
             break;
         case STATE::ALARM:
             onStateAlarm();
+            break;
+        case STATE::DIAGNOSTIC_SIGNAL_TEST_RUN:
+            onStateDiagnosticSignalTestRun();
             break;
         case STATE::DISARMED:
             onStateDisarmed();
@@ -276,6 +282,56 @@ void GateModule::updateStateAlarm() noexcept {
 }
 
 /**
+ * When initiating a test run to evaluate channel noise, first reset the misread counter.
+ * turn laser and status led off.
+ */
+void GateModule::onStateDiagnosticSignalTestRun() noexcept {
+    if (!isInitialized) return;
+
+    if (!laserDiode.turnOff()) {
+        stateMachine.setState(STATE::FAULT, "GateModule::onStateDiagnosticSignalTestRun: failed to turn off laser diode");
+    }
+
+    // Turn the status led off, if it is configured
+    if (statusLed.isConfigured() && !statusLed.turnOff()) {
+        ESP_LOGW(LOG_TAG, "failed to turn status led off during onStateAlarm");
+    }
+
+    diagnosticSignalTestRunNumMisreads = 0;
+    diagnosticSignalTestRunNumBatchesRun = 0;
+}
+
+/**
+ * Pulse the laser and record to pulseHistory.
+ * After each batch increment failure count.
+ * After reaching the final batch, fall back to DISARMED.
+ */
+void GateModule::updateStateDiagnosticSignalTestRun() noexcept {
+    if (!isInitialized) return;
+
+    // Run a batch worth of pulses at the current frequency
+    if (i_time.getMillis() - pulseTimer > laserPulseFrequency) {
+        if (!doPulseCycle()) {
+            return;
+        }
+
+        // Is the batch finished?
+        if (pulseHistory.isSaturated()) {
+            // Store misreads
+            diagnosticSignalTestRunNumMisreads += pulseHistory.getFailureCount();
+
+            // Reset the current ring buffer
+            pulseHistory.reset();
+
+            // Have we finished all batches?
+            if (diagnosticSignalTestRunNumBatchesRun++ >= DIAGNOSTIC_SIGNAL_TEST_NUM_BATCHES) {
+                stateMachine.setState(STATE::DISARMED);
+            }
+        }
+    }
+}
+
+/**
  *  * During fault, blink the status led on/off, being on initially
  */
 void GateModule::onStateFault() noexcept {
@@ -396,4 +452,9 @@ std::optional<uint16_t> GateModule::getBatchTime() const noexcept {
     }
 
     return PulseRingBuffer::getBufferSize() * laserPulseFrequency;
+}
+
+std::optional<uint16_t> GateModule::getLastDiagnosticRunSignalError() const noexcept {
+    if (!isInitialized) return std::nullopt;
+    return diagnosticSignalTestRunNumMisreads;
 }

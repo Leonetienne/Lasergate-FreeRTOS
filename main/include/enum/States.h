@@ -13,6 +13,7 @@ enum class STATE : uint8_t {
     CALIBRATION_LDR_THRESH, // The modules are calibrating their LDR threshold to reliably but greedily detect laser diode power state.
     CALIBRATION_MODULATION_FREQUENCY, // The modules are greedily calibrating the frequency at which they may modulate.
     OBSERVING,      // System is operating normally and watching for gate interruptions.
+    DIAGNOSTIC_SIGNAL_TEST_RUN, // The system runs a few batches as a test run to report how noise the laser pulse modulation channel is.
     DISARMED,       // The system is paused, lasers are offline.
     ALARM,          // The system has detected an intrusion
     FAULT,          // The system has entered an invalid state.

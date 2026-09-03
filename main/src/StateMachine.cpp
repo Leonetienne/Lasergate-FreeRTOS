@@ -9,6 +9,7 @@ namespace {
             case STATE::CALIBRATION_LDR_THRESH: return "CALIBRATION_LDR_THRESH";
             case STATE::CALIBRATION_MODULATION_FREQUENCY: return "CALIBRATION_MODULATION_FREQUENCY";
             case STATE::OBSERVING: return "OBSERVING";
+            case STATE::DIAGNOSTIC_SIGNAL_TEST_RUN: return "DIAGNOSTIC_SIGNAL_TEST_RUN";
             case STATE::DISARMED: return "DISARMED";
             case STATE::ALARM: return "ALARM";
             case STATE::FAULT: return "FAULT";
@@ -44,7 +45,10 @@ bool StateMachine::isTransitionAllowed(STATE from, STATE to) noexcept {
             return to == STATE::DISARMED || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
 
         case STATE::DISARMED:
-            return to == STATE::USER_ADJUSTING_BEAMS || to == STATE::CALIBRATION_LDR_THRESH || to == STATE::CALIBRATION_MODULATION_FREQUENCY || to == STATE::FAULT || to == STATE::OBSERVING || to == STATE::SHUTTING_DOWN;
+            return to == STATE::USER_ADJUSTING_BEAMS || to == STATE::CALIBRATION_LDR_THRESH || to == STATE::CALIBRATION_MODULATION_FREQUENCY || to == STATE::DIAGNOSTIC_SIGNAL_TEST_RUN || to == STATE::FAULT || to == STATE::OBSERVING || to == STATE::SHUTTING_DOWN;
+
+        case STATE::DIAGNOSTIC_SIGNAL_TEST_RUN:
+            return to == STATE::DISARMED || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
 
         case STATE::OBSERVING:
             return to == STATE::DISARMED || to == STATE::ALARM || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
