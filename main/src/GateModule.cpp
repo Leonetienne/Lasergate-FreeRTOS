@@ -248,7 +248,7 @@ void GateModule::onStateAlarm() noexcept {
     if (!isInitialized) return;
 
     if (!laserDiode.turnOff()) {
-        ESP_LOGW(LOG_TAG, "failed to turn off laser diode during onStateAlarm");
+        stateMachine.setState(STATE::FAULT, "GateModule::onStateAlarm: failed to turn off laser diode");
     }
 
     // Turn the status led on, if it is configured
@@ -283,6 +283,7 @@ void GateModule::onStateFault() noexcept {
     if (!isInitialized) return;
 
     if (!laserDiode.turnOff()) {
+        // Just a warning, since we're already in fault mode
         ESP_LOGW(LOG_TAG, "failed to turn off laser diode during onStateFault");
     }
 
@@ -319,7 +320,8 @@ void GateModule::onStateDisarmed() noexcept {
     if (!isInitialized) return;
 
     if (!laserDiode.turnOff()) {
-        ESP_LOGW(LOG_TAG, "failed to turn off laser diode during onStateDisarmed");
+
+        stateMachine.setState(STATE::FAULT, "GateModule::onStateDisarmed: failed to turn off laser diode");
     }
 
     // Turn the status led on, if it is configured
