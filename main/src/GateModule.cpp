@@ -289,7 +289,7 @@ void GateModule::onStateFault() noexcept {
 
     // Turn the status led on, if it is configured
     if (statusLed.isConfigured() && !statusLed.turnOn()) {
-        ESP_LOGW(LOG_TAG, "failed to set status led state during onStateFault");
+        ESP_LOGW(LOG_TAG, "failed to turn status led off during onStateFault");
     }
 
     // To simplify, we'll just use the pulseTimer to time the status led
