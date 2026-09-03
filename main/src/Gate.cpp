@@ -140,9 +140,7 @@ void Gate::fixedUpdate() noexcept {
             ldrCalibrators[i].fixedUpdate();
 
             if (ldrCalibrators[i].status() == LdrThreshCalibrator::Status::FAILED) {
-                stateMachine.setState(STATE::FAULT,
-                    "Gate: LDR threshold calibration failed for module " + std::to_string(i) +
-                    ": " + ldrCalibrators[i].failureReason());
+                stateMachine.setState(STATE::FAULT, "Gate: LDR threshold calibration failed for module " + std::to_string(i) + ": " + ldrCalibrators[i].failureReason());
                 return;
             }
             if (ldrCalibrators[i].status() == LdrThreshCalibrator::Status::RUNNING) {
@@ -162,9 +160,7 @@ void Gate::fixedUpdate() noexcept {
             freqCalibrators[i].fixedUpdate();
 
             if (freqCalibrators[i].status() == PulseFreqCalibrator::Status::FAILED) {
-                stateMachine.setState(STATE::FAULT,
-                    "Gate: laser pulse frequency calibration failed for module " + std::to_string(i) +
-                    ": " + freqCalibrators[i].failureReason());
+                stateMachine.setState(STATE::FAULT,"Gate: laser pulse frequency calibration failed for module " + std::to_string(i) + ": " + freqCalibrators[i].failureReason());
                 return;
             }
             if (freqCalibrators[i].status() == PulseFreqCalibrator::Status::RUNNING) {
@@ -176,6 +172,8 @@ void Gate::fixedUpdate() noexcept {
         }
         return;
     }
+
+    // These only run in non-calibration states
 
     // Update gatemodule fixedUpdate hook
     for (GateModule& module : modules) {
