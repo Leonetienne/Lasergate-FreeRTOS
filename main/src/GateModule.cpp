@@ -299,6 +299,7 @@ void GateModule::onStateDiagnosticSignalTestRun() noexcept {
 
     diagnosticSignalTestRunNumMisreads = 0;
     diagnosticSignalTestRunNumBatchesRun = 0;
+    hasStartedDiagnosticTest = true;
 }
 
 /**
@@ -466,7 +467,7 @@ std::optional<uint16_t> GateModule::getBatchTime() const noexcept {
     return PulseRingBuffer::getBufferSize() * laserPulseFrequency;
 }
 
-std::optional<uint16_t> GateModule::getLastDiagnosticRunSignalError() const noexcept {
+std::optional<uint16_t> GateModule::getLastDiagnosticRunSignalErrorCount() const noexcept {
     if (!isInitialized) return std::nullopt;
     if (!isDiagnosticSignalTestRunFinished().value_or(false)) return std::nullopt;
     return diagnosticSignalTestRunNumMisreads;
@@ -474,6 +475,7 @@ std::optional<uint16_t> GateModule::getLastDiagnosticRunSignalError() const noex
 
 std::optional<bool> GateModule::isDiagnosticSignalTestRunFinished() const noexcept {
     if (!isInitialized) return std::nullopt;
+    if (!hasStartedDiagnosticTest) return std::nullopt;
 
     return diagnosticSignalTestRunNumBatchesRun >= DIAGNOSTIC_SIGNAL_TEST_NUM_BATCHES;
 }

@@ -102,14 +102,14 @@ public:
     [[nodiscard]] std::optional<uint16_t> getBatchTime() const noexcept;
 
     /**
-     * @return How many misreads happened during the last DIAGNOSTIC_SIGNAL_TEST_RUN run
-     * (0 if no such run occurred), std::nullopt if uninitialized or if the run is not yet finished
+     * @return Misreads from the last finished DIAGNOSTIC_SIGNAL_TEST_RUN run.
+     * std::nullopt if uninitialized, no self-test has ever run, or the current run isn't finished
      */
-    [[nodiscard]] std::optional<uint16_t> getLastDiagnosticRunSignalError() const noexcept;
+    [[nodiscard]] std::optional<uint16_t> getLastDiagnosticRunSignalErrorCount() const noexcept;
 
     /**
      * @return Whether this module finished an ongoing DIAGNOSTIC_SIGNAL_TEST_RUN.
-     * std::nullopt if uninitialized
+     * std::nullopt if uninitialized or no self-test has ever run
      */
     [[nodiscard]] std::optional<bool> isDiagnosticSignalTestRunFinished() const noexcept;
 
@@ -211,8 +211,9 @@ private:
     time_t pulseTimer;
     PulseRingBuffer pulseHistory;
     uint16_t laserPulseFrequency = 0;
-    uint16_t diagnosticSignalTestRunNumMisreads = 0;
-    uint8_t diagnosticSignalTestRunNumBatchesRun = 0;
+    uint16_t diagnosticSignalTestRunNumMisreads = 0; // Cumulative misreads during this self-test
+    uint8_t diagnosticSignalTestRunNumBatchesRun = 0; // Batches already run during this self-test
+    bool hasStartedDiagnosticTest = false; // Whether a self-test has ever run; never reset to false
 };
 
 
