@@ -102,16 +102,16 @@ public:
     [[nodiscard]] std::optional<uint16_t> getBatchTime() const noexcept;
 
     /**
-     * @return Misreads from the last finished DIAGNOSTIC_SIGNAL_TEST_RUN run.
+     * @return Misreads from the last finished DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST run.
      * std::nullopt if uninitialized, no self-test has ever run, or the current run isn't finished
      */
-    [[nodiscard]] std::optional<uint16_t> getLastDiagnosticRunSignalErrorCount() const noexcept;
+    [[nodiscard]] std::optional<uint16_t> getLastDiagnosticSignalNoiseSelfTestErrorCount() const noexcept;
 
     /**
-     * @return Whether this module finished an ongoing DIAGNOSTIC_SIGNAL_TEST_RUN.
+     * @return Whether this module finished an ongoing DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST.
      * std::nullopt if uninitialized or no self-test has ever run
      */
-    [[nodiscard]] std::optional<bool> isDiagnosticSignalTestRunFinished() const noexcept;
+    [[nodiscard]] std::optional<bool> isDiagnosticSignalNoiseSelfTestFinished() const noexcept;
 
 private:
     /**
@@ -135,9 +135,9 @@ private:
     void onStateAlarm() noexcept;
 
     /**
-     * Gets called once after state engine switches to DIAGNOSTIC_SIGNAL_TEST_RUN
+     * Gets called once after state engine switches to DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST
      */
-    void onStateDiagnosticSignalTestRun() noexcept;
+    void onStateDiagnosticSignalNoiseSelfTest() noexcept;
 
     /**
      * Gets called once after state engine switches to DISARMED
@@ -165,9 +165,9 @@ private:
     void updateStateAlarm() noexcept;
 
     /**
-     * Gets called by update during state DIAGNOSTIC_SIGNAL_TEST_RUN
+     * Gets called by update during state DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST
      */
-    void updateStateDiagnosticSignalTestRun() noexcept;
+    void updateStateDiagnosticSignalNoiseSelfTest() noexcept;
 
     /**
       * Gets called by update during state DISARMED
@@ -211,9 +211,9 @@ private:
     time_t pulseTimer;
     PulseRingBuffer pulseHistory;
     uint16_t laserPulseFrequency = 0;
-    uint16_t diagnosticSignalTestRunNumMisreads = 0; // Cumulative misreads during this self-test
-    uint8_t diagnosticSignalTestRunNumBatchesRun = 0; // Batches already run during this self-test
-    bool hasStartedDiagnosticTest = false; // Whether a self-test has ever run; never reset to false
+    uint16_t diagnosticSignalNoiseSelfTestNumMisreads = 0; // Cumulative misreads during this self-test
+    uint8_t diagnosticSignalNoiseSelfTestNumBatchesRun = 0; // Batches already run during this self-test
+    bool hasStartedDiagnosticSignalNoiseSelfTest = false; // Whether a self-test has ever run; never reset to false
 };
 
 

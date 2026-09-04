@@ -110,8 +110,8 @@ void GateModule::fixedUpdate() noexcept {
         case STATE::ALARM:
             updateStateAlarm();
             break;
-        case STATE::DIAGNOSTIC_SIGNAL_TEST_RUN:
-            updateStateDiagnosticSignalTestRun();
+        case STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST:
+            updateStateDiagnosticSignalNoiseSelfTest();
             break;
         case STATE::DISARMED:
             updateStateDisarmed();
@@ -138,8 +138,8 @@ void GateModule::onStateChange() noexcept {
         case STATE::ALARM:
             onStateAlarm();
             break;
-        case STATE::DIAGNOSTIC_SIGNAL_TEST_RUN:
-            onStateDiagnosticSignalTestRun();
+        case STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST:
+            onStateDiagnosticSignalNoiseSelfTest();
             break;
         case STATE::DISARMED:
             onStateDisarmed();
@@ -282,24 +282,24 @@ void GateModule::updateStateAlarm() noexcept {
 }
 
 /**
- * When initiating a test run to evaluate channel noise, first reset the misread counter.
+ * When initiating a self-test to evaluate channel noise, first reset the misread counter.
  * turn laser and status led off.
  */
-void GateModule::onStateDiagnosticSignalTestRun() noexcept {
+void GateModule::onStateDiagnosticSignalNoiseSelfTest() noexcept {
     if (!isInitialized) return;
 
     if (!laserDiode.turnOff()) {
-        stateMachine.setState(STATE::FAULT, "GateModule::onStateDiagnosticSignalTestRun: failed to turn off laser diode");
+        stateMachine.setState(STATE::FAULT, "GateModule::onStateDiagnosticSignalNoiseSelfTest: failed to turn off laser diode");
     }
 
     // Turn the status led off, if it is configured
     if (statusLed.isConfigured() && !statusLed.turnOff()) {
-        ESP_LOGW(LOG_TAG, "GateModule::onStateDiagnosticSignalTestRun: failed to turn status led off during onStateAlarm");
+        ESP_LOGW(LOG_TAG, "GateModule::onStateDiagnosticSignalNoiseSelfTest: failed to turn status led off during onStateDiagnosticSignalNoiseSelfTest");
     }
 
-    diagnosticSignalTestRunNumMisreads = 0;
-    diagnosticSignalTestRunNumBatchesRun = 0;
-    hasStartedDiagnosticTest = true;
+    diagnosticSignalNoiseSelfTestNumMisreads = 0;
+    diagnosticSignalNoiseSelfTestNumBatchesRun = 0;
+    hasStartedDiagnosticSignalNoiseSelfTest = true;
 }
 
 /**
@@ -307,11 +307,11 @@ void GateModule::onStateDiagnosticSignalTestRun() noexcept {
  * After each batch increment failure count.
  * After reaching the final batch, stop.
  */
-void GateModule::updateStateDiagnosticSignalTestRun() noexcept {
+void GateModule::updateStateDiagnosticSignalNoiseSelfTest() noexcept {
     if (!isInitialized) return;
 
     // Do nothing if we're done
-    if (diagnosticSignalTestRunNumBatchesRun >= DIAGNOSTIC_SIGNAL_TEST_NUM_BATCHES)
+    if (diagnosticSignalNoiseSelfTestNumBatchesRun >= DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST_NUM_BATCHES)
         return;
 
     // Run a batch worth of pulses at the current frequency
@@ -323,21 +323,21 @@ void GateModule::updateStateDiagnosticSignalTestRun() noexcept {
         // Is the batch finished?
         if (pulseHistory.isSaturated()) {
             // Store misreads
-            diagnosticSignalTestRunNumMisreads += pulseHistory.getFailureCount();
+            diagnosticSignalNoiseSelfTestNumMisreads += pulseHistory.getFailureCount();
 
             // Reset the current ring buffer
             pulseHistory.reset();
 
             // Have we finished all batches?
-            if (++diagnosticSignalTestRunNumBatchesRun >= DIAGNOSTIC_SIGNAL_TEST_NUM_BATCHES) {
+            if (++diagnosticSignalNoiseSelfTestNumBatchesRun >= DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST_NUM_BATCHES) {
                 // Turn laser off and status led on
                 if (!laserDiode.turnOff()) {
-                    stateMachine.setState(STATE::FAULT, "GateModule::updateStateDiagnosticSignalTestRun: failed to turn off laser diode after finishing");
+                    stateMachine.setState(STATE::FAULT, "GateModule::updateStateDiagnosticSignalNoiseSelfTest: failed to turn off laser diode after finishing");
                 }
 
                 // Turn the status led off, if it is configured
                 if (statusLed.isConfigured() && !statusLed.turnOn()) {
-                    ESP_LOGW(LOG_TAG, "GateModule::updateStateDiagnosticSignalTestRun: failed to turn status led on after finishing");
+                    ESP_LOGW(LOG_TAG, "GateModule::updateStateDiagnosticSignalNoiseSelfTest: failed to turn status led on after finishing");
                 }
             }
         }
@@ -467,15 +467,15 @@ std::optional<uint16_t> GateModule::getBatchTime() const noexcept {
     return PulseRingBuffer::getBufferSize() * laserPulseFrequency;
 }
 
-std::optional<uint16_t> GateModule::getLastDiagnosticRunSignalErrorCount() const noexcept {
+std::optional<uint16_t> GateModule::getLastDiagnosticSignalNoiseSelfTestErrorCount() const noexcept {
     if (!isInitialized) return std::nullopt;
-    if (!isDiagnosticSignalTestRunFinished().value_or(false)) return std::nullopt;
-    return diagnosticSignalTestRunNumMisreads;
+    if (!isDiagnosticSignalNoiseSelfTestFinished().value_or(false)) return std::nullopt;
+    return diagnosticSignalNoiseSelfTestNumMisreads;
 }
 
-std::optional<bool> GateModule::isDiagnosticSignalTestRunFinished() const noexcept {
+std::optional<bool> GateModule::isDiagnosticSignalNoiseSelfTestFinished() const noexcept {
     if (!isInitialized) return std::nullopt;
-    if (!hasStartedDiagnosticTest) return std::nullopt;
+    if (!hasStartedDiagnosticSignalNoiseSelfTest) return std::nullopt;
 
-    return diagnosticSignalTestRunNumBatchesRun >= DIAGNOSTIC_SIGNAL_TEST_NUM_BATCHES;
+    return diagnosticSignalNoiseSelfTestNumBatchesRun >= DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST_NUM_BATCHES;
 }
