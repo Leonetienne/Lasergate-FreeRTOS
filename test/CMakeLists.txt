@@ -36,6 +36,7 @@ add_executable(lasergate_tests
         LaserPulseFreqCalibration.cpp
         Gate.cpp
         GateCalibration.cpp
+        GateDiagnosticSignalNoiseSelfTest.cpp
         PulseRingBuffer.cpp
         LdrPhysicsSim.cpp
 

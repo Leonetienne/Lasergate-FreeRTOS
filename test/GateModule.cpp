@@ -705,6 +705,50 @@ TEST_CASE("GateModule: getBatchTime", "[GateModule]") {
     }
 }
 
+TEST_CASE("GateModule: getLastDiagnosticSignalNoiseSelfTestErrorCount", "[GateModule]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
+    StateMachine stateMachine{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("test"));
+    SettingsManager settings(nvs);
+
+    constexpr gpio_num_t laserPin = GPIO_NUM_16;
+    constexpr gpio_num_t ledPin = GPIO_NUM_17;
+    constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
+
+    SECTION("nullopt before the module is initialized") {
+        GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
+        REQUIRE_FALSE(module.getLastDiagnosticSignalNoiseSelfTestErrorCount().has_value());
+        REQUIRE_FALSE(module.isDiagnosticSignalNoiseSelfTestFinished().has_value());
+    }
+
+    SECTION("nullopt once initialized, before any self-test has occurred") {
+        GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
+        REQUIRE(module.initialize());
+        REQUIRE_FALSE(module.getLastDiagnosticSignalNoiseSelfTestErrorCount().has_value());
+        REQUIRE_FALSE(module.isDiagnosticSignalNoiseSelfTestFinished().has_value());
+    }
+
+    SECTION("nullopt after running through unrelated states, having never entered DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST") {
+        GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
+        REQUIRE(module.initialize());
+
+        stateMachine.setState(STATE::DISARMED);
+        module.onStateChange();
+        stateMachine.setState(STATE::OBSERVING);
+        module.onStateChange();
+        stateMachine.setState(STATE::DISARMED);
+        module.onStateChange();
+
+        REQUIRE_FALSE(module.isDiagnosticSignalNoiseSelfTestFinished().has_value());
+        REQUIRE_FALSE(module.getLastDiagnosticSignalNoiseSelfTestErrorCount().has_value());
+    }
+}
+
 TEST_CASE("GateModule: isPulseBatchAcceptable", "[GateModule]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
@@ -788,5 +832,222 @@ TEST_CASE("GateModule: isPulseBatchAcceptable", "[GateModule]") {
         }
 
         REQUIRE(module.isPulseBatchAcceptable() == true);
+    }
+}
+
+TEST_CASE("GateModule: DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST behaviour", "[GateModule]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    AdcOneshotStub adcStub(ADC_UNIT_1);
+    REQUIRE(adcStub.initialize() == ESP_OK);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
+    StateMachine stateMachine{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("test"));
+    SettingsManager settings(nvs);
+
+    constexpr gpio_num_t laserPin = GPIO_NUM_16;
+    constexpr gpio_num_t ledPin = GPIO_NUM_17;
+    constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
+    constexpr adc_channel_t ldrChannel = ADC_CHANNEL_6;
+
+    GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
+    REQUIRE(module.initialize());
+    const uint16_t threshold = module.getLdrThreshold();
+
+    randomStub.test_setSeed(1234);
+
+    constexpr auto bufferSize = PulseRingBuffer::getBufferSize();
+
+    // DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST is only reachable from DISARMED
+    stateMachine.setState(STATE::DISARMED);
+    module.onStateChange();
+    REQUIRE(gpioStub.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+    SECTION("is not finished, and reports no result yet, right after entry") {
+        stateMachine.setState(STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST);
+        module.onStateChange();
+
+        REQUIRE(module.isDiagnosticSignalNoiseSelfTestFinished() == false);
+        REQUIRE_FALSE(module.getLastDiagnosticSignalNoiseSelfTestErrorCount().has_value());
+    }
+
+    SECTION("is not finished, and reports no result yet, mid-run") {
+        stateMachine.setState(STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST);
+        module.onStateChange();
+
+        tickMisreadPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+        for (std::size_t i = 0; i < bufferSize - 1; ++i) {
+            tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+        }
+
+        REQUIRE(module.isDiagnosticSignalNoiseSelfTestFinished() == false);
+        REQUIRE_FALSE(module.getLastDiagnosticSignalNoiseSelfTestErrorCount().has_value());
+        // GateModule itself never moves the state machine; that's Gate's job
+        REQUIRE(stateMachine.getState() == STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST);
+    }
+
+    SECTION("finishes after exactly DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST_NUM_BATCHES clean batches, reporting zero misreads") {
+        stateMachine.setState(STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST);
+        module.onStateChange();
+
+        for (int batch = 0; batch < DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST_NUM_BATCHES; ++batch) {
+            for (std::size_t i = 0; i < bufferSize; ++i) {
+                tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+            }
+        }
+
+        REQUIRE(module.isDiagnosticSignalNoiseSelfTestFinished() == true);
+        REQUIRE(module.getLastDiagnosticSignalNoiseSelfTestErrorCount() == 0);
+        // GateModule itself never moves the state machine; that's Gate's job
+        REQUIRE(stateMachine.getState() == STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST);
+    }
+
+    SECTION("accumulates misreads from every batch into the final result") {
+        stateMachine.setState(STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST);
+        module.onStateChange();
+
+        // first batch: one misread
+        tickMisreadPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+        for (std::size_t i = 0; i < bufferSize - 1; ++i) {
+            tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+        }
+
+        // second batch: two misreads
+        tickMisreadPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+        tickMisreadPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+        for (std::size_t i = 0; i < bufferSize - 2; ++i) {
+            tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+        }
+
+        // remaining batches: clean
+        for (int batch = 0; batch < DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST_NUM_BATCHES - 2; ++batch) {
+            for (std::size_t i = 0; i < bufferSize; ++i) {
+                tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+            }
+        }
+
+        REQUIRE(module.isDiagnosticSignalNoiseSelfTestFinished() == true);
+        REQUIRE(module.getLastDiagnosticSignalNoiseSelfTestErrorCount() == 3);
+    }
+
+    SECTION("isDiagnosticSignalNoiseSelfTestFinished flips from false to true exactly at the configured batch count") {
+        stateMachine.setState(STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST);
+        module.onStateChange();
+
+        // one batch short of the configured count: still running
+        for (int batch = 0; batch < DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST_NUM_BATCHES - 1; ++batch) {
+            for (std::size_t i = 0; i < bufferSize; ++i) {
+                tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+            }
+        }
+        REQUIRE(module.isDiagnosticSignalNoiseSelfTestFinished() == false);
+
+        // the final batch tips it over to finished
+        for (std::size_t i = 0; i < bufferSize; ++i) {
+            tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+        }
+        REQUIRE(module.isDiagnosticSignalNoiseSelfTestFinished() == true);
+    }
+
+    SECTION("stops pulsing once finished, ignoring further ticks") {
+        stateMachine.setState(STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST);
+        module.onStateChange();
+
+        for (int batch = 0; batch < DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST_NUM_BATCHES; ++batch) {
+            for (std::size_t i = 0; i < bufferSize; ++i) {
+                tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+            }
+        }
+        REQUIRE(module.getLastDiagnosticSignalNoiseSelfTestErrorCount() == 0);
+
+        // further ticks, even misreads, must not change the already-finished result
+        for (std::size_t i = 0; i < bufferSize * 2; ++i) {
+            tickMisreadPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+        }
+
+        REQUIRE(module.getLastDiagnosticSignalNoiseSelfTestErrorCount() == 0);
+    }
+}
+
+TEST_CASE("GateModule: DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST init and on-finish laser/status led behaviour", "[GateModule]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    AdcOneshotStub adcStub(ADC_UNIT_1);
+    REQUIRE(adcStub.initialize() == ESP_OK);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
+    StateMachine stateMachine{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("test"));
+    SettingsManager settings(nvs);
+
+    constexpr gpio_num_t laserPin = GPIO_NUM_16;
+    constexpr gpio_num_t ldrPin = GPIO_NUM_7; // -> ADC_UNIT_1 / ADC_CHANNEL_6 on esp32-s3
+    constexpr adc_channel_t ldrChannel = ADC_CHANNEL_6;
+    constexpr auto bufferSize = PulseRingBuffer::getBufferSize();
+
+    randomStub.test_setSeed(1234);
+
+    SECTION("status led is optional: laser still turns off on entry and stays off once finished") {
+        // no led pin passed, stays GPIO_NUM_NC / unconfigured
+        GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, GPIO_NUM_NC, ldrPin);
+        REQUIRE(module.initialize());
+        const uint16_t threshold = module.getLdrThreshold();
+
+        // DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST is only reachable from DISARMED
+        stateMachine.setState(STATE::DISARMED);
+        module.onStateChange();
+        stateMachine.setState(STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST);
+        module.onStateChange();
+
+        // init behaviour: laser off, no status led to touch or fault on
+        REQUIRE(gpioStub.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_NC));
+
+        for (int batch = 0; batch < DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST_NUM_BATCHES; ++batch) {
+            for (std::size_t i = 0; i < bufferSize; ++i) {
+                tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+            }
+        }
+
+        // on-finish behaviour: laser stays off, still nothing bound to the NC status led, no fault
+        REQUIRE(module.isDiagnosticSignalNoiseSelfTestFinished() == true);
+        REQUIRE(module.getLastDiagnosticSignalNoiseSelfTestErrorCount() == 0);
+        REQUIRE(gpioStub.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        REQUIRE(stateMachine.getState() != STATE::FAULT);
+        REQUIRE_FALSE(pr.isPinBound(GPIO_NUM_NC));
+    }
+
+    SECTION("with a configured status led: turns off on entry and back on once finished") {
+        constexpr gpio_num_t ledPin = GPIO_NUM_17;
+        GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, laserPin, ledPin, ldrPin);
+        REQUIRE(module.initialize());
+        const uint16_t threshold = module.getLdrThreshold();
+
+        // DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST is only reachable from DISARMED; DISARMED turns the led on,
+        // giving entry into the self-test something to actually turn off
+        stateMachine.setState(STATE::DISARMED);
+        module.onStateChange();
+        REQUIRE(gpioStub.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
+
+        stateMachine.setState(STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST);
+        module.onStateChange();
+
+        // init behaviour: laser and status led both off
+        REQUIRE(gpioStub.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        REQUIRE(gpioStub.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+
+        for (int batch = 0; batch < DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST_NUM_BATCHES; ++batch) {
+            for (std::size_t i = 0; i < bufferSize; ++i) {
+                tickCleanPulse(module, gpioStub, adcStub, timeStub, laserPin, ldrChannel, threshold);
+            }
+        }
+
+        // on-finish behaviour: laser stays off, status led comes back on
+        REQUIRE(module.isDiagnosticSignalNoiseSelfTestFinished() == true);
+        REQUIRE(gpioStub.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::LOW));
+        REQUIRE(gpioStub.test_gpioGetLevel(ledPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 }
