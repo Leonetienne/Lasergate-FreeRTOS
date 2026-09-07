@@ -4,6 +4,8 @@
 #include "LdrThreshCalibConfig.h"
 #include "compat/esp_log_macros.h"
 
+static const char* LOG_TAG = "GateModule";
+
 GateModule::GateModule(
     StateMachine& stateMachine,
     SettingsManager& settings,
