@@ -7,6 +7,7 @@
 #include "platform/MqttEsp32.h"
 #include "platform/EthernetManagerEsp32.h"
 #include "platform/HttpServerEsp32.h"
+#include "ApiController.h"
 #include "GpioPinRegister.h"
 #include "StateMachine.h"
 #include "SettingsManager.h"
@@ -29,9 +30,11 @@ System& getSystem() noexcept {
     static MqttEsp32 mqtt(mqttLedPin, gpio, gpioPinRegister, time);
     static EthernetManagerEsp32 ethernetMan(ethernetLedPin, gpio, gpioPinRegister, time);
     static StateMachine stateMachine;
-    static HttpServerEsp32 httpServer(ethernetMan, mqtt, settings, stateMachine);
+    static ApiController apiController;
+    static HttpServerEsp32 httpServer(ethernetMan, mqtt, settings, apiController);
     static System system(
-        stateMachine, gpioPinRegister, gpio, adcOneshot, random, time, nvs, settings, mqtt, ethernetMan, httpServer
+        stateMachine, gpioPinRegister, gpio, adcOneshot, random, time, nvs, settings, mqtt, ethernetMan, httpServer,
+        apiController
     );
     return system;
 }

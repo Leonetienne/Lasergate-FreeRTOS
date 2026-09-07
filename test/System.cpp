@@ -101,3 +101,37 @@ TEST_CASE("System: update polls the mqtt activity led pulse", "[System]") {
         REQUIRE(stub.gpio.test_gpioGetLevel(GPIO_NUM_3) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
     }
 }
+
+TEST_CASE("System: update applies a pending apiController state request", "[System]") {
+    SystemStub stub;
+    System& system = stub.buildSystem();
+    system.initialize();
+
+    SECTION("does nothing when no state was requested") {
+        system.update();
+
+        REQUIRE(stub.stateMachine.getState() == STATE::INITIALIZING);
+    }
+
+    SECTION("applies a requested state on the next update, not before") {
+        stub.apiController.requestSystemState(STATE::SHUTTING_DOWN);
+        REQUIRE(stub.stateMachine.getState() == STATE::INITIALIZING);
+
+        system.update();
+
+        REQUIRE(stub.stateMachine.getState() == STATE::SHUTTING_DOWN);
+    }
+
+    SECTION("only applies a requested state once") {
+        stub.apiController.requestSystemState(STATE::SHUTTING_DOWN);
+        system.update();
+        REQUIRE(stub.stateMachine.getState() == STATE::SHUTTING_DOWN);
+
+        // SHUTTING_DOWN -> FAULT would be a fresh, valid transition, so a second
+        // application of the stale request would be observable here.
+        stub.stateMachine.setState(STATE::FAULT, "unrelated fault");
+        system.update();
+
+        REQUIRE(stub.stateMachine.getState() == STATE::FAULT);
+    }
+}

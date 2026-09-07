@@ -22,7 +22,8 @@ System::System(
     SettingsManager& settings,
     IMqtt& i_mqtt,
     IEthernetManager& i_ethernetMan,
-    IHttpServer& i_httpServer
+    IHttpServer& i_httpServer,
+    ApiController& apiController
 ) noexcept :
     gate(stateMachine, settings, gpioPinRegister, i_gpio, i_adcOneshot, i_random, i_time),
     stateMachine(stateMachine),
@@ -35,7 +36,8 @@ System::System(
     settings(settings),
     i_mqtt(i_mqtt),
     i_ethernetMan(i_ethernetMan),
-    i_httpServer(i_httpServer)
+    i_httpServer(i_httpServer),
+    apiController(apiController)
 { }
 
 System::~System() noexcept {
@@ -159,6 +161,10 @@ void System::beforeShutdown() noexcept {
 }
 
 void System::update() noexcept {
+    if (const auto desired = apiController.consumeDesiredSystemState(); desired.has_value()) {
+        stateMachine.setState(*desired);
+    }
+
     i_mqtt.updateActivityLedPulse();
     gate.fixedUpdate();
 }

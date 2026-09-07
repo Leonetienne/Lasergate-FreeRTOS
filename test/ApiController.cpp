@@ -5,7 +5,6 @@
 #include "test/stubs/NVSStub.h"
 #include "test/stubs/MqttStub.h"
 #include "test/stubs/EthernetManagerStub.h"
-#include "StateMachine.h"
 #include "SettingsManager.h"
 #include "ApiController.h"
 
@@ -47,7 +46,7 @@ TEST_CASE("ApiController: settings report/form", "[ApiController]") {
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
     SettingsManager settings(nvs);
-    StateMachine stateMachine;
+    ApiController apiController;
 
     SECTION("buildSettingsReport reports blank fields when nothing was stored") {
         REQUIRE(ApiController::buildSettingsReport(settings) ==
@@ -71,7 +70,7 @@ TEST_CASE("ApiController: settings report/form", "[ApiController]") {
             {"mqtt_pass", "mqttpass"},
             {"node_id", "lasergate_node"},
         };
-        REQUIRE(ApiController::applySettingsForm(settings, stateMachine, form));
+        REQUIRE(apiController.applySettingsForm(settings, form));
         REQUIRE(*settings.retrieveTitle() == "Lasergate");
         REQUIRE(settings.retrieveMqttBrokerConfig()->uri == "mqtt://broker:1883");
         REQUIRE(*settings.retrieveMqttNodeId() == "lasergate_node");
@@ -79,19 +78,19 @@ TEST_CASE("ApiController: settings report/form", "[ApiController]") {
 
     SECTION("applySettingsForm requests a shutdown on success") {
         const std::unordered_map<std::string, std::string> form = {{"device_name", "Lasergate"}};
-        REQUIRE(ApiController::applySettingsForm(settings, stateMachine, form));
-        REQUIRE(stateMachine.getState() == STATE::SHUTTING_DOWN);
+        REQUIRE(apiController.applySettingsForm(settings, form));
+        REQUIRE(apiController.consumeDesiredSystemState() == STATE::SHUTTING_DOWN);
     }
 
     SECTION("applySettingsForm fails when device_name is missing") {
         const std::unordered_map<std::string, std::string> form = {{"mqtt_uri", "mqtt://broker:1883"}};
-        REQUIRE_FALSE(ApiController::applySettingsForm(settings, stateMachine, form));
+        REQUIRE_FALSE(apiController.applySettingsForm(settings, form));
     }
 
     SECTION("applySettingsForm does not request a shutdown when it fails") {
         const std::unordered_map<std::string, std::string> form = {};
-        ApiController::applySettingsForm(settings, stateMachine, form);
-        REQUIRE(stateMachine.getState() == STATE::INITIALIZING);
+        apiController.applySettingsForm(settings, form);
+        REQUIRE_FALSE(apiController.consumeDesiredSystemState().has_value());
     }
 
     SECTION("a blank mqtt password keeps the previously stored one") {
@@ -100,15 +99,34 @@ TEST_CASE("ApiController: settings report/form", "[ApiController]") {
             {"mqtt_uri", "mqtt://broker:1883"},
             {"mqtt_pass", "hunter2"},
         };
-        REQUIRE(ApiController::applySettingsForm(settings, stateMachine, initial));
+        REQUIRE(apiController.applySettingsForm(settings, initial));
 
         const std::unordered_map<std::string, std::string> update = {
             {"device_name", "Lasergate"},
             {"mqtt_uri", "mqtt://broker:1883"},
         };
-        REQUIRE(ApiController::applySettingsForm(settings, stateMachine, update));
+        REQUIRE(apiController.applySettingsForm(settings, update));
 
         REQUIRE(settings.retrieveMqttBrokerConfig()->password == "hunter2");
+    }
+}
+
+TEST_CASE("ApiController: desired system state", "[ApiController]") {
+    ApiController apiController;
+
+    SECTION("consumeDesiredSystemState returns nullopt when nothing was requested") {
+        REQUIRE_FALSE(apiController.consumeDesiredSystemState().has_value());
+    }
+
+    SECTION("consumeDesiredSystemState returns the requested state") {
+        apiController.requestSystemState(STATE::SHUTTING_DOWN);
+        REQUIRE(apiController.consumeDesiredSystemState() == STATE::SHUTTING_DOWN);
+    }
+
+    SECTION("consumeDesiredSystemState is single-shot") {
+        apiController.requestSystemState(STATE::SHUTTING_DOWN);
+        REQUIRE(apiController.consumeDesiredSystemState() == STATE::SHUTTING_DOWN);
+        REQUIRE_FALSE(apiController.consumeDesiredSystemState().has_value());
     }
 }
 
@@ -116,7 +134,7 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
     NVSStub nvs{};
     REQUIRE(nvs.begin("system"));
     SettingsManager settings(nvs);
-    StateMachine stateMachine;
+    ApiController apiController;
 
     SECTION("buildAdvancedSettingsReport reports blank fields when nothing was stored") {
         REQUIRE(ApiController::buildAdvancedSettingsReport(settings) ==
@@ -138,7 +156,7 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
             {"mqtt_led_gpio", "3"},
             {"enable_conn_leds", "1"},
         };
-        REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
+        REQUIRE(apiController.applyAdvancedSettingsForm(settings, form));
         REQUIRE(*settings.retrieveEthernetLedGpioPin() == GPIO_NUM_2);
         REQUIRE(*settings.retrieveMqttLedGpioPin() == GPIO_NUM_3);
         REQUIRE(*settings.retrieveConnLedsEnabled());
@@ -146,13 +164,13 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
 
     SECTION("applyAdvancedSettingsForm disables the conn leds master switch when its checkbox is absent") {
         const std::unordered_map<std::string, std::string> form = {};
-        REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
+        REQUIRE(apiController.applyAdvancedSettingsForm(settings, form));
         REQUIRE_FALSE(*settings.retrieveConnLedsEnabled());
     }
 
     SECTION("applyAdvancedSettingsForm leaves pins unset for blank gpio fields") {
         const std::unordered_map<std::string, std::string> form = {};
-        REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
+        REQUIRE(apiController.applyAdvancedSettingsForm(settings, form));
         REQUIRE(*settings.retrieveEthernetLedGpioPin() == GPIO_NUM_NC);
         REQUIRE(*settings.retrieveMqttLedGpioPin() == GPIO_NUM_NC);
     }
@@ -161,7 +179,7 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
         const std::unordered_map<std::string, std::string> form = {
             {"ethernet_led_gpio", "48"},
         };
-        REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
+        REQUIRE(apiController.applyAdvancedSettingsForm(settings, form));
         REQUIRE(*settings.retrieveEthernetLedGpioPin() == GPIO_NUM_48);
     }
 
@@ -169,13 +187,13 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
         const std::unordered_map<std::string, std::string> form = {
             {"ethernet_led_gpio", "49"},
         };
-        REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
+        REQUIRE(apiController.applyAdvancedSettingsForm(settings, form));
         REQUIRE(*settings.retrieveEthernetLedGpioPin() == GPIO_NUM_NC);
     }
 
     SECTION("applyAdvancedSettingsForm requests a shutdown on success") {
         const std::unordered_map<std::string, std::string> form = {};
-        REQUIRE(ApiController::applyAdvancedSettingsForm(settings, stateMachine, form));
-        REQUIRE(stateMachine.getState() == STATE::SHUTTING_DOWN);
+        REQUIRE(apiController.applyAdvancedSettingsForm(settings, form));
+        REQUIRE(apiController.consumeDesiredSystemState() == STATE::SHUTTING_DOWN);
     }
 }

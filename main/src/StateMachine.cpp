@@ -14,6 +14,7 @@ namespace {
             case STATE::ALARM: return "ALARM";
             case STATE::FAULT: return "FAULT";
             case STATE::SHUTTING_DOWN: return "SHUTTING_DOWN";
+            case STATE::NONE: return "NONE";
         }
         return "UNKNOWN";
     }
@@ -61,6 +62,9 @@ bool StateMachine::isTransitionAllowed(STATE from, STATE to) noexcept {
 
         case STATE::SHUTTING_DOWN:
             return to == STATE::FAULT;
+
+        case STATE::NONE:
+            return false;
     }
 
     return false;

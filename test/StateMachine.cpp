@@ -153,12 +153,13 @@ TEST_CASE("StateMachine", "[StateMachine]") {
             {S::ALARM, {S::DISARMED, S::OBSERVING, S::FAULT, S::SHUTTING_DOWN}},
             {S::FAULT, {S::SHUTTING_DOWN}},
             {S::SHUTTING_DOWN, {S::FAULT}},
+            {S::NONE, {}}, // NONE is only ever an ApiController-internal sentinel, never a real transition
         };
 
-        constexpr std::array<S, 10> allStates {
+        constexpr std::array<S, 11> allStates {
             S::INITIALIZING, S::USER_ADJUSTING_BEAMS, S::CALIBRATION_LDR_THRESH,
             S::CALIBRATION_MODULATION_FREQUENCY, S::DISARMED, S::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST,
-            S::OBSERVING, S::ALARM, S::FAULT, S::SHUTTING_DOWN
+            S::OBSERVING, S::ALARM, S::FAULT, S::SHUTTING_DOWN, S::NONE
         };
 
         for (const auto from : allStates) {

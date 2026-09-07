@@ -5,15 +5,15 @@
 #include "hal/IHttpServer.h"
 #include "hal/IEthernetManager.h"
 #include "hal/IMqtt.h"
+#include "ApiController.h"
 #include "SettingsManager.h"
-#include "StateMachine.h"
 
 /**
  * Esp32-Implementation of the web ui / api http server.
  */
 class HttpServerEsp32 : public IHttpServer {
 public:
-    HttpServerEsp32(IEthernetManager& i_ethernetMan, IMqtt& i_mqtt, SettingsManager& settings, StateMachine& stateMachine) noexcept;
+    HttpServerEsp32(IEthernetManager& i_ethernetMan, IMqtt& i_mqtt, SettingsManager& settings, ApiController& apiController) noexcept;
     HttpServerEsp32(const HttpServerEsp32&) = delete;
     HttpServerEsp32& operator=(const HttpServerEsp32&) = delete;
     HttpServerEsp32(HttpServerEsp32&&) = delete;
@@ -78,7 +78,7 @@ private:
     IEthernetManager& i_ethernetMan;
     IMqtt& i_mqtt;
     SettingsManager& settings;
-    StateMachine& stateMachine;
+    ApiController& apiController;
 };
 
 #endif //LASERGATE_V2_HTTPSERVERESP32_H

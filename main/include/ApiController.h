@@ -5,6 +5,8 @@
 #include "StateMachine.h"
 #include "hal/IEthernetManager.h"
 #include "hal/IMqtt.h"
+#include <atomic>
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -13,6 +15,11 @@
  */
 class ApiController {
 public:
+    ApiController() noexcept = default;
+    ApiController(const ApiController&) = delete;
+    ApiController(ApiController&&) = delete;
+    ApiController& operator=(const ApiController&) = delete;
+
     /**
      * @param i_ethernetMan
      * @param i_mqtt
@@ -34,13 +41,11 @@ public:
     /**
      * Applies a parsed settings form and requests a shutdown
      * @param settings
-     * @param stateMachine
      * @param form
      * @return Success state
      */
-    [[nodiscard]] static bool applySettingsForm(
+    [[nodiscard]] bool applySettingsForm(
         SettingsManager& settings,
-        StateMachine& stateMachine,
         const std::unordered_map<std::string, std::string>& form
     ) noexcept;
 
@@ -53,15 +58,28 @@ public:
     /**
      * Applies a parsed advanced settings form and requests a shutdown
      * @param settings
-     * @param stateMachine
      * @param form
      * @return Success state
      */
-    [[nodiscard]] static bool applyAdvancedSettingsForm(
+    [[nodiscard]] bool applyAdvancedSettingsForm(
         SettingsManager& settings,
-        StateMachine& stateMachine,
         const std::unordered_map<std::string, std::string>& form
     ) noexcept;
+
+    /**
+     * Requests a system state transition. Only records the request; it is applied
+     * on the main thread by consumeDesiredSystemState().
+     */
+    void requestSystemState(STATE state) noexcept;
+
+    /**
+     * Takes and clears the pending state request, if any.
+     * @return The requested state, or std::nullopt if none is pending
+     */
+    [[nodiscard]] std::optional<STATE> consumeDesiredSystemState() noexcept;
+
+private:
+    std::atomic<STATE> desiredSystemState { STATE::NONE };
 };
 
 #endif //LASERGATE_V2_APICONTROLLER_H

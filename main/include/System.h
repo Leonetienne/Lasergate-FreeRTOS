@@ -5,6 +5,7 @@
 #ifndef LASERGATE_V2_SYSTEM_H
 #define LASERGATE_V2_SYSTEM_H
 
+#include "ApiController.h"
 #include "Gate.h"
 #include "GpioPinRegister.h"
 #include "StateMachine.h"
@@ -35,7 +36,8 @@ public:
         SettingsManager& settings,
         IMqtt& i_mqtt,
         IEthernetManager& i_ethernetMan,
-        IHttpServer& i_httpServer
+        IHttpServer& i_httpServer,
+        ApiController& apiController
     ) noexcept;
     System(const System&) = delete;
     System& operator=(const System&) = delete;
@@ -56,7 +58,8 @@ public:
     bool free() noexcept;
 
     /**
-     * Processes one iteration of runtime work (mqtt activity LED pulse).
+     * Processes one iteration of runtime work: applies any pending state request from
+     * apiController, then runs the mqtt activity LED pulse and gate's fixed update.
      * Called repeatedly by loop().
      */
     void update() noexcept;
@@ -123,6 +126,7 @@ private:
     IMqtt& i_mqtt;
     IEthernetManager& i_ethernetMan;
     IHttpServer& i_httpServer;
+    ApiController& apiController;
 
     std::string lwtTopic;
 };

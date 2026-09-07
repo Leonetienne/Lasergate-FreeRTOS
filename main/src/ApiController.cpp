@@ -131,7 +131,6 @@ std::string ApiController::buildSettingsReport(const SettingsManager& settings) 
 
 bool ApiController::applySettingsForm(
     SettingsManager& settings,
-    StateMachine& stateMachine,
     const std::unordered_map<std::string, std::string>& form
 ) noexcept {
     const auto nameIt = form.find("device_name");
@@ -158,7 +157,7 @@ bool ApiController::applySettingsForm(
         return false;
     }
 
-    stateMachine.setState(STATE::SHUTTING_DOWN);
+    requestSystemState(STATE::SHUTTING_DOWN);
     return true;
 }
 
@@ -182,7 +181,6 @@ std::string ApiController::buildAdvancedSettingsReport(const SettingsManager& se
 
 bool ApiController::applyAdvancedSettingsForm(
     SettingsManager& settings,
-    StateMachine& stateMachine,
     const std::unordered_map<std::string, std::string>& form
 ) noexcept {
     const gpio_num_t ethernetLedPin = parseGpioField(form, "ethernet_led_gpio");
@@ -195,6 +193,18 @@ bool ApiController::applyAdvancedSettingsForm(
         return false;
     }
 
-    stateMachine.setState(STATE::SHUTTING_DOWN);
+    requestSystemState(STATE::SHUTTING_DOWN);
     return true;
+}
+
+void ApiController::requestSystemState(STATE state) noexcept {
+    desiredSystemState.store(state);
+}
+
+std::optional<STATE> ApiController::consumeDesiredSystemState() noexcept {
+    const STATE state = desiredSystemState.exchange(STATE::NONE);
+    if (state == STATE::NONE) {
+        return std::nullopt;
+    }
+    return state;
 }

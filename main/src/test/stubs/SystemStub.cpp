@@ -11,7 +11,8 @@ SystemStub::SystemStub(gpio_num_t mqttLedPin, gpio_num_t ethernetLedPin) noexcep
 
 System& SystemStub::buildSystem() noexcept {
     system.emplace(
-        stateMachine, gpioPinRegister, gpio, adcOneshot, random, time, nvs, settings, mqtt, ethernetMan, httpServer
+        stateMachine, gpioPinRegister, gpio, adcOneshot, random, time, nvs, settings, mqtt, ethernetMan, httpServer,
+        apiController
     );
     return *system;
 }

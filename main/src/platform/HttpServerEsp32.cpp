@@ -39,12 +39,12 @@ HttpServerEsp32::HttpServerEsp32(
     IEthernetManager& i_ethernetMan,
     IMqtt& i_mqtt,
     SettingsManager& settings,
-    StateMachine& stateMachine
+    ApiController& apiController
 ) noexcept :
     i_ethernetMan(i_ethernetMan),
     i_mqtt(i_mqtt),
     settings(settings),
-    stateMachine(stateMachine)
+    apiController(apiController)
 { }
 
 HttpServerEsp32::~HttpServerEsp32() noexcept {
@@ -199,7 +199,7 @@ esp_err_t HttpServerEsp32::handleSettingsForm(httpd_req_t* req) noexcept {
 
     const auto form = UrlEncodedForm::parse(body);
     auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
-    if (!ApiController::applySettingsForm(self->settings, self->stateMachine, form)) {
+    if (!self->apiController.applySettingsForm(self->settings, form)) {
         httpd_resp_set_status(req, "400 Bad Request");
         httpd_resp_send(req, nullptr, 0);
         return ESP_FAIL;
@@ -219,7 +219,7 @@ esp_err_t HttpServerEsp32::handleAdvancedSettingsForm(httpd_req_t* req) noexcept
 
     const auto form = UrlEncodedForm::parse(body);
     auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
-    if (!ApiController::applyAdvancedSettingsForm(self->settings, self->stateMachine, form)) {
+    if (!self->apiController.applyAdvancedSettingsForm(self->settings, form)) {
         httpd_resp_set_status(req, "400 Bad Request");
         httpd_resp_send(req, nullptr, 0);
         return ESP_FAIL;

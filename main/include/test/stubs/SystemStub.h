@@ -1,6 +1,7 @@
 #ifndef LASERGATE_V2_SYSTEMSTUB_H
 #define LASERGATE_V2_SYSTEMSTUB_H
 
+#include "ApiController.h"
 #include "GpioPinRegister.h"
 #include "SettingsManager.h"
 #include "StateMachine.h"
@@ -42,6 +43,7 @@ public:
     EthernetManagerStub ethernetMan;
     HttpServerStub httpServer;
     StateMachine stateMachine;
+    ApiController apiController;
 
 private:
     std::optional<System> system;
