@@ -4,6 +4,8 @@
 
 namespace {
 
+constexpr uint16_t MAX_OPEN_SOCKETS = 7; // LWIP_MAX_SOCKETS(10) - 3 reserved internally by httpd
+
 bool readRequestBody(httpd_req_t* req, std::string& outBody) noexcept {
     char buf[512] = {};
     const int contentLength = req->content_len < sizeof(buf) - 1
@@ -60,6 +62,7 @@ bool HttpServerEsp32::begin() noexcept {
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.uri_match_fn = httpd_uri_match_wildcard;
+    config.max_open_sockets = MAX_OPEN_SOCKETS;
 
     if (httpd_start(&server, &config) != ESP_OK) {
         return false;
