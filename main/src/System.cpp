@@ -72,6 +72,8 @@ void System::initialize() noexcept {
     // to begin it before ethernet has actually acquired a link/ip.
     beginMqtt();
 
+    stateMachine.setState(STATE::DISARMED);
+
     isInitialized = true;
 }
 
