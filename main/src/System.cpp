@@ -167,6 +167,10 @@ void System::update() noexcept {
         stateMachine.setState(*desired);
     }
 
+    if (stateMachine.getState() == STATE::SHUTTING_DOWN) {
+        return;
+    }
+
     i_mqtt.updateActivityLedPulse();
     gate.fixedUpdate();
 }

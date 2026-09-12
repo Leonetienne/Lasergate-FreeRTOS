@@ -119,6 +119,8 @@ void GateModule::fixedUpdate() noexcept {
             updateStateDisarmed();
 
         break;
+        case STATE::SHUTTING_DOWN:
+            break;
         default:
             // Shouldn't happen
             stateMachine.setState(STATE::FAULT, "GateModule::fixedUpdate: unhandled state");

@@ -135,3 +135,29 @@ TEST_CASE("System: update applies a pending apiController state request", "[Syst
         REQUIRE(stub.stateMachine.getState() == STATE::FAULT);
     }
 }
+
+TEST_CASE("System: states requested while a gate module is ready", "[System]") {
+    SystemStub stub;
+    REQUIRE(stub.settings.storeGateModuleLaserGpioPin(0, GPIO_NUM_41));
+    REQUIRE(stub.settings.storeGateModuleLdrGpioPin(0, GPIO_NUM_1));
+    System& system = stub.buildSystem();
+    system.initialize();
+    REQUIRE(stub.stateMachine.getState() == STATE::DISARMED);
+
+    SECTION("a shutdown request ends in SHUTTING_DOWN") {
+        stub.apiController.requestSystemState(STATE::SHUTTING_DOWN);
+        system.update();
+        system.update();
+
+        REQUIRE(stub.stateMachine.getState() == STATE::SHUTTING_DOWN);
+    }
+
+    SECTION("a shutdown request from FAULT is honored") {
+        stub.stateMachine.setState(STATE::FAULT, "test fault");
+        stub.apiController.requestSystemState(STATE::SHUTTING_DOWN);
+        system.update();
+        system.update();
+
+        REQUIRE(stub.stateMachine.getState() == STATE::SHUTTING_DOWN);
+    }
+}
