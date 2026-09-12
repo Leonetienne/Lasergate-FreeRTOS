@@ -63,6 +63,7 @@ TEST_CASE("Gate: diagnostic signal noise self-test returns to DISARMED once all 
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     REQUIRE(adcStub.initialize() == ESP_OK);
     RandomStub randomStub{};
     TimeStub timeStub{};
@@ -72,7 +73,7 @@ TEST_CASE("Gate: diagnostic signal noise self-test returns to DISARMED once all 
     StateMachine stateMachine{};
 
     configureTwoModules(settings);
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
     REQUIRE(gate.initialize());
 
     randomStub.test_setSeed(1234);
@@ -109,6 +110,7 @@ TEST_CASE("Gate: diagnostic signal noise self-test concludes immediately with ze
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     RandomStub randomStub{};
     TimeStub timeStub{};
     NVSStub nvs{};
@@ -117,7 +119,7 @@ TEST_CASE("Gate: diagnostic signal noise self-test concludes immediately with ze
     StateMachine stateMachine{};
 
     // nothing stored in settings: every module resolves to GPIO_NUM_NC and is unconfigured
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
     REQUIRE(gate.initialize());
 
     enterDiagnosticSignalNoiseSelfTest(stateMachine, gate);
@@ -130,6 +132,7 @@ TEST_CASE("Gate: diagnostic signal noise self-test waits for every configured mo
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     REQUIRE(adcStub.initialize() == ESP_OK);
     RandomStub randomStub{};
     TimeStub timeStub{};
@@ -145,7 +148,7 @@ TEST_CASE("Gate: diagnostic signal noise self-test waits for every configured mo
     // must be stored before Gate/GateModule::initialize() reads it below.
     REQUIRE(settings.storeGateModuleLaserPulseFrequency(1, 1600));
 
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
     REQUIRE(gate.initialize());
 
     randomStub.test_setSeed(1234);

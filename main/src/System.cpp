@@ -16,6 +16,7 @@ System::System(
     GpioPinRegister& gpioPinRegister,
     IGpio& i_gpio,
     IAdcOneshot& i_adcOneshot,
+    IAdcOneshot& i_adcOneshot2,
     IRandom& i_random,
     ITime& i_time,
     INVS& i_nvs,
@@ -25,11 +26,12 @@ System::System(
     IHttpServer& i_httpServer,
     ApiController& apiController
 ) noexcept :
-    gate(stateMachine, settings, gpioPinRegister, i_gpio, i_adcOneshot, i_random, i_time),
+    gate(stateMachine, settings, gpioPinRegister, i_gpio, i_adcOneshot, i_adcOneshot2, i_random, i_time),
     stateMachine(stateMachine),
     gpioPinRegister(gpioPinRegister),
     i_gpio(i_gpio),
     i_adcOneshot(i_adcOneshot),
+    i_adcOneshot2(i_adcOneshot2),
     i_random(i_random),
     i_time(i_time),
     i_nvs(i_nvs),
@@ -57,6 +59,9 @@ void System::initialize() noexcept {
 
     if (i_adcOneshot.initialize() != ESP_OK) {
         stateMachine.setState(STATE::FAULT, "System::initialize: adcOneshot.initialize() failed");
+    }
+    if (i_adcOneshot2.initialize() != ESP_OK) {
+        stateMachine.setState(STATE::FAULT, "System::initialize: adcOneshot2.initialize() failed");
     }
     if (!gate.initialize()) {
         stateMachine.setState(STATE::FAULT, "System::initialize: gate.initialize() failed");

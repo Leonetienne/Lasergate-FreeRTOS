@@ -83,6 +83,7 @@ TEST_CASE("Gate: LDR calibration waits for all configured modules before conclud
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     REQUIRE(adcStub.initialize() == ESP_OK);
     RandomStub randomStub{};
     TimeStub timeStub{};
@@ -92,7 +93,7 @@ TEST_CASE("Gate: LDR calibration waits for all configured modules before conclud
     StateMachine stateMachine{};
 
     configureTwoModules(settings);
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
     REQUIRE(gate.initialize());
 
     randomStub.test_setSeed(1234);
@@ -135,6 +136,7 @@ TEST_CASE("Gate: LDR calibration faults immediately on the first failure, withou
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     REQUIRE(adcStub.initialize() == ESP_OK);
     RandomStub randomStub{};
     TimeStub timeStub{};
@@ -144,7 +146,7 @@ TEST_CASE("Gate: LDR calibration faults immediately on the first failure, withou
     StateMachine stateMachine{};
 
     configureTwoModules(settings);
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
     REQUIRE(gate.initialize());
 
     randomStub.test_setSeed(1234);
@@ -173,6 +175,7 @@ TEST_CASE("Gate: LDR calibration concludes immediately with zero configured modu
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     RandomStub randomStub{};
     TimeStub timeStub{};
     NVSStub nvs{};
@@ -181,7 +184,7 @@ TEST_CASE("Gate: LDR calibration concludes immediately with zero configured modu
     StateMachine stateMachine{};
 
     // nothing stored in settings: every module resolves to GPIO_NUM_NC and is unconfigured
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
     REQUIRE(gate.initialize());
 
     enterCalibration(stateMachine, gate, STATE::CALIBRATION_LDR_THRESH);
@@ -194,6 +197,7 @@ TEST_CASE("Gate: laser pulse frequency calibration faults immediately on the fir
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     REQUIRE(adcStub.initialize() == ESP_OK);
     RandomStub randomStub{};
     TimeStub timeStub{};
@@ -203,7 +207,7 @@ TEST_CASE("Gate: laser pulse frequency calibration faults immediately on the fir
     StateMachine stateMachine{};
 
     configureTwoModules(settings);
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
     REQUIRE(gate.initialize());
 
     randomStub.test_setSeed(1234);
@@ -233,6 +237,7 @@ TEST_CASE("Gate: laser pulse frequency calibration concludes immediately with ze
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     RandomStub randomStub{};
     TimeStub timeStub{};
     NVSStub nvs{};
@@ -241,7 +246,7 @@ TEST_CASE("Gate: laser pulse frequency calibration concludes immediately with ze
     StateMachine stateMachine{};
 
     // nothing stored in settings: every module resolves to GPIO_NUM_NC and is unconfigured
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
     REQUIRE(gate.initialize());
 
     enterCalibration(stateMachine, gate, STATE::CALIBRATION_MODULATION_FREQUENCY);

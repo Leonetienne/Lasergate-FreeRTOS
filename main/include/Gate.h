@@ -15,7 +15,8 @@
 
 /**
  * A gate aggregates four gate modules into a single gate. Reads each module's
- * gpio pins from settings at construction time.
+ * gpio pins from settings at construction time, routing each ldr to the adc
+ * unit (i_adcOneshot1/2) its pin belongs to.
  * The gate raises alarm state if any of the following conditions is met:
  * - Less than or equal n; n>=1, gatemodules are interrupted for more than x ms
  * - More than n gatemodules are interrupted for any amount of time
@@ -29,7 +30,8 @@ public:
         SettingsManager& settings,
         GpioPinRegister& gpioPinRegister,
         IGpio& i_gpio,
-        IAdcOneshot& i_adcOneshot,
+        IAdcOneshot& i_adcOneshot1,
+        IAdcOneshot& i_adcOneshot2,
         IRandom& i_random,
         ITime& i_time
     ) noexcept;

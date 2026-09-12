@@ -15,6 +15,7 @@
 System& getSystem() noexcept {
     static GpioEsp32 gpio;
     static AdcOneshot adcOneshot(ADC_UNIT_1);
+    static AdcOneshot adcOneshot2(ADC_UNIT_2);
     static RandomEsp32 random;
     static TimeEsp32 time;
     static NVSEsp32 nvs;
@@ -33,8 +34,8 @@ System& getSystem() noexcept {
     static ApiController apiController;
     static HttpServerEsp32 httpServer(ethernetMan, mqtt, settings, apiController);
     static System system(
-        stateMachine, gpioPinRegister, gpio, adcOneshot, random, time, nvs, settings, mqtt, ethernetMan, httpServer,
-        apiController
+        stateMachine, gpioPinRegister, gpio, adcOneshot, adcOneshot2, random, time, nvs, settings, mqtt, ethernetMan,
+        httpServer, apiController
     );
     return system;
 }

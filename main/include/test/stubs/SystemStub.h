@@ -35,6 +35,7 @@ public:
     GpioPinRegister gpioPinRegister;
     GpioStub gpio;
     AdcOneshotStub adcOneshot;
+    AdcOneshotStub adcOneshot2;
     RandomStub random;
     TimeStub time;
     NVSStub nvs;

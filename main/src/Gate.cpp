@@ -1,13 +1,28 @@
 #include "Gate.h"
 #include "GateConfig.h"
+#include "hal/AdcGpioMapping.h"
 #include <string>
+
+namespace {
+
+// driver for ldrPin's adc unit, adc1 as fallback for GPIO_NUM_NC/non-adc pins
+IAdcOneshot& selectAdcOneshot(IAdcOneshot& i_adcOneshot1, IAdcOneshot& i_adcOneshot2, gpio_num_t ldrPin) noexcept {
+    const auto channel = AdcGpioMapping::gpioToChannel(ldrPin);
+    if (channel.has_value() && channel->first == i_adcOneshot2.getAdcUnit()) {
+        return i_adcOneshot2;
+    }
+    return i_adcOneshot1;
+}
+
+}
 
 Gate::Gate(
     StateMachine& stateMachine,
     SettingsManager& settings,
     GpioPinRegister& gpioPinRegister,
     IGpio& i_gpio,
-    IAdcOneshot& i_adcOneshot,
+    IAdcOneshot& i_adcOneshot1,
+    IAdcOneshot& i_adcOneshot2,
     IRandom& i_random,
     ITime& i_time
 ) noexcept:
@@ -19,7 +34,7 @@ Gate::Gate(
             0,
             gpioPinRegister,
             i_gpio,
-            i_adcOneshot,
+            selectAdcOneshot(i_adcOneshot1, i_adcOneshot2, settings.retrieveGateModuleLdrGpioPin(0).value_or(GPIO_NUM_NC)),
             i_random,
             i_time,
             settings.retrieveGateModuleLaserGpioPin(0).value_or(GPIO_NUM_NC),
@@ -32,7 +47,7 @@ Gate::Gate(
             1,
             gpioPinRegister,
             i_gpio,
-            i_adcOneshot,
+            selectAdcOneshot(i_adcOneshot1, i_adcOneshot2, settings.retrieveGateModuleLdrGpioPin(1).value_or(GPIO_NUM_NC)),
             i_random,
             i_time,
             settings.retrieveGateModuleLaserGpioPin(1).value_or(GPIO_NUM_NC),
@@ -45,7 +60,7 @@ Gate::Gate(
             2,
             gpioPinRegister,
             i_gpio,
-            i_adcOneshot,
+            selectAdcOneshot(i_adcOneshot1, i_adcOneshot2, settings.retrieveGateModuleLdrGpioPin(2).value_or(GPIO_NUM_NC)),
             i_random,
             i_time,
             settings.retrieveGateModuleLaserGpioPin(2).value_or(GPIO_NUM_NC),
@@ -58,7 +73,7 @@ Gate::Gate(
             3,
             gpioPinRegister,
             i_gpio,
-            i_adcOneshot,
+            selectAdcOneshot(i_adcOneshot1, i_adcOneshot2, settings.retrieveGateModuleLdrGpioPin(3).value_or(GPIO_NUM_NC)),
             i_random,
             i_time,
             settings.retrieveGateModuleLaserGpioPin(3).value_or(GPIO_NUM_NC),

@@ -30,6 +30,7 @@ public:
         GpioPinRegister& gpioPinRegister,
         IGpio& i_gpio,
         IAdcOneshot& i_adcOneshot,
+        IAdcOneshot& i_adcOneshot2,
         IRandom& i_random,
         ITime& i_time,
         INVS& i_nvs,
@@ -119,6 +120,7 @@ private:
     GpioPinRegister& gpioPinRegister;
     IGpio& i_gpio;
     IAdcOneshot& i_adcOneshot;
+    IAdcOneshot& i_adcOneshot2;
     IRandom& i_random;
     ITime& i_time;
     INVS& i_nvs;

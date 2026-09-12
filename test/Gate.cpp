@@ -64,6 +64,7 @@ TEST_CASE("Gate: lifecycle", "[Gate]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     RandomStub randomStub{};
     TimeStub timeStub{};
     NVSStub nvs{};
@@ -71,9 +72,7 @@ TEST_CASE("Gate: lifecycle", "[Gate]") {
     SettingsManager settings(nvs);
     StateMachine stateMachine{};
 
-    // ldr pins must stay within GPIO_NUM_1-10 (ADC_UNIT_1, ch0-9 on esp32-s3) since all 4
-    // modules share one AdcOneshotStub bound to ADC_UNIT_1; laser/led are plain digital pins
-    // so they're kept clear of the ADC1/ADC2 ranges (GPIO_NUM_1-20) to avoid pin collisions
+    // ldr pins in GPIO_NUM_1-10 (ADC_UNIT_1) route all 4 modules through adcStub, laser/led pins are outside GPIO_NUM_1-20
     REQUIRE(settings.storeGateModuleLaserGpioPin(0, GPIO_NUM_41));
     REQUIRE(settings.storeGateModuleLedGpioPin(0, GPIO_NUM_42));
     REQUIRE(settings.storeGateModuleLdrGpioPin(0, GPIO_NUM_1));
@@ -87,7 +86,7 @@ TEST_CASE("Gate: lifecycle", "[Gate]") {
     REQUIRE(settings.storeGateModuleLedGpioPin(3, GPIO_NUM_48));
     REQUIRE(settings.storeGateModuleLdrGpioPin(3, GPIO_NUM_4));
 
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
 
     SECTION("not ready by default") {
         REQUIRE_FALSE(gate.isReady());
@@ -123,6 +122,7 @@ TEST_CASE("Gate: skips unconfigured modules", "[Gate]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     RandomStub randomStub{};
     TimeStub timeStub{};
     NVSStub nvs{};
@@ -132,7 +132,7 @@ TEST_CASE("Gate: skips unconfigured modules", "[Gate]") {
 
     // nothing stored in settings, so every module resolves to GPIO_NUM_NC pins
     // and is therefore unconfigured - none of them are attempted
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
 
     SECTION("initializes successfully when no module is configured") {
         REQUIRE(gate.initialize());
@@ -150,6 +150,7 @@ TEST_CASE("Gate: initializes only the configured modules", "[Gate]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     RandomStub randomStub{};
     TimeStub timeStub{};
     NVSStub nvs{};
@@ -162,7 +163,7 @@ TEST_CASE("Gate: initializes only the configured modules", "[Gate]") {
     REQUIRE(settings.storeGateModuleLedGpioPin(0, GPIO_NUM_42));
     REQUIRE(settings.storeGateModuleLdrGpioPin(0, GPIO_NUM_1));
 
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
 
     REQUIRE(gate.initialize());
     REQUIRE(gate.isReady());
@@ -173,6 +174,7 @@ TEST_CASE("Gate: intrusion detection", "[Gate]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     REQUIRE(adcStub.initialize() == ESP_OK);
     RandomStub randomStub{};
     TimeStub timeStub{};
@@ -184,7 +186,7 @@ TEST_CASE("Gate: intrusion detection", "[Gate]") {
     // modules 2 and 3 stay unconfigured throughout, which also covers that they never
     // count toward the interrupted tally
     configureTwoModules(settings);
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
     REQUIRE(gate.initialize());
 
     randomStub.test_setSeed(1234);
@@ -298,6 +300,7 @@ TEST_CASE("Gate: intrusion detection grace period tracks the slowest configured 
     GpioPinRegister pr{};
     GpioStub gpioStub{};
     AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
     REQUIRE(adcStub.initialize() == ESP_OK);
     RandomStub randomStub{};
     TimeStub timeStub{};
@@ -312,7 +315,7 @@ TEST_CASE("Gate: intrusion detection grace period tracks the slowest configured 
     REQUIRE(settings.storeGateModuleLaserPulseFrequency(0, 200));
     REQUIRE(settings.storeGateModuleLaserPulseFrequency(1, 600));
 
-    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, randomStub, timeStub);
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
     REQUIRE(gate.initialize());
 
     randomStub.test_setSeed(1234);
