@@ -9,6 +9,10 @@ SettingsManager::SettingsManager(SettingsManager && other) noexcept :
     i_nvs(other.i_nvs)
 { }
 
+bool SettingsManager::resetToDefaults() const noexcept {
+    return i_nvs.eraseAll();
+}
+
 bool SettingsManager::storeTitle(const std::string &title) const noexcept {
     return i_nvs.setString("title", title.c_str());
 }

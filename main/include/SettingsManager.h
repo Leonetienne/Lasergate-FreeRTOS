@@ -21,6 +21,12 @@ public:
     SettingsManager& operator=(SettingsManager&&) = delete;
 
     /**
+     * Erases every stored setting, so callers fall back to their defaults
+     * @return Success state
+     */
+    bool resetToDefaults() const noexcept;
+
+    /**
      * @return Success state
      */
     bool storeTitle(const std::string& title) const noexcept;

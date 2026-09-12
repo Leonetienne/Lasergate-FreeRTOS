@@ -197,3 +197,30 @@ TEST_CASE("SettingsManager: connectivity leds enabled", "[SettingsManager]") {
         REQUIRE_FALSE(settings.retrieveConnLedsEnabled().has_value());
     }
 }
+
+TEST_CASE("SettingsManager: resetToDefaults", "[SettingsManager]") {
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+
+    SECTION("erases every kind of stored setting") {
+        REQUIRE(settings.storeTitle("Lasergate"));
+        REQUIRE(settings.storeEthernetLedGpioPin(GPIO_NUM_2));
+        REQUIRE(settings.storeConnLedsEnabled(false));
+        REQUIRE(settings.storeGateModuleLaserGpioPin(1, GPIO_NUM_41));
+        REQUIRE(settings.storeGateModuleLdrThreshold(1, 1820));
+
+        REQUIRE(settings.resetToDefaults());
+
+        REQUIRE_FALSE(settings.retrieveTitle().has_value());
+        REQUIRE_FALSE(settings.retrieveEthernetLedGpioPin().has_value());
+        REQUIRE_FALSE(settings.retrieveConnLedsEnabled().has_value());
+        REQUIRE_FALSE(settings.retrieveGateModuleLaserGpioPin(1).has_value());
+        REQUIRE_FALSE(settings.retrieveGateModuleLdrThreshold(1).has_value());
+    }
+
+    SECTION("fails when nvs is not ready") {
+        REQUIRE(nvs.free());
+        REQUIRE_FALSE(settings.resetToDefaults());
+    }
+}
