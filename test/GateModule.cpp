@@ -292,8 +292,7 @@ TEST_CASE("GateModule: OBSERVING status led behaviour", "[GateModule]") {
         stub.random.test_setSeed(1234);
 
         // USER_ADJUSTING_BEAMS leaves the laser on, so entering OBSERVING from there gives it
-        // something to actually turn off
-        stub.stateMachine.setState(STATE::DISARMED);
+        // something to turn off
         stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
         REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
         stub.stateMachine.setState(STATE::DISARMED);
@@ -321,7 +320,6 @@ TEST_CASE("GateModule: OBSERVING status led behaviour", "[GateModule]") {
         stub.random.test_setSeed(1234);
 
         // USER_ADJUSTING_BEAMS leaves the laser on, so bounce through it first
-        stub.stateMachine.setState(STATE::DISARMED);
         stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
         stub.stateMachine.setState(STATE::DISARMED);
         stub.stateMachine.setState(STATE::OBSERVING);
@@ -406,7 +404,6 @@ TEST_CASE("GateModule: ALARM status led behaviour", "[GateModule]") {
         system.initialize();
 
         // ALARM is only reachable from OBSERVING
-        stub.stateMachine.setState(STATE::DISARMED);
         stub.stateMachine.setState(STATE::OBSERVING);
 
         // onStateObserving already turns the laser off on entry, so pulse in OBSERVING
@@ -442,7 +439,6 @@ TEST_CASE("GateModule: ALARM status led behaviour", "[GateModule]") {
         system.initialize();
 
         // ALARM is only reachable from OBSERVING
-        stub.stateMachine.setState(STATE::DISARMED);
         stub.stateMachine.setState(STATE::OBSERVING);
 
         SECTION("turns the status led on upon entering ALARM") {
@@ -516,8 +512,7 @@ TEST_CASE("GateModule: FAULT status led behaviour", "[GateModule]") {
         system.initialize();
 
         // USER_ADJUSTING_BEAMS leaves the laser on, so entering FAULT from there gives it
-        // something to actually turn off
-        stub.stateMachine.setState(STATE::DISARMED);
+        // something to turn off
         stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
         REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
 
@@ -541,8 +536,7 @@ TEST_CASE("GateModule: FAULT status led behaviour", "[GateModule]") {
         system.initialize();
 
         // USER_ADJUSTING_BEAMS leaves the laser on, so entering FAULT from there gives it
-        // something to actually turn off
-        stub.stateMachine.setState(STATE::DISARMED);
+        // something to turn off
         stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
         REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
 
@@ -605,8 +599,7 @@ TEST_CASE("GateModule: DISARMED behaviour", "[GateModule]") {
         system.initialize();
 
         // USER_ADJUSTING_BEAMS leaves the laser on, so entering DISARMED from there gives it
-        // something to actually turn off
-        stub.stateMachine.setState(STATE::DISARMED);
+        // something to turn off
         stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
         REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
 
@@ -627,8 +620,7 @@ TEST_CASE("GateModule: DISARMED behaviour", "[GateModule]") {
         system.initialize();
 
         // USER_ADJUSTING_BEAMS leaves the laser on, so entering DISARMED from there gives it
-        // something to actually turn off
-        stub.stateMachine.setState(STATE::DISARMED);
+        // something to turn off
         stub.stateMachine.setState(STATE::USER_ADJUSTING_BEAMS);
         REQUIRE(stub.gpio.test_gpioGetLevel(laserPin) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH));
 
