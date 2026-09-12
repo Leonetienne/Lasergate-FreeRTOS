@@ -17,7 +17,7 @@ public:
     ~GpioStub() override = default;
 
     /**
-     * Will reset a pins state
+     * Resets a pin's state, leaving it without a direction
      */
     esp_err_t gpioResetPin(const gpio_num_t pinNum) noexcept override;
 

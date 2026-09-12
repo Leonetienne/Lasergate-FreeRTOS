@@ -9,7 +9,8 @@ GpioStub::GpioStub(GpioStub&& other) noexcept {
     this->pinDirectionMap = std::move(other.pinDirectionMap);
 }
 
-esp_err_t GpioStub::gpioResetPin(const gpio_num_t) noexcept {
+esp_err_t GpioStub::gpioResetPin(const gpio_num_t pinNum) noexcept {
+    pinDirectionMap.erase(pinNum);
     return ESP_OK;
 }
 
