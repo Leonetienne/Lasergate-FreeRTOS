@@ -7,7 +7,9 @@
 
 #include "enum/States.h"
 #include <functional>
+#include <optional>
 #include <string>
+#include <string_view>
 
 class StateMachine {
 public:
@@ -35,6 +37,17 @@ public:
      * @return Whether transitioning from `from` to `to` is permitted by the state transition table
      */
     [[nodiscard]] static bool isTransitionAllowed(STATE from, STATE to) noexcept;
+
+    /**
+     * @return The stable, uppercase name of the given state (e.g. "OBSERVING")
+     */
+    [[nodiscard]] static const char* toString(STATE state) noexcept;
+
+    /**
+     * @param name A state name as produced by toString()
+     * @return The matching state, or std::nullopt if name isn't recognized
+     */
+    [[nodiscard]] static std::optional<STATE> fromString(std::string_view name) noexcept;
 
     /**
      * Callback setter. Fired whenever setState() applies a new state.

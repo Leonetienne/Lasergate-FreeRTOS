@@ -170,4 +170,36 @@ TEST_CASE("StateMachine", "[StateMachine]") {
             }
         }
     }
+
+    SECTION("toString returns the enumerator's name for every state") {
+        REQUIRE(std::string(StateMachine::toString(STATE::NONE)) == "NONE");
+        REQUIRE(std::string(StateMachine::toString(STATE::INITIALIZING)) == "INITIALIZING");
+        REQUIRE(std::string(StateMachine::toString(STATE::USER_ADJUSTING_BEAMS)) == "USER_ADJUSTING_BEAMS");
+        REQUIRE(std::string(StateMachine::toString(STATE::CALIBRATION_LDR_THRESH)) == "CALIBRATION_LDR_THRESH");
+        REQUIRE(std::string(StateMachine::toString(STATE::CALIBRATION_MODULATION_FREQUENCY)) == "CALIBRATION_MODULATION_FREQUENCY");
+        REQUIRE(std::string(StateMachine::toString(STATE::OBSERVING)) == "OBSERVING");
+        REQUIRE(std::string(StateMachine::toString(STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST)) == "DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST");
+        REQUIRE(std::string(StateMachine::toString(STATE::DISARMED)) == "DISARMED");
+        REQUIRE(std::string(StateMachine::toString(STATE::ALARM)) == "ALARM");
+        REQUIRE(std::string(StateMachine::toString(STATE::FAULT)) == "FAULT");
+        REQUIRE(std::string(StateMachine::toString(STATE::SHUTTING_DOWN)) == "SHUTTING_DOWN");
+    }
+
+    SECTION("fromString round-trips every state through toString") {
+        constexpr std::array<STATE, 11> allStates {
+            STATE::NONE, STATE::INITIALIZING, STATE::USER_ADJUSTING_BEAMS, STATE::CALIBRATION_LDR_THRESH,
+            STATE::CALIBRATION_MODULATION_FREQUENCY, STATE::OBSERVING, STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST,
+            STATE::DISARMED, STATE::ALARM, STATE::FAULT, STATE::SHUTTING_DOWN
+        };
+
+        for (const auto state : allStates) {
+            REQUIRE(StateMachine::fromString(StateMachine::toString(state)) == state);
+        }
+    }
+
+    SECTION("fromString returns nullopt for an unrecognized name") {
+        REQUIRE_FALSE(StateMachine::fromString("NOT_A_STATE").has_value());
+        REQUIRE_FALSE(StateMachine::fromString("").has_value());
+        REQUIRE_FALSE(StateMachine::fromString("observing").has_value()); // case-sensitive
+    }
 }

@@ -1,24 +1,6 @@
 #include "StateMachine.h"
 #include "compat/esp_log_macros.h"
-
-namespace {
-    const char* stateToString(STATE state) noexcept {
-        switch (state) {
-            case STATE::INITIALIZING: return "INITIALIZING";
-            case STATE::USER_ADJUSTING_BEAMS: return "USER_ADJUSTING_BEAMS";
-            case STATE::CALIBRATION_LDR_THRESH: return "CALIBRATION_LDR_THRESH";
-            case STATE::CALIBRATION_MODULATION_FREQUENCY: return "CALIBRATION_MODULATION_FREQUENCY";
-            case STATE::OBSERVING: return "OBSERVING";
-            case STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST: return "DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST";
-            case STATE::DISARMED: return "DISARMED";
-            case STATE::ALARM: return "ALARM";
-            case STATE::FAULT: return "FAULT";
-            case STATE::SHUTTING_DOWN: return "SHUTTING_DOWN";
-            case STATE::NONE: return "NONE";
-        }
-        return "UNKNOWN";
-    }
-}
+#include <array>
 
 static const char* LOG_TAG = "StateMachine";
 
@@ -81,14 +63,14 @@ void StateMachine::setState(STATE state, std::string reason) noexcept {
 
     if (isTransitionAllowed(currentState, STATE::FAULT)) {
         setLastFaultReason(
-            std::string("invalid transition requested: ") + stateToString(currentState) + " -> " + stateToString(state)
+            std::string("invalid transition requested: ") + StateMachine::toString(currentState) + " -> " + StateMachine::toString(state)
         );
         applyState(STATE::FAULT);
     }
 }
 
 void StateMachine::applyState(STATE state) noexcept {
-    ESP_LOGI(LOG_TAG, "state change: %s -> %s", stateToString(currentState), stateToString(state));
+    ESP_LOGI(LOG_TAG, "state change: %s -> %s", StateMachine::toString(currentState), StateMachine::toString(state));
 
     currentState = state;
 
@@ -108,4 +90,36 @@ const std::string& StateMachine::getLastFaultReason() const noexcept {
 void StateMachine::setLastFaultReason(std::string reason) noexcept {
     ESP_LOGE(LOG_TAG, "fault reason: %s", reason.c_str());
     lastFaultReason = std::move(reason);
+}
+
+const char* StateMachine::toString(STATE state) noexcept {
+    switch (state) {
+        case STATE::INITIALIZING: return "INITIALIZING";
+        case STATE::USER_ADJUSTING_BEAMS: return "USER_ADJUSTING_BEAMS";
+        case STATE::CALIBRATION_LDR_THRESH: return "CALIBRATION_LDR_THRESH";
+        case STATE::CALIBRATION_MODULATION_FREQUENCY: return "CALIBRATION_MODULATION_FREQUENCY";
+        case STATE::OBSERVING: return "OBSERVING";
+        case STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST: return "DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST";
+        case STATE::DISARMED: return "DISARMED";
+        case STATE::ALARM: return "ALARM";
+        case STATE::FAULT: return "FAULT";
+        case STATE::SHUTTING_DOWN: return "SHUTTING_DOWN";
+        case STATE::NONE: return "NONE";
+    }
+    return "UNKNOWN";
+}
+
+std::optional<STATE> StateMachine::fromString(std::string_view name) noexcept {
+    static constexpr std::array<STATE, 11> allStates {
+        STATE::NONE, STATE::INITIALIZING, STATE::USER_ADJUSTING_BEAMS, STATE::CALIBRATION_LDR_THRESH,
+        STATE::CALIBRATION_MODULATION_FREQUENCY, STATE::OBSERVING, STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST,
+        STATE::DISARMED, STATE::ALARM, STATE::FAULT, STATE::SHUTTING_DOWN
+    };
+
+    for (const STATE state : allStates) {
+        if (name == toString(state)) {
+            return state;
+        }
+    }
+    return std::nullopt;
 }
