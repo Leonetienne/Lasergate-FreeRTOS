@@ -134,4 +134,21 @@ TEST_CASE("NVSStub", "[NVSStub]") {
         stub.begin("lasergate");
         REQUIRE(stub.eraseKey("missing"));
     }
+
+    SECTION("eraseAll fails before begin") {
+        REQUIRE_FALSE(stub.eraseAll());
+    }
+
+    SECTION("eraseAll removes every stored int and string value") {
+        stub.begin("lasergate");
+        stub.setInt("count", 42);
+        stub.setString("title", "Lasergate");
+
+        REQUIRE(stub.eraseAll());
+
+        int32_t intValue = 0;
+        char buffer[NVS_MAX_STRING_LENGTH + 1];
+        REQUIRE_FALSE(stub.getInt("count", intValue));
+        REQUIRE_FALSE(stub.getString("title", buffer));
+    }
 }

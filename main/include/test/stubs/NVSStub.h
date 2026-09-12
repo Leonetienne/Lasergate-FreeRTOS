@@ -65,6 +65,12 @@ public:
      */
     bool eraseKey(const char* key) noexcept override;
 
+    /**
+     * Erases every value stored in the opened namespace
+     * @return Success state
+     */
+    bool eraseAll() noexcept override;
+
     [[nodiscard]] const std::string& getLastNamespace() const;
     [[nodiscard]] int getBeginCallCount() const;
 

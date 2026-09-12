@@ -70,6 +70,12 @@ public:
     virtual bool eraseKey(const char* key) noexcept = 0;
 
     /**
+     * Erases every value stored in the opened namespace
+     * @return Success state
+     */
+    virtual bool eraseAll() noexcept = 0;
+
+    /**
      * @return Whether the nvs system is ready and initialized
      */
     [[nodiscard]] bool isReady() const noexcept { return isInitialized; }

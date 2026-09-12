@@ -103,3 +103,15 @@ bool NVSEsp32::eraseKey(const char* key) noexcept {
 
     return nvs_commit(handle) == ESP_OK;
 }
+
+bool NVSEsp32::eraseAll() noexcept {
+    if (!isInitialized) {
+        return false;
+    }
+
+    if (nvs_erase_all(handle) != ESP_OK) {
+        return false;
+    }
+
+    return nvs_commit(handle) == ESP_OK;
+}

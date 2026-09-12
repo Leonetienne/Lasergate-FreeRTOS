@@ -68,6 +68,12 @@ public:
      */
     bool eraseKey(const char* key) noexcept override;
 
+    /**
+     * Erases every value stored in the opened namespace
+     * @return Success state
+     */
+    bool eraseAll() noexcept override;
+
 private:
     nvs_handle_t handle = 0;
 };
