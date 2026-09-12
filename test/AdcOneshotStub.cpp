@@ -38,8 +38,13 @@ TEST_CASE("AdcOneshotStub", "[AdcOneshotStub]") {
         REQUIRE(stubAdc1.registerChannel(ADC_CHANNEL_6) == ESP_OK);
     }
 
-    SECTION("can't initialize off-unit channel on unit 1") {
-        REQUIRE_FALSE(stubAdc1.registerChannel(ADC_CHANNEL_9) == ESP_OK);
+    SECTION("can initialize the highest channel on unit 1") {
+        // esp32-s3 adc1 covers channels 0-9 (gpio1-10)
+        REQUIRE(stubAdc1.registerChannel(ADC_CHANNEL_9) == ESP_OK);
+    }
+
+    SECTION("can't initialize a channel beyond the esp32-s3 range on unit 1") {
+        REQUIRE_FALSE(stubAdc1.registerChannel(ADC_CHANNEL_10) == ESP_OK);
     }
 
     SECTION("can initialize adc-2 unit channel on adc2 adc driver") {
@@ -47,9 +52,10 @@ TEST_CASE("AdcOneshotStub", "[AdcOneshotStub]") {
         REQUIRE(stubAdc2.registerChannel(ADC_CHANNEL_9) == ESP_OK);
     }
 
-    SECTION("can't initialize off-unit channel on unit 2") {
+    SECTION("can also initialize a low channel number on unit 2") {
+        // esp32-s3 adc2 covers channels 0-9 (gpio11-20)
         AdcOneshotStub stubAdc2(ADC_UNIT_2);
-        REQUIRE_FALSE(stubAdc2.registerChannel(ADC_CHANNEL_6) == ESP_OK);
+        REQUIRE(stubAdc2.registerChannel(ADC_CHANNEL_6) == ESP_OK);
     }
 
     SECTION("reading initialized channel works and returns 0") {

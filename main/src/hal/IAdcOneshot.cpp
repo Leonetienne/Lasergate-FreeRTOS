@@ -18,12 +18,11 @@ IAdcOneshot::IAdcOneshot(IAdcOneshot &&other) noexcept :
 }
 
 bool IAdcOneshot::isAdcChannelOnCurrentUnit(const adc_channel_t adcChannel) const noexcept {
+    // esp32-s3: adc1 and adc2 each expose channels 0-9
     switch (adcUnit) {
         case ADC_UNIT_1:
-           return adcChannel <= ADC_CHANNEL_7;
-
         case ADC_UNIT_2:
-            return adcChannel >= ADC_CHANNEL_8 && adcChannel <= ADC_CHANNEL_10;
+            return adcChannel <= ADC_CHANNEL_9;
 
         default:
             return false;
