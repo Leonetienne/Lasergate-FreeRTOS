@@ -110,12 +110,12 @@ TEST_CASE("System: update applies a pending apiController state request", "[Syst
     SECTION("does nothing when no state was requested") {
         system.update();
 
-        REQUIRE(stub.stateMachine.getState() == STATE::INITIALIZING);
+        REQUIRE(stub.stateMachine.getState() == STATE::DISARMED);
     }
 
     SECTION("applies a requested state on the next update, not before") {
         stub.apiController.requestSystemState(STATE::SHUTTING_DOWN);
-        REQUIRE(stub.stateMachine.getState() == STATE::INITIALIZING);
+        REQUIRE(stub.stateMachine.getState() == STATE::DISARMED);
 
         system.update();
 
