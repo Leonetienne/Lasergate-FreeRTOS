@@ -170,6 +170,58 @@ TEST_CASE("Gate: initializes only the configured modules", "[Gate]") {
     REQUIRE(pr.isPinBound(GPIO_NUM_41));
 }
 
+TEST_CASE("Gate: ldr reads route to each pin's ADC unit", "[Gate]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    AdcOneshotStub adcStub(ADC_UNIT_1);
+    AdcOneshotStub adcStub2(ADC_UNIT_2);
+    REQUIRE(adcStub.initialize() == ESP_OK);
+    REQUIRE(adcStub2.initialize() == ESP_OK);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+    StateMachine stateMachine{};
+
+    constexpr gpio_num_t MODULE0_LASER_PIN = GPIO_NUM_41;
+    constexpr gpio_num_t MODULE0_LED_PIN = GPIO_NUM_42;
+    constexpr gpio_num_t MODULE0_LDR_PIN = GPIO_NUM_1;   // -> ADC_UNIT_1 / CH0
+    constexpr gpio_num_t MODULE1_LASER_PIN = GPIO_NUM_47;
+    constexpr gpio_num_t MODULE1_LED_PIN = GPIO_NUM_48;
+    constexpr gpio_num_t MODULE1_LDR_PIN = GPIO_NUM_15;  // -> ADC_UNIT_2 / CH4
+
+    REQUIRE(settings.storeGateModuleLaserGpioPin(0, MODULE0_LASER_PIN));
+    REQUIRE(settings.storeGateModuleLedGpioPin(0, MODULE0_LED_PIN));
+    REQUIRE(settings.storeGateModuleLdrGpioPin(0, MODULE0_LDR_PIN));
+    REQUIRE(settings.storeGateModuleLaserGpioPin(1, MODULE1_LASER_PIN));
+    REQUIRE(settings.storeGateModuleLedGpioPin(1, MODULE1_LED_PIN));
+    REQUIRE(settings.storeGateModuleLdrGpioPin(1, MODULE1_LDR_PIN));
+
+    Gate gate(stateMachine, settings, pr, gpioStub, adcStub, adcStub2, randomStub, timeStub);
+
+    // module 1's ldr sits on adc2, so its sensor initializes against adcStub2
+    REQUIRE(gate.initialize());
+    REQUIRE(gate.isReady());
+
+    randomStub.test_setSeed(1234);
+    enterObserving(stateMachine, gate);
+
+    const auto bufferSize = PulseRingBuffer::getBufferSize();
+
+    // each module's ldr reads through its own adc unit
+    for (std::size_t i = 0; i < bufferSize * 3; ++i) {
+        const bool laserOn0 = gpioStub.test_gpioGetLevel(MODULE0_LASER_PIN) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH);
+        const bool laserOn1 = gpioStub.test_gpioGetLevel(MODULE1_LASER_PIN) == static_cast<uint32_t>(PIN_STATE_DIGITAL::HIGH);
+        adcStub.test_setChannelValue(ADC_CHANNEL_0, laserOn0 ? static_cast<uint16_t>(CALIB_LDR_THRESH_INITIAL_THRESH + 1) : static_cast<uint16_t>(0));
+        adcStub2.test_setChannelValue(ADC_CHANNEL_4, laserOn1 ? static_cast<uint16_t>(CALIB_LDR_THRESH_INITIAL_THRESH + 1) : static_cast<uint16_t>(0));
+
+        timeStub.setStubbedMillis(timeStub.getMillis() + CALIB_PULSE_FREQ_MAX_FREQ + 1);
+        gate.fixedUpdate();
+        REQUIRE(stateMachine.getState() == STATE::OBSERVING);
+    }
+}
+
 TEST_CASE("Gate: intrusion detection", "[Gate]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};
