@@ -68,6 +68,12 @@ public:
      */
     void onStateChange() noexcept;
 
+    /**
+     * @param moduleIndex Index of the gate module (0-based, < MODULE_COUNT)
+     * @return Read-only access to the given module
+     */
+    [[nodiscard]] const GateModule& getModule(std::size_t moduleIndex) const noexcept;
+
 private:
     void resetLenientAlarmState() noexcept;
     void startLenientAlarmState() noexcept;

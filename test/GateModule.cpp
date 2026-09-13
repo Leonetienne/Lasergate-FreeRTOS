@@ -195,6 +195,32 @@ TEST_CASE("GateModule: isConfigured", "[GateModule]") {
     }
 }
 
+TEST_CASE("GateModule: pin getters", "[GateModule]") {
+    GpioPinRegister pr{};
+    GpioStub gpioStub{};
+    AdcOneshotStub adcStub(ADC_UNIT_1);
+    RandomStub randomStub{};
+    TimeStub timeStub{};
+    StateMachine stateMachine{};
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("test"));
+    SettingsManager settings(nvs);
+
+    SECTION("report the pins the module was constructed with") {
+        GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, GPIO_NUM_16, GPIO_NUM_17, GPIO_NUM_7);
+        REQUIRE(module.getLaserPin() == GPIO_NUM_16);
+        REQUIRE(module.getStatusLedPin() == GPIO_NUM_17);
+        REQUIRE(module.getLdrPin() == GPIO_NUM_7);
+    }
+
+    SECTION("report GPIO_NUM_NC when unconfigured") {
+        GateModule module(stateMachine, settings, 0, pr, gpioStub, adcStub, randomStub, timeStub, GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC);
+        REQUIRE(module.getLaserPin() == GPIO_NUM_NC);
+        REQUIRE(module.getStatusLedPin() == GPIO_NUM_NC);
+        REQUIRE(module.getLdrPin() == GPIO_NUM_NC);
+    }
+}
+
 TEST_CASE("GateModule: status led is optional", "[GateModule]") {
     GpioPinRegister pr{};
     GpioStub gpioStub{};

@@ -24,6 +24,9 @@ GateModule::GateModule(
     settings_index {settingsIndex},
     i_random {i_random},
     i_time {i_time},
+    laserPin {laserPin},
+    statusLedPin {statusLedPin},
+    ldrPin {ldrPin},
     laserDiode {pinRegister, i_gpio, laserPin},
     statusLed {pinRegister, i_gpio, statusLedPin},
     laserSensor {pinRegister, i_adcOneshot, ldrPin},
@@ -38,6 +41,18 @@ GateModule::~GateModule() noexcept {
 
 bool GateModule::isConfigured() const noexcept {
     return laserDiode.isConfigured() && laserSensor.isConfigured();
+}
+
+gpio_num_t GateModule::getLaserPin() const noexcept {
+    return laserPin;
+}
+
+gpio_num_t GateModule::getStatusLedPin() const noexcept {
+    return statusLedPin;
+}
+
+gpio_num_t GateModule::getLdrPin() const noexcept {
+    return ldrPin;
 }
 
 bool GateModule::initialize() noexcept {

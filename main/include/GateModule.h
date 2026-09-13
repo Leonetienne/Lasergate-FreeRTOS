@@ -97,6 +97,21 @@ public:
     [[nodiscard]] std::optional<bool> isPulseBatchAcceptable() const noexcept;
 
     /**
+     * @return The gpio pin driving the laser diode, or GPIO_NUM_NC if unconfigured
+     */
+    [[nodiscard]] gpio_num_t getLaserPin() const noexcept;
+
+    /**
+     * @return The gpio pin driving the status led, or GPIO_NUM_NC if unconfigured
+     */
+    [[nodiscard]] gpio_num_t getStatusLedPin() const noexcept;
+
+    /**
+     * @return The gpio pin reading the laser sensor, or GPIO_NUM_NC if unconfigured
+     */
+    [[nodiscard]] gpio_num_t getLdrPin() const noexcept;
+
+    /**
      * @return The amount in ms the module takes to completely a pulse batch, or std::nullopt if the gate is not ready or does not have a pulse frequency assigned yet
      */
     [[nodiscard]] std::optional<uint16_t> getBatchTime() const noexcept;
@@ -204,6 +219,9 @@ private:
     std::size_t settings_index;
     IRandom& i_random;
     ITime& i_time;
+    gpio_num_t laserPin;
+    gpio_num_t statusLedPin;
+    gpio_num_t ldrPin;
     LaserDiode laserDiode;
     LightEmittingDiode statusLed;
     LaserSensor laserSensor;

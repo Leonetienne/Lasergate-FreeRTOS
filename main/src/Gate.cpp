@@ -281,6 +281,10 @@ void Gate::onStateChange() noexcept {
     }
 }
 
+const GateModule& Gate::getModule(std::size_t moduleIndex) const noexcept {
+    return modules[moduleIndex];
+}
+
 void Gate::startLenientAlarmState() noexcept {
     lenientAlarmActive = true;
     lenientAlarmTimeout = i_time.getMillis();

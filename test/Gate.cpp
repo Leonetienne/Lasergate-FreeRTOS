@@ -116,6 +116,13 @@ TEST_CASE("Gate: lifecycle", "[Gate]") {
         gate.fixedUpdate();
         gate.onStateChange();
     }
+
+    SECTION("getModule exposes each configured module's pins, in index order") {
+        REQUIRE(gate.getModule(0).getLaserPin() == GPIO_NUM_41);
+        REQUIRE(gate.getModule(1).getLaserPin() == GPIO_NUM_43);
+        REQUIRE(gate.getModule(2).getLaserPin() == GPIO_NUM_45);
+        REQUIRE(gate.getModule(3).getLaserPin() == GPIO_NUM_47);
+    }
 }
 
 TEST_CASE("Gate: skips unconfigured modules", "[Gate]") {
