@@ -13,6 +13,7 @@ idf_component_register(SRCS
                        "src/LdrThreshCalibrator.cpp"
                        "src/PulseFreqCalibrator.cpp"
                        "src/PulseRingBuffer.cpp"
+                       "src/GpioDiscovery.cpp"
                        "src/hal/IAdcOneshot.cpp"
                        "src/hal/AdcGpioMapping.cpp"
                        "src/hal/BoardReservedPins.cpp"

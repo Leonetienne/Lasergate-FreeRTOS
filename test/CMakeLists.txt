@@ -15,6 +15,7 @@ add_executable(lasergate_tests
         GpioStub.cpp
         AdcOneshotStub.cpp
         BoardReservedPins.cpp
+        GpioDiscovery.cpp
         RandomStub.cpp
         GpioDigitalWritePin.cpp
         AdcAnalogReadPin.cpp
@@ -55,6 +56,8 @@ add_executable(lasergate_tests
         ../main/src/hal/AdcGpioMapping.cpp
         ../main/src/hal/BoardReservedPins.cpp
         ../main/include/hal/BoardReservedPins.h
+        ../main/src/GpioDiscovery.cpp
+        ../main/include/GpioDiscovery.h
         ../main/src/hal/IRandom.cpp
         ../main/include/hal/IRandom.h
         ../main/src/test/stubs/RandomStub.cpp
