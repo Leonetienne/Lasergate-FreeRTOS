@@ -1,6 +1,10 @@
 #include "ApiController.h"
 #include "JsonWriter.h"
 #include "compat/gpio_num_t.h"
+#include "hal/AdcGpioMapping.h"
+#include "hal/BoardReservedPins.h"
+#include <algorithm>
+#include <span>
 
 namespace {
 
@@ -44,6 +48,78 @@ void appendGpioField(std::string& report, const std::string& key, gpio_num_t pin
         report += std::to_string(static_cast<int32_t>(pin));
     }
     report += '\n';
+}
+
+using PinClaims = std::unordered_map<int32_t, std::string>;
+
+std::string pinLabel(gpio_num_t pin) {
+    return "GPIO " + std::to_string(static_cast<int32_t>(pin));
+}
+
+// only modules with a laser and an ldr pin bind anything at boot
+void claimModulePins(PinClaims& claims, const SettingsManager& settings, std::optional<std::size_t> exceptModule) {
+    for (std::size_t i = 0; i < Gate::MODULE_COUNT; ++i) {
+        if (i == exceptModule) {
+            continue;
+        }
+
+        const gpio_num_t laserPin = settings.retrieveGateModuleLaserGpioPin(i).value_or(GPIO_NUM_NC);
+        const gpio_num_t ledPin = settings.retrieveGateModuleLedGpioPin(i).value_or(GPIO_NUM_NC);
+        const gpio_num_t ldrPin = settings.retrieveGateModuleLdrGpioPin(i).value_or(GPIO_NUM_NC);
+        if (laserPin == GPIO_NUM_NC || ldrPin == GPIO_NUM_NC) {
+            continue;
+        }
+
+        const std::string owner = "module " + std::to_string(i);
+        claims.try_emplace(laserPin, owner + " laser");
+        claims.try_emplace(ldrPin, owner + " LDR");
+        if (ledPin != GPIO_NUM_NC) {
+            claims.try_emplace(ledPin, owner + " status LED");
+        }
+    }
+}
+
+std::string pinUnusableReason(gpio_num_t pin) {
+    if (std::ranges::find(BoardReservedPins::ALL_PINS, pin) == BoardReservedPins::ALL_PINS.end()) {
+        return "does not exist on this chip";
+    }
+    if (BoardReservedPins::isReserved(pin)) {
+        return "is reserved by the board";
+    }
+    return {};
+}
+
+struct PinRole {
+    gpio_num_t pin;
+    const char* name;
+    bool needsAdc;
+};
+
+std::expected<void, std::string> validatePinRoles(std::span<const PinRole> roles, const PinClaims& claims) {
+    for (std::size_t i = 0; i < roles.size(); ++i) {
+        const PinRole& role = roles[i];
+        if (role.pin == GPIO_NUM_NC) {
+            continue;
+        }
+
+        const std::string subject = std::string(role.name) + " " + pinLabel(role.pin);
+
+        if (const std::string reason = pinUnusableReason(role.pin); !reason.empty()) {
+            return std::unexpected(subject + " " + reason);
+        }
+        if (role.needsAdc && !AdcGpioMapping::gpioToChannel(role.pin).has_value()) {
+            return std::unexpected(subject + " needs an ADC pin");
+        }
+        for (std::size_t j = 0; j < i; ++j) {
+            if (roles[j].pin == role.pin) {
+                return std::unexpected(std::string(roles[j].name) + " and " + role.name + " can't share " + pinLabel(role.pin));
+            }
+        }
+        if (const auto claim = claims.find(role.pin); claim != claims.end()) {
+            return std::unexpected(subject + " is already used by " + claim->second);
+        }
+    }
+    return {};
 }
 
 std::string formValue(const std::unordered_map<std::string, std::string>& form, const std::string& key) noexcept {
@@ -180,7 +256,7 @@ std::string ApiController::buildAdvancedSettingsReport(const SettingsManager& se
     return report;
 }
 
-bool ApiController::applyAdvancedSettingsForm(
+std::expected<void, std::string> ApiController::applyAdvancedSettingsForm(
     SettingsManager& settings,
     const std::unordered_map<std::string, std::string>& form
 ) noexcept {
@@ -188,14 +264,27 @@ bool ApiController::applyAdvancedSettingsForm(
     const gpio_num_t mqttLedPin = parseGpioField(form, "mqtt_led_gpio");
     const bool connLedsEnabled = form.contains("enable_conn_leds");
 
+    if (connLedsEnabled) {
+        PinClaims claims;
+        claimModulePins(claims, settings, std::nullopt);
+
+        const std::array<PinRole, 2> roles{{
+            {ethernetLedPin, "Ethernet LED", false},
+            {mqttLedPin, "MQTT LED", false},
+        }};
+        if (const auto valid = validatePinRoles(roles, claims); !valid) {
+            return valid;
+        }
+    }
+
     if (!settings.storeEthernetLedGpioPin(ethernetLedPin) ||
         !settings.storeMqttLedGpioPin(mqttLedPin) ||
         !settings.storeConnLedsEnabled(connLedsEnabled)) {
-        return false;
+        return std::unexpected("Failed to write settings");
     }
 
     requestSystemState(STATE::SHUTTING_DOWN);
-    return true;
+    return {};
 }
 
 void ApiController::requestSystemState(STATE state) noexcept {

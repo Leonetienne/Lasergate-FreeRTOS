@@ -64,6 +64,11 @@ private:
     static esp_err_t handlePostSettings(httpd_req_t* req) noexcept;
 
     /**
+     * Sends a 400 whose plain text body is message
+     */
+    static void sendBadRequest(httpd_req_t* req, const std::string& message) noexcept;
+
+    /**
      * Saves the settings form submitted via the web ui and requests a shutdown
      */
     static esp_err_t handleSettingsForm(httpd_req_t* req) noexcept;

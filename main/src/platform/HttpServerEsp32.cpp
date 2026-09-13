@@ -192,6 +192,12 @@ esp_err_t HttpServerEsp32::handlePostSettings(httpd_req_t* req) noexcept {
     return ESP_FAIL;
 }
 
+void HttpServerEsp32::sendBadRequest(httpd_req_t* req, const std::string& message) noexcept {
+    httpd_resp_set_status(req, "400 Bad Request");
+    httpd_resp_set_type(req, "text/plain");
+    httpd_resp_send(req, message.c_str(), static_cast<ssize_t>(message.size()));
+}
+
 esp_err_t HttpServerEsp32::handleSettingsForm(httpd_req_t* req) noexcept {
     std::string body;
     if (!readRequestBody(req, body)) {
@@ -222,9 +228,8 @@ esp_err_t HttpServerEsp32::handleAdvancedSettingsForm(httpd_req_t* req) noexcept
 
     const auto form = UrlEncodedForm::parse(body);
     auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
-    if (!self->apiController.applyAdvancedSettingsForm(self->settings, form)) {
-        httpd_resp_set_status(req, "400 Bad Request");
-        httpd_resp_send(req, nullptr, 0);
+    if (const auto result = self->apiController.applyAdvancedSettingsForm(self->settings, form); !result) {
+        sendBadRequest(req, result.error());
         return ESP_FAIL;
     }
 

@@ -159,12 +159,12 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
     SECTION("applyAdvancedSettingsForm stores the submitted values") {
         const std::unordered_map<std::string, std::string> form = {
             {"ethernet_led_gpio", "2"},
-            {"mqtt_led_gpio", "3"},
+            {"mqtt_led_gpio", "15"},
             {"enable_conn_leds", "1"},
         };
         REQUIRE(apiController.applyAdvancedSettingsForm(settings, form));
         REQUIRE(*settings.retrieveEthernetLedGpioPin() == GPIO_NUM_2);
-        REQUIRE(*settings.retrieveMqttLedGpioPin() == GPIO_NUM_3);
+        REQUIRE(*settings.retrieveMqttLedGpioPin() == GPIO_NUM_15);
         REQUIRE(*settings.retrieveConnLedsEnabled());
     }
 
@@ -195,6 +195,46 @@ TEST_CASE("ApiController: advanced settings report/form", "[ApiController]") {
         };
         REQUIRE(apiController.applyAdvancedSettingsForm(settings, form));
         REQUIRE(*settings.retrieveEthernetLedGpioPin() == GPIO_NUM_NC);
+    }
+
+    SECTION("applyAdvancedSettingsForm rejects a board reserved pin") {
+        const std::unordered_map<std::string, std::string> form = {
+            {"ethernet_led_gpio", "3"},
+            {"enable_conn_leds", "1"},
+        };
+        REQUIRE_FALSE(apiController.applyAdvancedSettingsForm(settings, form));
+        REQUIRE_FALSE(settings.retrieveEthernetLedGpioPin().has_value());
+        REQUIRE_FALSE(apiController.consumeDesiredSystemState().has_value());
+    }
+
+    SECTION("applyAdvancedSettingsForm rejects both leds on the same pin") {
+        const std::unordered_map<std::string, std::string> form = {
+            {"ethernet_led_gpio", "2"},
+            {"mqtt_led_gpio", "2"},
+            {"enable_conn_leds", "1"},
+        };
+        REQUIRE_FALSE(apiController.applyAdvancedSettingsForm(settings, form));
+    }
+
+    SECTION("applyAdvancedSettingsForm rejects a pin used by a configured module") {
+        REQUIRE(settings.storeGateModuleLaserGpioPin(0, GPIO_NUM_48));
+        REQUIRE(settings.storeGateModuleLdrGpioPin(0, GPIO_NUM_16));
+
+        const std::unordered_map<std::string, std::string> form = {
+            {"ethernet_led_gpio", "16"},
+            {"enable_conn_leds", "1"},
+        };
+        const auto result = apiController.applyAdvancedSettingsForm(settings, form);
+        REQUIRE_FALSE(result);
+        REQUIRE(result.error() == "Ethernet LED GPIO 16 is already used by module 0 LDR");
+    }
+
+    SECTION("applyAdvancedSettingsForm skips pin checks while the conn leds are disabled") {
+        REQUIRE(settings.storeGateModuleLaserGpioPin(0, GPIO_NUM_48));
+        REQUIRE(settings.storeGateModuleLdrGpioPin(0, GPIO_NUM_16));
+
+        const std::unordered_map<std::string, std::string> form = {{"ethernet_led_gpio", "16"}};
+        REQUIRE(apiController.applyAdvancedSettingsForm(settings, form));
     }
 
     SECTION("applyAdvancedSettingsForm requests a shutdown on success") {

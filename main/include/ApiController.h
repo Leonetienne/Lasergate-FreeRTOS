@@ -9,6 +9,7 @@
 #include "hal/IMqtt.h"
 #include <array>
 #include <atomic>
+#include <expected>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -64,9 +65,9 @@ public:
      * Applies a parsed advanced settings form and requests a shutdown
      * @param settings
      * @param form
-     * @return Success state
+     * @return void on success, otherwise why the form was rejected
      */
-    [[nodiscard]] bool applyAdvancedSettingsForm(
+    [[nodiscard]] std::expected<void, std::string> applyAdvancedSettingsForm(
         SettingsManager& settings,
         const std::unordered_map<std::string, std::string>& form
     ) noexcept;
