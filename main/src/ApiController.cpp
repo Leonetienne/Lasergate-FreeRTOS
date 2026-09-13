@@ -79,6 +79,21 @@ void claimModulePins(PinClaims& claims, const SettingsManager& settings, std::op
     }
 }
 
+void claimConnLedPins(PinClaims& claims, const SettingsManager& settings) {
+    if (!settings.retrieveConnLedsEnabled().value_or(true)) {
+        return;
+    }
+
+    const gpio_num_t ethernetLedPin = settings.retrieveEthernetLedGpioPin().value_or(GPIO_NUM_NC);
+    const gpio_num_t mqttLedPin = settings.retrieveMqttLedGpioPin().value_or(GPIO_NUM_NC);
+    if (ethernetLedPin != GPIO_NUM_NC) {
+        claims.try_emplace(ethernetLedPin, "the Ethernet status LED");
+    }
+    if (mqttLedPin != GPIO_NUM_NC) {
+        claims.try_emplace(mqttLedPin, "the MQTT status LED");
+    }
+}
+
 std::string pinUnusableReason(gpio_num_t pin) {
     if (std::ranges::find(BoardReservedPins::ALL_PINS, pin) == BoardReservedPins::ALL_PINS.end()) {
         return "does not exist on this chip";
@@ -125,6 +140,21 @@ std::expected<void, std::string> validatePinRoles(std::span<const PinRole> roles
 std::string formValue(const std::unordered_map<std::string, std::string>& form, const std::string& key) noexcept {
     const auto it = form.find(key);
     return it != form.end() ? it->second : std::string();
+}
+
+// blank/invalid/out-of-range yields 0, the "unset" value
+uint16_t parseUint16Field(const std::unordered_map<std::string, std::string>& form, const std::string& key) noexcept {
+    const auto it = form.find(key);
+    if (it == form.end() || it->second.empty()) {
+        return 0;
+    }
+
+    int32_t value = 0;
+    if (!parseInt32(it->second, value) || value < 0 || value > UINT16_MAX) {
+        return 0;
+    }
+
+    return static_cast<uint16_t>(value);
 }
 
 const char* toString(EthernetConnectionState state) noexcept {
@@ -453,4 +483,39 @@ bool ApiController::requestStateIfAllowed(STATE current, STATE requested) noexce
 
     requestSystemState(requested);
     return true;
+}
+
+std::expected<void, std::string> ApiController::applyModuleConfigForm(
+    SettingsManager& settings,
+    std::size_t moduleIndex,
+    const std::unordered_map<std::string, std::string>& form
+) noexcept {
+    const gpio_num_t laserPin = parseGpioField(form, "laser_gpio");
+    const gpio_num_t ledPin = parseGpioField(form, "led_gpio");
+    const gpio_num_t ldrPin = parseGpioField(form, "ldr_gpio");
+    const uint16_t ldrThreshold = parseUint16Field(form, "ldr_thresh");
+    const uint16_t pulseFrequency = parseUint16Field(form, "pulse_freq");
+
+    PinClaims claims;
+    claimModulePins(claims, settings, moduleIndex);
+    claimConnLedPins(claims, settings);
+
+    const std::array<PinRole, 3> roles{{
+        {laserPin, "Laser", false},
+        {ledPin, "Status LED", false},
+        {ldrPin, "LDR", true},
+    }};
+    if (const auto valid = validatePinRoles(roles, claims); !valid) {
+        return valid;
+    }
+
+    if (!settings.storeGateModuleLaserGpioPin(moduleIndex, laserPin) ||
+        !settings.storeGateModuleLedGpioPin(moduleIndex, ledPin) ||
+        !settings.storeGateModuleLdrGpioPin(moduleIndex, ldrPin) ||
+        !settings.storeGateModuleLdrThreshold(moduleIndex, ldrThreshold) ||
+        !settings.storeGateModuleLaserPulseFrequency(moduleIndex, pulseFrequency)) {
+        return std::unexpected("Failed to write settings");
+    }
+
+    return {};
 }

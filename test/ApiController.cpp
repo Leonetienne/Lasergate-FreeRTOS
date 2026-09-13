@@ -447,3 +447,107 @@ TEST_CASE("ApiController: requestStateIfAllowed", "[ApiController]") {
         REQUIRE_FALSE(apiController.consumeDesiredSystemState().has_value());
     }
 }
+
+TEST_CASE("ApiController: applyModuleConfigForm", "[ApiController]") {
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+    ApiController apiController;
+
+    SECTION("stores the submitted pins, threshold and frequency for the given module") {
+        const std::unordered_map<std::string, std::string> form = {
+            {"laser_gpio", "41"},
+            {"led_gpio", "42"},
+            {"ldr_gpio", "1"},
+            {"ldr_thresh", "1820"},
+            {"pulse_freq", "8"},
+        };
+        REQUIRE(apiController.applyModuleConfigForm(settings, 0, form));
+
+        REQUIRE(*settings.retrieveGateModuleLaserGpioPin(0) == GPIO_NUM_41);
+        REQUIRE(*settings.retrieveGateModuleLedGpioPin(0) == GPIO_NUM_42);
+        REQUIRE(*settings.retrieveGateModuleLdrGpioPin(0) == GPIO_NUM_1);
+        REQUIRE(*settings.retrieveGateModuleLdrThreshold(0) == 1820);
+        REQUIRE(*settings.retrieveGateModuleLaserPulseFrequency(0) == 8);
+    }
+
+    SECTION("targets the given module index and leaves others untouched") {
+        const std::unordered_map<std::string, std::string> form = {{"laser_gpio", "41"}};
+        REQUIRE(apiController.applyModuleConfigForm(settings, 2, form));
+
+        REQUIRE(*settings.retrieveGateModuleLaserGpioPin(2) == GPIO_NUM_41);
+        REQUIRE(settings.retrieveGateModuleLaserGpioPin(0).value_or(GPIO_NUM_NC) == GPIO_NUM_NC);
+    }
+
+    SECTION("leaves pins unset for blank gpio fields") {
+        const std::unordered_map<std::string, std::string> form = {};
+        REQUIRE(apiController.applyModuleConfigForm(settings, 0, form));
+
+        REQUIRE(*settings.retrieveGateModuleLaserGpioPin(0) == GPIO_NUM_NC);
+        REQUIRE(*settings.retrieveGateModuleLdrThreshold(0) == 0);
+        REQUIRE(*settings.retrieveGateModuleLaserPulseFrequency(0) == 0);
+    }
+
+    SECTION("rejects a board reserved pin") {
+        const std::unordered_map<std::string, std::string> form = {{"laser_gpio", "9"}, {"ldr_gpio", "1"}};
+        REQUIRE_FALSE(apiController.applyModuleConfigForm(settings, 0, form));
+        REQUIRE_FALSE(settings.retrieveGateModuleLdrGpioPin(0).has_value());
+    }
+
+    SECTION("rejects a pin missing from the chip") {
+        const std::unordered_map<std::string, std::string> form = {{"laser_gpio", "23"}, {"ldr_gpio", "1"}};
+        REQUIRE_FALSE(apiController.applyModuleConfigForm(settings, 0, form));
+    }
+
+    SECTION("rejects an ldr pin without an adc channel") {
+        const std::unordered_map<std::string, std::string> form = {{"laser_gpio", "41"}, {"ldr_gpio", "42"}};
+        const auto result = apiController.applyModuleConfigForm(settings, 0, form);
+        REQUIRE_FALSE(result);
+        REQUIRE(result.error() == "LDR GPIO 42 needs an ADC pin");
+    }
+
+    SECTION("rejects the same pin used for two roles in one module") {
+        const std::unordered_map<std::string, std::string> form = {{"laser_gpio", "1"}, {"ldr_gpio", "1"}};
+        REQUIRE_FALSE(apiController.applyModuleConfigForm(settings, 0, form));
+    }
+
+    SECTION("rejects a pin used by another configured module") {
+        const std::unordered_map<std::string, std::string> first = {{"laser_gpio", "41"}, {"ldr_gpio", "1"}};
+        REQUIRE(apiController.applyModuleConfigForm(settings, 0, first));
+
+        const std::unordered_map<std::string, std::string> second = {{"laser_gpio", "42"}, {"ldr_gpio", "1"}};
+        const auto result = apiController.applyModuleConfigForm(settings, 1, second);
+        REQUIRE_FALSE(result);
+        REQUIRE(result.error() == "LDR GPIO 1 is already used by module 0 LDR");
+        REQUIRE_FALSE(settings.retrieveGateModuleLdrGpioPin(1).has_value());
+    }
+
+    SECTION("accepts re-saving a module with its own current pins") {
+        const std::unordered_map<std::string, std::string> form = {{"laser_gpio", "41"}, {"ldr_gpio", "1"}};
+        REQUIRE(apiController.applyModuleConfigForm(settings, 0, form));
+        REQUIRE(apiController.applyModuleConfigForm(settings, 0, form));
+    }
+
+    SECTION("rejects a pin used by an enabled connectivity led") {
+        REQUIRE(settings.storeEthernetLedGpioPin(GPIO_NUM_16));
+
+        const std::unordered_map<std::string, std::string> form = {{"laser_gpio", "48"}, {"ldr_gpio", "16"}};
+        const auto result = apiController.applyModuleConfigForm(settings, 0, form);
+        REQUIRE_FALSE(result);
+        REQUIRE(result.error() == "LDR GPIO 16 is already used by the Ethernet status LED");
+    }
+
+    SECTION("ignores a connectivity led pin while the leds are disabled") {
+        REQUIRE(settings.storeEthernetLedGpioPin(GPIO_NUM_16));
+        REQUIRE(settings.storeConnLedsEnabled(false));
+
+        const std::unordered_map<std::string, std::string> form = {{"laser_gpio", "48"}, {"ldr_gpio", "16"}};
+        REQUIRE(apiController.applyModuleConfigForm(settings, 0, form));
+    }
+
+    SECTION("leaves the shutdown request to the caller") {
+        const std::unordered_map<std::string, std::string> form = {};
+        REQUIRE(apiController.applyModuleConfigForm(settings, 0, form));
+        REQUIRE_FALSE(apiController.consumeDesiredSystemState().has_value());
+    }
+}

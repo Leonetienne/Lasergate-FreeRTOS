@@ -160,6 +160,21 @@ public:
      */
     bool requestStateIfAllowed(STATE current, STATE requested) noexcept;
 
+    /**
+     * Applies a parsed manual module configuration form. Callers save all modules first,
+     * then request one SHUTTING_DOWN.
+     * @param settings The settings store to write to
+     * @param moduleIndex Index of the gate module (0-based, < Gate::MODULE_COUNT)
+     * @param form The submitted form fields
+     * @return void on success, otherwise why the form was rejected. Rejected before any write:
+     * board reserved pins, a non-analog ldr pin, duplicate pins, pins used elsewhere in the saved config.
+     */
+    [[nodiscard]] std::expected<void, std::string> applyModuleConfigForm(
+        SettingsManager& settings,
+        std::size_t moduleIndex,
+        const std::unordered_map<std::string, std::string>& form
+    ) noexcept;
+
 private:
     std::atomic<STATE> desiredSystemState { STATE::NONE };
     mutable std::mutex snapshotMutex;
