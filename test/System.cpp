@@ -160,4 +160,34 @@ TEST_CASE("System: states requested while a gate module is ready", "[System]") {
 
         REQUIRE(stub.stateMachine.getState() == STATE::SHUTTING_DOWN);
     }
+
+    SECTION("state changes keep the module's laser pin configured as an output") {
+        REQUIRE(stub.gpio.test_gpioGetMode(GPIO_NUM_41) == GPIO_MODE_OUTPUT);
+
+        stub.apiController.requestSystemState(STATE::OBSERVING);
+        system.update();
+        system.update();
+
+        REQUIRE(stub.gpio.test_gpioGetMode(GPIO_NUM_41) == GPIO_MODE_OUTPUT);
+    }
+
+    SECTION("a gpio discovery run keeps the module's laser pin an output") {
+        stub.apiController.requestSystemState(STATE::DIAGNOSTIC_GPIO_DISCOVERY);
+        system.update();
+        system.update();
+        stub.apiController.requestSystemState(STATE::DISARMED);
+        system.update();
+        system.update();
+
+        REQUIRE(stub.stateMachine.getState() == STATE::DISARMED);
+        REQUIRE(stub.gpio.test_gpioGetMode(GPIO_NUM_41) == GPIO_MODE_OUTPUT);
+    }
+
+    SECTION("gpio discovery enters DIAGNOSTIC_GPIO_DISCOVERY") {
+        stub.apiController.requestSystemState(STATE::DIAGNOSTIC_GPIO_DISCOVERY);
+        system.update();
+        system.update();
+
+        REQUIRE(stub.stateMachine.getState() == STATE::DIAGNOSTIC_GPIO_DISCOVERY);
+    }
 }

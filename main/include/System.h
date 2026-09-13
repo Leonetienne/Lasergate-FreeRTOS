@@ -7,6 +7,7 @@
 
 #include "ApiController.h"
 #include "Gate.h"
+#include "GpioDiscovery.h"
 #include "GpioPinRegister.h"
 #include "StateMachine.h"
 #include "SettingsManager.h"
@@ -116,6 +117,7 @@ private:
     bool isInitialized = false;
 
     Gate gate;
+    GpioDiscovery gpioDiscovery;
     StateMachine& stateMachine;
     GpioPinRegister& gpioPinRegister;
     IGpio& i_gpio;

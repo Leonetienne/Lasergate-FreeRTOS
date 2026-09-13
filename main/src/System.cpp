@@ -27,6 +27,7 @@ System::System(
     ApiController& apiController
 ) noexcept :
     gate(stateMachine, settings, gpioPinRegister, i_gpio, i_adcOneshot, i_adcOneshot2, i_random, i_time),
+    gpioDiscovery(gpioPinRegister, i_gpio, i_adcOneshot, i_adcOneshot2),
     stateMachine(stateMachine),
     gpioPinRegister(gpioPinRegister),
     i_gpio(i_gpio),
@@ -208,4 +209,10 @@ void System::onEthernetDisconnected() noexcept {
 
 void System::onStateChange() noexcept {
     gate.onStateChange();
+
+    if (stateMachine.getState() == STATE::DIAGNOSTIC_GPIO_DISCOVERY) {
+        gpioDiscovery.begin();
+    } else {
+        gpioDiscovery.end();
+    }
 }
