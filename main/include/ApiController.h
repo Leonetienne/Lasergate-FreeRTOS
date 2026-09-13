@@ -153,6 +153,12 @@ public:
      */
     [[nodiscard]] static std::string buildStateJson(const SystemSnapshot& snapshot) noexcept;
 
+    /**
+     * Requests `requested` only if the transition table currently allows it from `current`.
+     * @return Whether the request was queued
+     */
+    bool requestStateIfAllowed(STATE current, STATE requested) noexcept;
+
 private:
     std::atomic<STATE> desiredSystemState { STATE::NONE };
     mutable std::mutex snapshotMutex;

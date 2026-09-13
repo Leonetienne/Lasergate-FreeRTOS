@@ -393,3 +393,17 @@ TEST_CASE("ApiController: buildStateJson", "[ApiController]") {
         ) != std::string::npos);
     }
 }
+
+TEST_CASE("ApiController: requestStateIfAllowed", "[ApiController]") {
+    ApiController apiController;
+
+    SECTION("queues the request when the transition is allowed") {
+        REQUIRE(apiController.requestStateIfAllowed(STATE::DISARMED, STATE::OBSERVING));
+        REQUIRE(apiController.consumeDesiredSystemState() == STATE::OBSERVING);
+    }
+
+    SECTION("rejects a disallowed transition") {
+        REQUIRE_FALSE(apiController.requestStateIfAllowed(STATE::INITIALIZING, STATE::CALIBRATION_LDR_THRESH));
+        REQUIRE_FALSE(apiController.consumeDesiredSystemState().has_value());
+    }
+}

@@ -356,3 +356,12 @@ std::string ApiController::buildStateJson(const SystemSnapshot& snapshot) noexce
     json += '}';
     return json;
 }
+
+bool ApiController::requestStateIfAllowed(STATE current, STATE requested) noexcept {
+    if (!StateMachine::isTransitionAllowed(current, requested)) {
+        return false;
+    }
+
+    requestSystemState(requested);
+    return true;
+}
