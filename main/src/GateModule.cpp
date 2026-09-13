@@ -119,6 +119,7 @@ void GateModule::fixedUpdate() noexcept {
             updateStateDisarmed();
 
         break;
+        case STATE::DIAGNOSTIC_GPIO_DISCOVERY:
         case STATE::SHUTTING_DOWN:
             break;
         default:

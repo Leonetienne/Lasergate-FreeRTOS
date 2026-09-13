@@ -15,6 +15,7 @@ enum class STATE : uint8_t {
     CALIBRATION_MODULATION_FREQUENCY, // The modules are greedily calibrating the frequency at which they may modulate.
     OBSERVING,      // System is operating normally and watching for gate interruptions.
     DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST, // The system runs a few batches as a self-test to report how noisy the laser pulse modulation channel is.
+    DIAGNOSTIC_GPIO_DISCOVERY, // Raw ADC readings and manual pin toggling to identify wiring on fresh hardware.
     DISARMED,       // The system is paused, lasers are offline.
     ALARM,          // The system has detected an intrusion
     FAULT,          // The system has entered an invalid state.

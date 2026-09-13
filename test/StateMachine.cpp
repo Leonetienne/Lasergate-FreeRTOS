@@ -147,8 +147,9 @@ TEST_CASE("StateMachine", "[StateMachine]") {
             {S::USER_ADJUSTING_BEAMS, {S::DISARMED, S::FAULT, S::SHUTTING_DOWN}},
             {S::CALIBRATION_LDR_THRESH, {S::DISARMED, S::FAULT, S::SHUTTING_DOWN}},
             {S::CALIBRATION_MODULATION_FREQUENCY, {S::DISARMED, S::FAULT, S::SHUTTING_DOWN}},
-            {S::DISARMED, {S::USER_ADJUSTING_BEAMS, S::CALIBRATION_LDR_THRESH, S::CALIBRATION_MODULATION_FREQUENCY, S::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST, S::FAULT, S::OBSERVING, S::SHUTTING_DOWN}},
+            {S::DISARMED, {S::USER_ADJUSTING_BEAMS, S::CALIBRATION_LDR_THRESH, S::CALIBRATION_MODULATION_FREQUENCY, S::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST, S::DIAGNOSTIC_GPIO_DISCOVERY, S::FAULT, S::OBSERVING, S::SHUTTING_DOWN}},
             {S::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST, {S::DISARMED, S::FAULT, S::SHUTTING_DOWN}},
+            {S::DIAGNOSTIC_GPIO_DISCOVERY, {S::DISARMED, S::FAULT, S::SHUTTING_DOWN}},
             {S::OBSERVING, {S::DISARMED, S::ALARM, S::FAULT, S::SHUTTING_DOWN}},
             {S::ALARM, {S::DISARMED, S::OBSERVING, S::FAULT, S::SHUTTING_DOWN}},
             {S::FAULT, {S::SHUTTING_DOWN}},
@@ -156,10 +157,10 @@ TEST_CASE("StateMachine", "[StateMachine]") {
             {S::NONE, {}}, // NONE is only ever an ApiController-internal sentinel, never a real transition
         };
 
-        constexpr std::array<S, 11> allStates {
+        constexpr std::array<S, 12> allStates {
             S::INITIALIZING, S::USER_ADJUSTING_BEAMS, S::CALIBRATION_LDR_THRESH,
             S::CALIBRATION_MODULATION_FREQUENCY, S::DISARMED, S::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST,
-            S::OBSERVING, S::ALARM, S::FAULT, S::SHUTTING_DOWN, S::NONE
+            S::DIAGNOSTIC_GPIO_DISCOVERY, S::OBSERVING, S::ALARM, S::FAULT, S::SHUTTING_DOWN, S::NONE
         };
 
         for (const auto from : allStates) {
@@ -179,6 +180,7 @@ TEST_CASE("StateMachine", "[StateMachine]") {
         REQUIRE(std::string(StateMachine::toString(STATE::CALIBRATION_MODULATION_FREQUENCY)) == "CALIBRATION_MODULATION_FREQUENCY");
         REQUIRE(std::string(StateMachine::toString(STATE::OBSERVING)) == "OBSERVING");
         REQUIRE(std::string(StateMachine::toString(STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST)) == "DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST");
+        REQUIRE(std::string(StateMachine::toString(STATE::DIAGNOSTIC_GPIO_DISCOVERY)) == "DIAGNOSTIC_GPIO_DISCOVERY");
         REQUIRE(std::string(StateMachine::toString(STATE::DISARMED)) == "DISARMED");
         REQUIRE(std::string(StateMachine::toString(STATE::ALARM)) == "ALARM");
         REQUIRE(std::string(StateMachine::toString(STATE::FAULT)) == "FAULT");
@@ -186,10 +188,10 @@ TEST_CASE("StateMachine", "[StateMachine]") {
     }
 
     SECTION("fromString round-trips every state through toString") {
-        constexpr std::array<STATE, 11> allStates {
+        constexpr std::array<STATE, 12> allStates {
             STATE::NONE, STATE::INITIALIZING, STATE::USER_ADJUSTING_BEAMS, STATE::CALIBRATION_LDR_THRESH,
             STATE::CALIBRATION_MODULATION_FREQUENCY, STATE::OBSERVING, STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST,
-            STATE::DISARMED, STATE::ALARM, STATE::FAULT, STATE::SHUTTING_DOWN
+            STATE::DIAGNOSTIC_GPIO_DISCOVERY, STATE::DISARMED, STATE::ALARM, STATE::FAULT, STATE::SHUTTING_DOWN
         };
 
         for (const auto state : allStates) {

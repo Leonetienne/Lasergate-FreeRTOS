@@ -28,9 +28,12 @@ bool StateMachine::isTransitionAllowed(STATE from, STATE to) noexcept {
             return to == STATE::DISARMED || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
 
         case STATE::DISARMED:
-            return to == STATE::USER_ADJUSTING_BEAMS || to == STATE::CALIBRATION_LDR_THRESH || to == STATE::CALIBRATION_MODULATION_FREQUENCY || to == STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST || to == STATE::FAULT || to == STATE::OBSERVING || to == STATE::SHUTTING_DOWN;
+            return to == STATE::USER_ADJUSTING_BEAMS || to == STATE::CALIBRATION_LDR_THRESH || to == STATE::CALIBRATION_MODULATION_FREQUENCY || to == STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST || to == STATE::DIAGNOSTIC_GPIO_DISCOVERY || to == STATE::FAULT || to == STATE::OBSERVING || to == STATE::SHUTTING_DOWN;
 
         case STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST:
+            return to == STATE::DISARMED || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
+
+        case STATE::DIAGNOSTIC_GPIO_DISCOVERY:
             return to == STATE::DISARMED || to == STATE::FAULT || to == STATE::SHUTTING_DOWN;
 
         case STATE::OBSERVING:
@@ -100,6 +103,7 @@ const char* StateMachine::toString(STATE state) noexcept {
         case STATE::CALIBRATION_MODULATION_FREQUENCY: return "CALIBRATION_MODULATION_FREQUENCY";
         case STATE::OBSERVING: return "OBSERVING";
         case STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST: return "DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST";
+        case STATE::DIAGNOSTIC_GPIO_DISCOVERY: return "DIAGNOSTIC_GPIO_DISCOVERY";
         case STATE::DISARMED: return "DISARMED";
         case STATE::ALARM: return "ALARM";
         case STATE::FAULT: return "FAULT";
@@ -110,10 +114,10 @@ const char* StateMachine::toString(STATE state) noexcept {
 }
 
 std::optional<STATE> StateMachine::fromString(std::string_view name) noexcept {
-    static constexpr std::array<STATE, 11> allStates {
+    static constexpr std::array<STATE, 12> allStates {
         STATE::NONE, STATE::INITIALIZING, STATE::USER_ADJUSTING_BEAMS, STATE::CALIBRATION_LDR_THRESH,
         STATE::CALIBRATION_MODULATION_FREQUENCY, STATE::OBSERVING, STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST,
-        STATE::DISARMED, STATE::ALARM, STATE::FAULT, STATE::SHUTTING_DOWN
+        STATE::DIAGNOSTIC_GPIO_DISCOVERY, STATE::DISARMED, STATE::ALARM, STATE::FAULT, STATE::SHUTTING_DOWN
     };
 
     for (const STATE state : allStates) {
