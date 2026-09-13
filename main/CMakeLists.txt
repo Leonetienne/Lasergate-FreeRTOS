@@ -15,6 +15,7 @@ idf_component_register(SRCS
                        "src/PulseRingBuffer.cpp"
                        "src/hal/IAdcOneshot.cpp"
                        "src/hal/AdcGpioMapping.cpp"
+                       "src/hal/BoardReservedPins.cpp"
                        "src/hal/IRandom.cpp"
                        "src/platform/GpioEsp32.cpp"
                        "src/platform/RandomEsp32.cpp"
