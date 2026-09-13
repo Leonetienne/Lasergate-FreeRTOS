@@ -175,6 +175,17 @@ public:
         const std::unordered_map<std::string, std::string>& form
     ) noexcept;
 
+    /**
+     * Erases all user settings and requests a shutdown. Only allowed while DISARMED or FAULT.
+     * @param settings The settings store to erase
+     * @param current Current system state
+     * @return void on success, otherwise why the reset was refused
+     */
+    [[nodiscard]] std::expected<void, std::string> resetSettingsToDefaults(
+        SettingsManager& settings,
+        STATE current
+    ) noexcept;
+
 private:
     std::atomic<STATE> desiredSystemState { STATE::NONE };
     mutable std::mutex snapshotMutex;

@@ -519,3 +519,19 @@ std::expected<void, std::string> ApiController::applyModuleConfigForm(
 
     return {};
 }
+
+std::expected<void, std::string> ApiController::resetSettingsToDefaults(
+    SettingsManager& settings,
+    STATE current
+) noexcept {
+    if (current != STATE::DISARMED && current != STATE::FAULT) {
+        return std::unexpected("Settings can only be reset while disarmed or in fault");
+    }
+
+    if (!settings.resetToDefaults()) {
+        return std::unexpected("Failed to erase settings");
+    }
+
+    requestSystemState(STATE::SHUTTING_DOWN);
+    return {};
+}

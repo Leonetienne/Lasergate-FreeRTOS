@@ -551,3 +551,34 @@ TEST_CASE("ApiController: applyModuleConfigForm", "[ApiController]") {
         REQUIRE_FALSE(apiController.consumeDesiredSystemState().has_value());
     }
 }
+
+TEST_CASE("ApiController: resetSettingsToDefaults", "[ApiController]") {
+    NVSStub nvs{};
+    REQUIRE(nvs.begin("system"));
+    SettingsManager settings(nvs);
+    ApiController apiController;
+
+    REQUIRE(settings.storeEthernetLedGpioPin(GPIO_NUM_16));
+    REQUIRE(settings.storeGateModuleLaserGpioPin(0, GPIO_NUM_48));
+
+    SECTION("erases settings and requests a shutdown while disarmed") {
+        REQUIRE(apiController.resetSettingsToDefaults(settings, STATE::DISARMED));
+        REQUIRE_FALSE(settings.retrieveEthernetLedGpioPin().has_value());
+        REQUIRE_FALSE(settings.retrieveGateModuleLaserGpioPin(0).has_value());
+        REQUIRE(apiController.consumeDesiredSystemState() == STATE::SHUTTING_DOWN);
+    }
+
+    SECTION("works while in fault") {
+        REQUIRE(apiController.resetSettingsToDefaults(settings, STATE::FAULT));
+        REQUIRE_FALSE(settings.retrieveGateModuleLaserGpioPin(0).has_value());
+        REQUIRE(apiController.consumeDesiredSystemState() == STATE::SHUTTING_DOWN);
+    }
+
+    SECTION("is refused in every other state") {
+        for (const STATE state : {STATE::OBSERVING, STATE::ALARM, STATE::USER_ADJUSTING_BEAMS, STATE::INITIALIZING}) {
+            REQUIRE_FALSE(apiController.resetSettingsToDefaults(settings, state));
+        }
+        REQUIRE(*settings.retrieveEthernetLedGpioPin() == GPIO_NUM_16);
+        REQUIRE_FALSE(apiController.consumeDesiredSystemState().has_value());
+    }
+}
