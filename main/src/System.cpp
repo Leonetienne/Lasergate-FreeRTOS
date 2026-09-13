@@ -179,6 +179,8 @@ void System::update() noexcept {
 
     i_mqtt.updateActivityLedPulse();
     gate.fixedUpdate();
+
+    apiController.publishSnapshot(stateMachine, gate, gpioDiscovery, i_time.getMillis());
 }
 
 void System::onMqttConnected() noexcept {
