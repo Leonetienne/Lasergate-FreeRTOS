@@ -6,6 +6,7 @@ idf_component_register(SRCS
                        "src/SettingsManager.cpp"
                        "src/UrlEncodedForm.cpp"
                        "src/ApiController.cpp"
+                       "src/JsonWriter.cpp"
                        "src/Diode.cpp"
                        "src/LaserSensor.cpp"
                        "src/Gate.cpp"

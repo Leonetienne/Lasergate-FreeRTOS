@@ -29,6 +29,7 @@ add_executable(lasergate_tests
         SettingsManager.cpp
         UrlEncodedForm.cpp
         ApiController.cpp
+        JsonWriter.cpp
         System.cpp
         Diode.cpp
         LaserDiode.cpp
@@ -48,6 +49,8 @@ add_executable(lasergate_tests
         ../main/src/SettingsManager.cpp
         ../main/src/UrlEncodedForm.cpp
         ../main/src/ApiController.cpp
+        ../main/src/JsonWriter.cpp
+        ../main/include/JsonWriter.h
         ../main/src/Diode.cpp
         ../main/src/platform/GpioDigitalWritePin.cpp
         ../main/src/platform/AdcAnalogReadPin.cpp
