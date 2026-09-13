@@ -1,4 +1,5 @@
 #include "ApiController.h"
+#include "JsonWriter.h"
 #include "compat/gpio_num_t.h"
 
 namespace {
@@ -207,4 +208,151 @@ std::optional<STATE> ApiController::consumeDesiredSystemState() noexcept {
         return std::nullopt;
     }
     return state;
+}
+
+void ApiController::publishSnapshot(
+    const StateMachine& stateMachine,
+    const Gate& gate,
+    const GpioDiscovery& gpioDiscovery,
+    int64_t uptimeMs
+) noexcept {
+    SystemSnapshot next;
+    next.state = stateMachine.getState();
+    next.faultReason = stateMachine.getLastFaultReason();
+    next.uptimeMs = uptimeMs;
+
+    for (std::size_t i = 0; i < Gate::MODULE_COUNT; ++i) {
+        const GateModule& module = gate.getModule(i);
+        GateModuleSnapshot& moduleSnapshot = next.modules[i];
+
+        moduleSnapshot.configured = module.isConfigured();
+        moduleSnapshot.ready = module.isReady();
+        moduleSnapshot.laserPin = module.getLaserPin();
+        moduleSnapshot.statusLedPin = module.getStatusLedPin();
+        moduleSnapshot.ldrPin = module.getLdrPin();
+        moduleSnapshot.ldrThreshold = module.getLdrThreshold();
+        moduleSnapshot.pulseFrequency = module.getPulseFrequency();
+        moduleSnapshot.pulseBatchAcceptable = module.isPulseBatchAcceptable();
+        moduleSnapshot.batchTimeMs = module.getBatchTime();
+        moduleSnapshot.selfTestErrorCount = module.getLastDiagnosticSignalNoiseSelfTestErrorCount();
+        moduleSnapshot.selfTestFinished = module.isDiagnosticSignalNoiseSelfTestFinished();
+    }
+
+    if (next.state == STATE::DIAGNOSTIC_GPIO_DISCOVERY) {
+        for (const auto& reading : gpioDiscovery.readAdc1()) {
+            if (reading.has_value()) {
+                next.gpioDiscoveryPins.push_back({reading->first, GpioDiscoveryPinRole::ADC1, reading->second, false});
+            }
+        }
+        for (const auto& reading : gpioDiscovery.readAdc2()) {
+            if (reading.has_value()) {
+                next.gpioDiscoveryPins.push_back({reading->first, GpioDiscoveryPinRole::ADC2, reading->second, false});
+            }
+        }
+        for (const auto& pin : gpioDiscovery.getDrivenPins()) {
+            if (pin.has_value()) {
+                next.gpioDiscoveryPins.push_back({
+                    *pin, GpioDiscoveryPinRole::OUTPUT, 0, gpioDiscovery.getPinLevel(*pin).value_or(false)
+                });
+            }
+        }
+    }
+
+    const std::lock_guard<std::mutex> lock(snapshotMutex);
+    snapshot = std::move(next);
+}
+
+ApiController::SystemSnapshot ApiController::getSnapshot() const noexcept {
+    const std::lock_guard<std::mutex> lock(snapshotMutex);
+    return snapshot;
+}
+
+std::string ApiController::buildStateJson(const SystemSnapshot& snapshot) noexcept {
+    std::string json = "{";
+
+    json += "\"state\":";
+    json += JsonWriter::string(StateMachine::toString(snapshot.state));
+    json += ",\"fault_reason\":";
+    json += JsonWriter::string(snapshot.faultReason);
+    json += ",\"uptime_ms\":";
+    json += JsonWriter::number(snapshot.uptimeMs);
+
+    json += ",\"allowed_transitions\":[";
+    bool firstTransition = true;
+    for (const STATE candidate : {
+        STATE::INITIALIZING, STATE::USER_ADJUSTING_BEAMS, STATE::CALIBRATION_LDR_THRESH,
+        STATE::CALIBRATION_MODULATION_FREQUENCY, STATE::OBSERVING, STATE::DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST,
+        STATE::DIAGNOSTIC_GPIO_DISCOVERY, STATE::DISARMED, STATE::ALARM, STATE::FAULT, STATE::SHUTTING_DOWN
+    }) {
+        if (!StateMachine::isTransitionAllowed(snapshot.state, candidate)) {
+            continue;
+        }
+        if (!firstTransition) {
+            json += ',';
+        }
+        firstTransition = false;
+        json += JsonWriter::string(StateMachine::toString(candidate));
+    }
+    json += ']';
+
+    json += ",\"modules\":[";
+    for (std::size_t i = 0; i < snapshot.modules.size(); ++i) {
+        const GateModuleSnapshot& m = snapshot.modules[i];
+        if (i > 0) {
+            json += ',';
+        }
+
+        json += "{\"index\":";
+        json += JsonWriter::number(static_cast<int64_t>(i));
+        json += ",\"configured\":";
+        json += JsonWriter::boolean(m.configured);
+        json += ",\"ready\":";
+        json += JsonWriter::boolean(m.ready);
+        json += ",\"laser_gpio\":";
+        json += m.laserPin != GPIO_NUM_NC ? JsonWriter::number(m.laserPin) : std::string(JsonWriter::null());
+        json += ",\"led_gpio\":";
+        json += m.statusLedPin != GPIO_NUM_NC ? JsonWriter::number(m.statusLedPin) : std::string(JsonWriter::null());
+        json += ",\"ldr_gpio\":";
+        json += m.ldrPin != GPIO_NUM_NC ? JsonWriter::number(m.ldrPin) : std::string(JsonWriter::null());
+        json += ",\"ldr_threshold\":";
+        json += JsonWriter::number(m.ldrThreshold);
+        json += ",\"pulse_frequency_ms\":";
+        json += JsonWriter::number(m.pulseFrequency);
+        json += ",\"pulse_batch_acceptable\":";
+        json += JsonWriter::optBoolean(m.pulseBatchAcceptable);
+        json += ",\"batch_time_ms\":";
+        json += JsonWriter::optNumber(m.batchTimeMs);
+        json += ",\"self_test_error_count\":";
+        json += JsonWriter::optNumber(m.selfTestErrorCount);
+        json += ",\"self_test_finished\":";
+        json += JsonWriter::optBoolean(m.selfTestFinished);
+        json += '}';
+    }
+    json += ']';
+
+    json += ",\"gpio_pins\":[";
+    for (std::size_t i = 0; i < snapshot.gpioDiscoveryPins.size(); ++i) {
+        const GpioDiscoveryPinSnapshot& p = snapshot.gpioDiscoveryPins[i];
+        if (i > 0) {
+            json += ',';
+        }
+
+        const bool isAdc = p.role != GpioDiscoveryPinRole::OUTPUT;
+
+        json += "{\"gpio\":";
+        json += JsonWriter::number(p.pin);
+        json += ",\"role\":";
+        json += JsonWriter::string(
+            p.role == GpioDiscoveryPinRole::ADC1 ? "adc1" : p.role == GpioDiscoveryPinRole::ADC2 ? "adc2" : "output"
+        );
+        json += ",\"adc_raw\":";
+        json += isAdc ? JsonWriter::number(p.adcRaw) : std::string(JsonWriter::null());
+        json += ",\"level\":";
+        json += isAdc ? std::string(JsonWriter::null()) : std::string(JsonWriter::boolean(p.level));
+        json += '}';
+    }
+    json += ']';
+
+    json += '}';
+    return json;
 }

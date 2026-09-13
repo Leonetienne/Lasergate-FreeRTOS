@@ -1,14 +1,19 @@
 #ifndef LASERGATE_V2_APICONTROLLER_H
 #define LASERGATE_V2_APICONTROLLER_H
 
+#include "Gate.h"
+#include "GpioDiscovery.h"
 #include "SettingsManager.h"
 #include "StateMachine.h"
 #include "hal/IEthernetManager.h"
 #include "hal/IMqtt.h"
+#include <array>
 #include <atomic>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 /**
  * Executes parsed api commands against the application state.
@@ -78,8 +83,80 @@ public:
      */
     [[nodiscard]] std::optional<STATE> consumeDesiredSystemState() noexcept;
 
+    /**
+     * Live, read-only view of a single gate module, as reported to web clients.
+     */
+    struct GateModuleSnapshot {
+        bool configured = false;
+        bool ready = false;
+        gpio_num_t laserPin = GPIO_NUM_NC;
+        gpio_num_t statusLedPin = GPIO_NUM_NC;
+        gpio_num_t ldrPin = GPIO_NUM_NC;
+        uint16_t ldrThreshold = 0;
+        uint16_t pulseFrequency = 0;
+        std::optional<bool> pulseBatchAcceptable;
+        std::optional<uint16_t> batchTimeMs;
+        std::optional<uint16_t> selfTestErrorCount;
+        std::optional<bool> selfTestFinished;
+    };
+
+    /**
+     * Which role a gpio-discovery pin snapshot was captured under.
+     */
+    enum class GpioDiscoveryPinRole {
+        OUTPUT,
+        ADC1,
+        ADC2
+    };
+
+    /**
+     * Live, read-only view of a single gpio-discovery pin, as reported to web clients.
+     */
+    struct GpioDiscoveryPinSnapshot {
+        gpio_num_t pin = GPIO_NUM_NC;
+        GpioDiscoveryPinRole role = GpioDiscoveryPinRole::OUTPUT;
+        uint16_t adcRaw = 0; // only meaningful when role is ADC1/ADC2
+        bool level = false;  // only meaningful when role is OUTPUT
+    };
+
+    /**
+     * Live, read-only view of overall system state, as reported to web clients.
+     */
+    struct SystemSnapshot {
+        STATE state = STATE::NONE;
+        std::string faultReason;
+        int64_t uptimeMs = 0;
+        std::array<GateModuleSnapshot, Gate::MODULE_COUNT> modules{};
+        std::vector<GpioDiscoveryPinSnapshot> gpioDiscoveryPins; // only populated in STATE::DIAGNOSTIC_GPIO_DISCOVERY
+    };
+
+    /**
+     * Builds a fresh snapshot of live system/module state for getSnapshot() to hand out.
+     * Main thread only (System::update()), since it reads stateMachine/gate/gpioDiscovery directly.
+     * gpioDiscoveryPins is populated while in STATE::DIAGNOSTIC_GPIO_DISCOVERY.
+     */
+    void publishSnapshot(
+        const StateMachine& stateMachine,
+        const Gate& gate,
+        const GpioDiscovery& gpioDiscovery,
+        int64_t uptimeMs
+    ) noexcept;
+
+    /**
+     * @return A copy of the most recently published snapshot. Safe to call from any thread.
+     */
+    [[nodiscard]] SystemSnapshot getSnapshot() const noexcept;
+
+    /**
+     * @param snapshot The snapshot to serialize
+     * @return snapshot serialized as the /api/state JSON payload (also used for the websocket push)
+     */
+    [[nodiscard]] static std::string buildStateJson(const SystemSnapshot& snapshot) noexcept;
+
 private:
     std::atomic<STATE> desiredSystemState { STATE::NONE };
+    mutable std::mutex snapshotMutex;
+    SystemSnapshot snapshot;
 };
 
 #endif //LASERGATE_V2_APICONTROLLER_H
