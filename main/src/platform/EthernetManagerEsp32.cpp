@@ -56,6 +56,10 @@ bool EthernetManagerEsp32::begin() noexcept {
         return false;
     }
 
+    if (!bindFixedPins()) {
+        return false;
+    }
+
     spi_bus_config_t busConfig = {};
     busConfig.mosi_io_num = SPI_MOSI_GPIO;
     busConfig.miso_io_num = SPI_MISO_GPIO;
@@ -189,6 +193,8 @@ bool EthernetManagerEsp32::free() noexcept {
         success = false;
     }
 
+    freeFixedPins();
+
     isInitialized = false;
     eventHandlersRegistered = false;
     state = EthernetConnectionState::Disconnected;
@@ -212,6 +218,25 @@ void EthernetManagerEsp32::setOnDisconnected(std::function<void()> callback) noe
 void EthernetManagerEsp32::setIndicatorState(PIN_STATE_DIGITAL pinState) noexcept {
     if (indicatorPin.isReady()) {
         indicatorPin.setState(pinState);
+    }
+}
+
+bool EthernetManagerEsp32::bindFixedPins() noexcept {
+    for (std::size_t i = 0; i < FIXED_PINS.size(); ++i) {
+        if (!pinRegister.bindPin(FIXED_PINS[i])) {
+            ESP_LOGE(LOG_TAG, "failed to bind fixed pin %d, already in use", FIXED_PINS[i]);
+            for (std::size_t j = 0; j < i; ++j) {
+                pinRegister.freePin(FIXED_PINS[j]);
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+void EthernetManagerEsp32::freeFixedPins() noexcept {
+    for (const gpio_num_t pin : FIXED_PINS) {
+        pinRegister.freePin(pin);
     }
 }
 

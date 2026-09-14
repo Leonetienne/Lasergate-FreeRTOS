@@ -12,6 +12,7 @@
 #include "esp_eth_netif_glue.h"
 #include "esp_eth_mac.h"
 #include "esp_eth_phy.h"
+#include <array>
 
 /**
  * Esp32-S3 implementation, driving a W5500 SPI ethernet PHY
@@ -50,15 +51,24 @@ private:
 
     void setIndicatorState(PIN_STATE_DIGITAL pinState) noexcept;
 
+    // reserves FIXED_PINS in the pin register so nothing else can claim them
+    bool bindFixedPins() noexcept;
+
+    void freeFixedPins() noexcept;
+
     // Fixed SPI wiring of the Waveshare ESP32-S3-ETH board's onboard W5500
-    static constexpr int SPI_SCLK_GPIO = 13;
-    static constexpr int SPI_MOSI_GPIO = 11;
-    static constexpr int SPI_MISO_GPIO = 12;
-    static constexpr int SPI_CS_GPIO = 14;
-    static constexpr int SPI_INT_GPIO = 10;
-    static constexpr int PHY_RESET_GPIO = 9;
+    static constexpr gpio_num_t SPI_SCLK_GPIO = GPIO_NUM_13;
+    static constexpr gpio_num_t SPI_MOSI_GPIO = GPIO_NUM_11;
+    static constexpr gpio_num_t SPI_MISO_GPIO = GPIO_NUM_12;
+    static constexpr gpio_num_t SPI_CS_GPIO = GPIO_NUM_14;
+    static constexpr gpio_num_t SPI_INT_GPIO = GPIO_NUM_10;
+    static constexpr gpio_num_t PHY_RESET_GPIO = GPIO_NUM_9;
     static constexpr int SPI_CLOCK_MHZ = 25;
     static constexpr uint8_t PHY_ADDR = 1;
+
+    static constexpr std::array<gpio_num_t, 6> FIXED_PINS = {
+        SPI_SCLK_GPIO, SPI_MOSI_GPIO, SPI_MISO_GPIO, SPI_CS_GPIO, SPI_INT_GPIO, PHY_RESET_GPIO
+    };
 
     IGpio& i_gpio;
     GpioPinRegister& pinRegister;
