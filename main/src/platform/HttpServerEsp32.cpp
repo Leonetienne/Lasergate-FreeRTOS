@@ -27,6 +27,21 @@ esp_err_t serveEmbedded(httpd_req_t* req, const uint8_t* start, const uint8_t* e
     return httpd_resp_send(req, reinterpret_cast<const char*>(start), static_cast<ssize_t>(end - start));
 }
 
+// trailing "/api/modules/<n>" index, n is a single digit 0-3
+std::optional<std::size_t> parseModuleIndex(std::string_view uri) noexcept {
+    const auto lastSlash = uri.rfind('/');
+    if (lastSlash == std::string_view::npos || lastSlash + 1 >= uri.size()) {
+        return std::nullopt;
+    }
+
+    const std::string_view segment = uri.substr(lastSlash + 1);
+    if (segment.size() != 1 || segment[0] < '0' || segment[0] > '3') {
+        return std::nullopt;
+    }
+
+    return static_cast<std::size_t>(segment[0] - '0');
+}
+
 }
 
 extern const uint8_t index_html_start[] asm("_binary_index_html_start");
@@ -117,6 +132,12 @@ bool HttpServerEsp32::begin() noexcept {
         .handler = handlePostApiSettingsReset,
         .user_ctx = this,
     };
+    static const httpd_uri_t postApiModuleUri = {
+        .uri = "/api/modules/*",
+        .method = HTTP_POST,
+        .handler = handlePostApiModule,
+        .user_ctx = this,
+    };
 
     if (httpd_register_uri_handler(server, &getIndexUri) != ESP_OK) {
         return false;
@@ -140,6 +161,9 @@ bool HttpServerEsp32::begin() noexcept {
         return false;
     }
     if (httpd_register_uri_handler(server, &postApiSettingsResetUri) != ESP_OK) {
+        return false;
+    }
+    if (httpd_register_uri_handler(server, &postApiModuleUri) != ESP_OK) {
         return false;
     }
 
@@ -291,6 +315,31 @@ esp_err_t HttpServerEsp32::handlePostApiSettingsReset(httpd_req_t* req) noexcept
     const STATE current = self->apiController.getSnapshot().state;
 
     if (const auto result = self->apiController.resetSettingsToDefaults(self->settings, current); !result) {
+        sendBadRequest(req, result.error());
+        return ESP_FAIL;
+    }
+
+    httpd_resp_send(req, nullptr, 0);
+    return ESP_OK;
+}
+
+esp_err_t HttpServerEsp32::handlePostApiModule(httpd_req_t* req) noexcept {
+    const auto moduleIndex = parseModuleIndex(req->uri);
+    if (!moduleIndex.has_value()) {
+        httpd_resp_send_404(req);
+        return ESP_FAIL;
+    }
+
+    std::string body;
+    if (!readRequestBody(req, body)) {
+        httpd_resp_set_status(req, "400 Bad Request");
+        httpd_resp_send(req, nullptr, 0);
+        return ESP_FAIL;
+    }
+
+    const auto form = UrlEncodedForm::parse(body);
+    auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
+    if (const auto result = self->apiController.applyModuleConfigForm(self->settings, *moduleIndex, form); !result) {
         sendBadRequest(req, result.error());
         return ESP_FAIL;
     }

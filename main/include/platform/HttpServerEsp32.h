@@ -88,6 +88,11 @@ private:
      */
     static esp_err_t handlePostApiSettingsReset(httpd_req_t* req) noexcept;
 
+    /**
+     * Routes POST /api/modules/{0..3}: saves a single gate module's manual configuration
+     */
+    static esp_err_t handlePostApiModule(httpd_req_t* req) noexcept;
+
     bool isInitialized = false;
     httpd_handle_t server = nullptr;
     IEthernetManager& i_ethernetMan;
