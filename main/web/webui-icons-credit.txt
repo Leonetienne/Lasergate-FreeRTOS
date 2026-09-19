@@ -1,0 +1,18 @@
+Icons used in this web UI are from Flaticon (https://www.flaticon.com) and are used
+under the Flaticon Free License, which requires attribution. Credits below, one per file.
+
+sidebar-dashboard.png    Dashboard by Pixel perfect        https://www.flaticon.com/free-icon/dashboard_1828765
+sidebar-emitters.png     Target by Magnific                https://www.flaticon.com/free-icon/target_934589
+sidebar-calibrate-ldr.png Adjust by Vector Stall            https://www.flaticon.com/free-icon/adjust_6162045
+sidebar-calibrate-freq.png Frequency by Magnific            https://www.flaticon.com/free-icon/frequency_1598797
+sidebar-modules.png      Sliders by Creatype                https://www.flaticon.com/free-icon/sliders_9265850
+sidebar-self-test.png    Clipboard by Kiranshastry          https://www.flaticon.com/free-icon/clipboard_839860
+sidebar-config.png       Settings by Magnific               https://www.flaticon.com/free-icon/settings_2099058
+status-armed.png         Shield by Magnific                 https://www.flaticon.com/free-icon/shield_1962520
+status-disarmed.png      Shield by Magnific                 https://www.flaticon.com/free-icon/shield_786245
+status-alarm.png         Siren by Prosymbols                https://www.flaticon.com/free-icon/siren_365647
+action-stop.png          Stop by Darius Dan                 https://www.flaticon.com/free-icon/stop_916317
+brand.png                Shield by Magnific                 https://www.flaticon.com/free-icon/shield_786245
+headbar-uptime.png       Stopwatch by Smashicons            https://www.flaticon.com/free-icon/stopwatch_1679806
+headbar-state.png        Pulse by Cursor Creative           https://www.flaticon.com/free-icon/pulse_340187
+headbar-modules.png      Microchip by smalllikeart          https://www.flaticon.com/free-icon/microchip_1404247
