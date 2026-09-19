@@ -83,6 +83,11 @@ private:
      */
     static esp_err_t handlePostApiState(httpd_req_t* req) noexcept;
 
+    /**
+     * Erases all user settings and requests a shutdown
+     */
+    static esp_err_t handlePostApiSettingsReset(httpd_req_t* req) noexcept;
+
     bool isInitialized = false;
     httpd_handle_t server = nullptr;
     IEthernetManager& i_ethernetMan;

@@ -111,6 +111,12 @@ bool HttpServerEsp32::begin() noexcept {
         .handler = handlePostApiState,
         .user_ctx = this,
     };
+    static const httpd_uri_t postApiSettingsResetUri = {
+        .uri = "/api/settings/reset",
+        .method = HTTP_POST,
+        .handler = handlePostApiSettingsReset,
+        .user_ctx = this,
+    };
 
     if (httpd_register_uri_handler(server, &getIndexUri) != ESP_OK) {
         return false;
@@ -131,6 +137,9 @@ bool HttpServerEsp32::begin() noexcept {
         return false;
     }
     if (httpd_register_uri_handler(server, &postApiStateUri) != ESP_OK) {
+        return false;
+    }
+    if (httpd_register_uri_handler(server, &postApiSettingsResetUri) != ESP_OK) {
         return false;
     }
 
@@ -270,6 +279,19 @@ esp_err_t HttpServerEsp32::handlePostApiState(httpd_req_t* req) noexcept {
     if (!requested.has_value() || !self->apiController.requestStateIfAllowed(current, *requested)) {
         httpd_resp_set_status(req, "400 Bad Request");
         httpd_resp_send(req, nullptr, 0);
+        return ESP_FAIL;
+    }
+
+    httpd_resp_send(req, nullptr, 0);
+    return ESP_OK;
+}
+
+esp_err_t HttpServerEsp32::handlePostApiSettingsReset(httpd_req_t* req) noexcept {
+    auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
+    const STATE current = self->apiController.getSnapshot().state;
+
+    if (const auto result = self->apiController.resetSettingsToDefaults(self->settings, current); !result) {
+        sendBadRequest(req, result.error());
         return ESP_FAIL;
     }
 
