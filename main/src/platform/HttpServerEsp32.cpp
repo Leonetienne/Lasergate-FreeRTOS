@@ -1,5 +1,6 @@
 #include "platform/HttpServerEsp32.h"
 #include "ApiController.h"
+#include "StateMachine.h"
 #include "UrlEncodedForm.h"
 
 namespace {
@@ -104,6 +105,12 @@ bool HttpServerEsp32::begin() noexcept {
         .handler = handlePostSettings,
         .user_ctx = this,
     };
+    static const httpd_uri_t postApiStateUri = {
+        .uri = "/api/state",
+        .method = HTTP_POST,
+        .handler = handlePostApiState,
+        .user_ctx = this,
+    };
 
     if (httpd_register_uri_handler(server, &getIndexUri) != ESP_OK) {
         return false;
@@ -121,6 +128,9 @@ bool HttpServerEsp32::begin() noexcept {
         return false;
     }
     if (httpd_register_uri_handler(server, &postSettingsUri) != ESP_OK) {
+        return false;
+    }
+    if (httpd_register_uri_handler(server, &postApiStateUri) != ESP_OK) {
         return false;
     }
 
@@ -235,6 +245,31 @@ esp_err_t HttpServerEsp32::handleAdvancedSettingsForm(httpd_req_t* req) noexcept
     auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
     if (const auto result = self->apiController.applyAdvancedSettingsForm(self->settings, form); !result) {
         sendBadRequest(req, result.error());
+        return ESP_FAIL;
+    }
+
+    httpd_resp_send(req, nullptr, 0);
+    return ESP_OK;
+}
+
+esp_err_t HttpServerEsp32::handlePostApiState(httpd_req_t* req) noexcept {
+    std::string body;
+    if (!readRequestBody(req, body)) {
+        httpd_resp_set_status(req, "400 Bad Request");
+        httpd_resp_send(req, nullptr, 0);
+        return ESP_FAIL;
+    }
+
+    const auto form = UrlEncodedForm::parse(body);
+    const auto it = form.find("state");
+    const auto requested = it != form.end() ? StateMachine::fromString(it->second) : std::nullopt;
+
+    auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
+    const STATE current = self->apiController.getSnapshot().state;
+
+    if (!requested.has_value() || !self->apiController.requestStateIfAllowed(current, *requested)) {
+        httpd_resp_set_status(req, "400 Bad Request");
+        httpd_resp_send(req, nullptr, 0);
         return ESP_FAIL;
     }
 

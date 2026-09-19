@@ -78,6 +78,11 @@ private:
      */
     static esp_err_t handleAdvancedSettingsForm(httpd_req_t* req) noexcept;
 
+    /**
+     * Routes POST /api/state {state=NAME}: requests a state transition if currently allowed
+     */
+    static esp_err_t handlePostApiState(httpd_req_t* req) noexcept;
+
     bool isInitialized = false;
     httpd_handle_t server = nullptr;
     IEthernetManager& i_ethernetMan;
