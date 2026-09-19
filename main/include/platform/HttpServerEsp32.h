@@ -37,7 +37,12 @@ public:
 
 private:
     /**
-     * Routes GET /api/ requests
+     * Serves the embedded static asset (html/css/js) matching req->uri, or 404
+     */
+    static esp_err_t handleGetStatic(httpd_req_t* req) noexcept;
+
+    /**
+     * Routes GET requests under /api
      */
     static esp_err_t handleGetApi(httpd_req_t* req) noexcept;
 

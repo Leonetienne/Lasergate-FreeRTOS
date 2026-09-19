@@ -32,6 +32,11 @@ idf_component_register(SRCS
                        "src/platform/SystemEsp32.cpp"
                        PRIV_REQUIRES spi_flash
                        REQUIRES esp_driver_gpio esp_driver_spi esp_adc nvs_flash mqtt esp_eth esp_netif esp_event esp_http_server esp_timer
-                       INCLUDE_DIRS "include")
+                       INCLUDE_DIRS "include"
+                       EMBED_FILES "web/style.css"
+                                   "web/sidebar.html"
+                                   "web/app.js"
+                                   "web/icons/brand.png"
+                                   "web/icons/sidebar-dashboard.png")
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -std=gnu++23)
