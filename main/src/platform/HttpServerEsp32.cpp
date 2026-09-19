@@ -163,18 +163,23 @@ esp_err_t HttpServerEsp32::handleGetApi(httpd_req_t* req) noexcept {
     auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
 
     std::string report;
+    const char* contentType = "text/plain";
+
     if (uri == "/api/status") {
         report = ApiController::buildStatusReport(self->i_ethernetMan, self->i_mqtt, self->settings);
     } else if (uri == "/api/settings") {
         report = ApiController::buildSettingsReport(self->settings);
     } else if (uri == "/api/settings/advanced") {
         report = ApiController::buildAdvancedSettingsReport(self->settings);
+    } else if (uri == "/api/state") {
+        report = ApiController::buildStateJson(self->apiController.getSnapshot());
+        contentType = "application/json";
     } else {
         httpd_resp_send_404(req);
         return ESP_FAIL;
     }
 
-    httpd_resp_set_type(req, "text/plain");
+    httpd_resp_set_type(req, contentType);
     return httpd_resp_send(req, report.c_str(), static_cast<ssize_t>(report.size()));
 }
 
