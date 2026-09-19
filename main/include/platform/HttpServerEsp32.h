@@ -93,6 +93,12 @@ private:
      */
     static esp_err_t handlePostApiModule(httpd_req_t* req) noexcept;
 
+    /**
+     * Routes POST /api/gpio-discovery/pin {pin=N,level=0|1}: queues a pin write, only
+     * accepted while the system is in STATE::DIAGNOSTIC_GPIO_DISCOVERY
+     */
+    static esp_err_t handlePostApiGpioDiscoveryPin(httpd_req_t* req) noexcept;
+
     bool isInitialized = false;
     httpd_handle_t server = nullptr;
     IEthernetManager& i_ethernetMan;

@@ -138,6 +138,12 @@ bool HttpServerEsp32::begin() noexcept {
         .handler = handlePostApiModule,
         .user_ctx = this,
     };
+    static const httpd_uri_t postApiGpioDiscoveryPinUri = {
+        .uri = "/api/gpio-discovery/pin",
+        .method = HTTP_POST,
+        .handler = handlePostApiGpioDiscoveryPin,
+        .user_ctx = this,
+    };
 
     if (httpd_register_uri_handler(server, &getIndexUri) != ESP_OK) {
         return false;
@@ -164,6 +170,9 @@ bool HttpServerEsp32::begin() noexcept {
         return false;
     }
     if (httpd_register_uri_handler(server, &postApiModuleUri) != ESP_OK) {
+        return false;
+    }
+    if (httpd_register_uri_handler(server, &postApiGpioDiscoveryPinUri) != ESP_OK) {
         return false;
     }
 
@@ -341,6 +350,28 @@ esp_err_t HttpServerEsp32::handlePostApiModule(httpd_req_t* req) noexcept {
     auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
     if (const auto result = self->apiController.applyModuleConfigForm(self->settings, *moduleIndex, form); !result) {
         sendBadRequest(req, result.error());
+        return ESP_FAIL;
+    }
+
+    httpd_resp_send(req, nullptr, 0);
+    return ESP_OK;
+}
+
+esp_err_t HttpServerEsp32::handlePostApiGpioDiscoveryPin(httpd_req_t* req) noexcept {
+    std::string body;
+    if (!readRequestBody(req, body)) {
+        httpd_resp_set_status(req, "400 Bad Request");
+        httpd_resp_send(req, nullptr, 0);
+        return ESP_FAIL;
+    }
+
+    const auto form = UrlEncodedForm::parse(body);
+    auto* self = static_cast<HttpServerEsp32*>(req->user_ctx);
+
+    if (self->apiController.getSnapshot().state != STATE::DIAGNOSTIC_GPIO_DISCOVERY ||
+        !self->apiController.requestGpioDiscoveryPinLevel(form)) {
+        httpd_resp_set_status(req, "400 Bad Request");
+        httpd_resp_send(req, nullptr, 0);
         return ESP_FAIL;
     }
 
