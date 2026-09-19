@@ -180,6 +180,12 @@ void System::update() noexcept {
     i_mqtt.updateActivityLedPulse();
     gate.fixedUpdate();
 
+    // pin requests are consumed in every state
+    if (const auto pinRequest = apiController.consumeGpioDiscoveryPinRequest();
+        pinRequest.has_value() && stateMachine.getState() == STATE::DIAGNOSTIC_GPIO_DISCOVERY) {
+        gpioDiscovery.setPinLevel(pinRequest->pin, pinRequest->high);
+    }
+
     apiController.publishSnapshot(stateMachine, gate, gpioDiscovery, i_time.getMillis());
 }
 

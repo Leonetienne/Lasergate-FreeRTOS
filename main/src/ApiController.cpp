@@ -535,3 +535,26 @@ std::expected<void, std::string> ApiController::resetSettingsToDefaults(
     requestSystemState(STATE::SHUTTING_DOWN);
     return {};
 }
+
+bool ApiController::requestGpioDiscoveryPinLevel(const std::unordered_map<std::string, std::string>& form) noexcept {
+    const gpio_num_t pin = parseGpioField(form, "pin");
+    if (pin == GPIO_NUM_NC) {
+        return false;
+    }
+
+    const auto levelIt = form.find("level");
+    if (levelIt == form.end() || (levelIt->second != "0" && levelIt->second != "1")) {
+        return false;
+    }
+
+    const std::lock_guard<std::mutex> lock(gpioDiscoveryRequestMutex);
+    pendingGpioDiscoveryPinRequest = GpioDiscoveryPinRequest{pin, levelIt->second == "1"};
+    return true;
+}
+
+std::optional<ApiController::GpioDiscoveryPinRequest> ApiController::consumeGpioDiscoveryPinRequest() noexcept {
+    const std::lock_guard<std::mutex> lock(gpioDiscoveryRequestMutex);
+    std::optional<GpioDiscoveryPinRequest> request = pendingGpioDiscoveryPinRequest;
+    pendingGpioDiscoveryPinRequest.reset();
+    return request;
+}

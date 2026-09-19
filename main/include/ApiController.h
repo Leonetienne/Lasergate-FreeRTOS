@@ -186,10 +186,33 @@ public:
         STATE current
     ) noexcept;
 
+    /**
+     * A pending request to drive one gpio-discovery pin high/low, queued by the http
+     * thread and applied on the main thread by consumeGpioDiscoveryPinRequest().
+     */
+    struct GpioDiscoveryPinRequest {
+        gpio_num_t pin = GPIO_NUM_NC;
+        bool high = false;
+    };
+
+    /**
+     * Parses and queues a gpio-discovery pin write, applied later on the main thread.
+     * @return false if the form lacks a valid pin/level pair
+     */
+    bool requestGpioDiscoveryPinLevel(const std::unordered_map<std::string, std::string>& form) noexcept;
+
+    /**
+     * Takes and clears the pending gpio-discovery pin request, if any.
+     */
+    [[nodiscard]] std::optional<GpioDiscoveryPinRequest> consumeGpioDiscoveryPinRequest() noexcept;
+
 private:
     std::atomic<STATE> desiredSystemState { STATE::NONE };
     mutable std::mutex snapshotMutex;
     SystemSnapshot snapshot;
+
+    std::mutex gpioDiscoveryRequestMutex;
+    std::optional<GpioDiscoveryPinRequest> pendingGpioDiscoveryPinRequest;
 };
 
 #endif //LASERGATE_V2_APICONTROLLER_H

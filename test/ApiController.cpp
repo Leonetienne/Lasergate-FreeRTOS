@@ -582,3 +582,49 @@ TEST_CASE("ApiController: resetSettingsToDefaults", "[ApiController]") {
         REQUIRE_FALSE(apiController.consumeDesiredSystemState().has_value());
     }
 }
+
+TEST_CASE("ApiController: gpio-discovery pin request", "[ApiController]") {
+    ApiController apiController;
+
+    SECTION("consumeGpioDiscoveryPinRequest returns nullopt without a request") {
+        REQUIRE_FALSE(apiController.consumeGpioDiscoveryPinRequest().has_value());
+    }
+
+    SECTION("queues a valid pin/level pair") {
+        const std::unordered_map<std::string, std::string> form = {{"pin", "15"}, {"level", "1"}};
+        REQUIRE(apiController.requestGpioDiscoveryPinLevel(form));
+
+        const auto request = apiController.consumeGpioDiscoveryPinRequest();
+        REQUIRE(request.has_value());
+        REQUIRE(request->pin == GPIO_NUM_15);
+        REQUIRE(request->high);
+    }
+
+    SECTION("is single-shot") {
+        const std::unordered_map<std::string, std::string> form = {{"pin", "15"}, {"level", "1"}};
+        REQUIRE(apiController.requestGpioDiscoveryPinLevel(form));
+
+        REQUIRE(apiController.consumeGpioDiscoveryPinRequest().has_value());
+        REQUIRE_FALSE(apiController.consumeGpioDiscoveryPinRequest().has_value());
+    }
+
+    SECTION("rejects a missing pin") {
+        const std::unordered_map<std::string, std::string> form = {{"level", "1"}};
+        REQUIRE_FALSE(apiController.requestGpioDiscoveryPinLevel(form));
+    }
+
+    SECTION("rejects a missing or invalid level") {
+        REQUIRE_FALSE(apiController.requestGpioDiscoveryPinLevel({{"pin", "15"}}));
+        REQUIRE_FALSE(apiController.requestGpioDiscoveryPinLevel({{"pin", "15"}, {"level", "2"}}));
+    }
+
+    SECTION("a later request overwrites an earlier, unconsumed one") {
+        REQUIRE(apiController.requestGpioDiscoveryPinLevel({{"pin", "15"}, {"level", "1"}}));
+        REQUIRE(apiController.requestGpioDiscoveryPinLevel({{"pin", "16"}, {"level", "0"}}));
+
+        const auto request = apiController.consumeGpioDiscoveryPinRequest();
+        REQUIRE(request->pin == GPIO_NUM_16);
+        REQUIRE_FALSE(request->high);
+    }
+}
+
