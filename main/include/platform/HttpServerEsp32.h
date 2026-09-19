@@ -37,26 +37,6 @@ public:
 
 private:
     /**
-     * Serves the embedded index page
-     */
-    static esp_err_t handleGetIndex(httpd_req_t* req) noexcept;
-
-    /**
-     * Serves the embedded stylesheet
-     */
-    static esp_err_t handleGetStyle(httpd_req_t* req) noexcept;
-
-    /**
-     * Serves the embedded settings page
-     */
-    static esp_err_t handleGetSettingsPage(httpd_req_t* req) noexcept;
-
-    /**
-     * Serves the embedded advanced settings page
-     */
-    static esp_err_t handleGetAdvancedPage(httpd_req_t* req) noexcept;
-
-    /**
      * Routes GET /api/ requests
      */
     static esp_err_t handleGetApi(httpd_req_t* req) noexcept;
