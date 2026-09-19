@@ -2,6 +2,7 @@
 #define LASERGATE_V2_HTTPSERVERESP32_H
 
 #include "esp_http_server.h"
+#include "esp_timer.h"
 #include "hal/IHttpServer.h"
 #include "hal/IEthernetManager.h"
 #include "hal/IMqtt.h"
@@ -9,7 +10,9 @@
 #include "SettingsManager.h"
 
 /**
- * Esp32-Implementation of the web ui / api http server.
+ * Esp32-Implementation of the web ui / api http server. Serves the embedded static
+ * frontend, the text/JSON api, and a websocket (/ws) that periodically broadcasts the
+ * live system/module state built by ApiController::publishSnapshot().
  */
 class HttpServerEsp32 : public IHttpServer {
 public:
@@ -21,13 +24,13 @@ public:
     ~HttpServerEsp32() noexcept override;
 
     /**
-     * Starts the http server and registers all uri handlers
+     * Starts the http server, registers all uri handlers and starts the websocket broadcast timer
      * @return Success state
      */
     bool begin() noexcept override;
 
     /**
-     * Stops the http server and releases the resources acquired by begin()
+     * Stops the broadcast timer and the http server, and releases the resources acquired by begin()
      * @return Success state
      */
     bool free() noexcept override;
@@ -99,8 +102,26 @@ private:
      */
     static esp_err_t handlePostApiGpioDiscoveryPin(httpd_req_t* req) noexcept;
 
+    /**
+     * Upgrades GET /ws to a websocket for server push, driven by the broadcast timer.
+     * Client frames are discarded.
+     */
+    static esp_err_t handleWs(httpd_req_t* req) noexcept;
+
+    /**
+     * Pushes the current snapshot to every open websocket connection.
+     * Queued by onBroadcastTimer, so it runs on the httpd task.
+     */
+    static void broadcastToWebsockets(void* arg) noexcept;
+
+    /**
+     * esp_timer callback: queues broadcastToWebsockets on the httpd task
+     */
+    static void onBroadcastTimer(void* arg) noexcept;
+
     bool isInitialized = false;
     httpd_handle_t server = nullptr;
+    esp_timer_handle_t broadcastTimer = nullptr;
     IEthernetManager& i_ethernetMan;
     IMqtt& i_mqtt;
     SettingsManager& settings;
