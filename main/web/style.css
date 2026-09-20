@@ -494,6 +494,25 @@ button.danger:hover, .btn.danger:hover {
 }
 
 
+.module-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.module-card .module-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.module-card .module-head h3 {
+    font-size: 14px;
+    margin: 0;
+}
+
+
 .table {
     width: 100%;
     border-collapse: collapse;

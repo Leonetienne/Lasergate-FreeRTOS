@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modules | Lasergate</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+    <nav class="sidebar" id="sidebar"></nav>
+    <div class="main">
+        <header class="headbar" id="headbar"></header>
+        <div class="content">
+            <h1 class="page-title">Modules</h1>
+            <p class="page-subtitle">GPIO pins, LDR threshold and pulse frequency per module.</p>
+
+            <div class="gated" id="gate">
+                <div class="state-gate">
+                    <div class="label"></div>
+                    <button class="primary">Disarm</button>
+                </div>
+
+                <div class="gated-content">
+                    <div id="status" class="status-msg"></div>
+                    <div class="module-grid" id="module-grid"></div>
+                    <div class="actions">
+                        <button class="primary" id="save-all-btn">Save &amp; restart</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/app.js"></script>
+<script src="/page.modules.js"></script>
+</body>
+</html>
