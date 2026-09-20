@@ -33,10 +33,17 @@ idf_component_register(SRCS
                        PRIV_REQUIRES spi_flash
                        REQUIRES esp_driver_gpio esp_driver_spi esp_adc nvs_flash mqtt esp_eth esp_netif esp_event esp_http_server esp_timer
                        INCLUDE_DIRS "include"
-                       EMBED_FILES "web/style.css"
+                       EMBED_FILES "web/index.html"
+                                   "web/style.css"
                                    "web/sidebar.html"
                                    "web/app.js"
+                                   "web/page.dashboard.js"
                                    "web/icons/brand.png"
-                                   "web/icons/sidebar-dashboard.png")
+                                   "web/icons/sidebar-dashboard.png"
+                                   "web/icons/status-armed.png"
+                                   "web/icons/status-disarmed.png"
+                                   "web/icons/status-alarm.png"
+                                   "web/icons/action-stop.png"
+                                   "web/icons/headbar-state.png")
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -std=gnu++23)

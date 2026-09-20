@@ -166,3 +166,100 @@ button, input, select {
 }
 
 
+button, .btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 16px;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: background .12s ease, border-color .12s ease;
+}
+
+.btn {
+    display: inline-block;
+    text-align: center;
+}
+
+button:hover, .btn:hover {
+    background: #262b36;
+}
+
+button:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
+button.primary, .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #06121c;
+}
+
+button.primary:hover, .btn.primary:hover {
+    filter: brightness(1.08);
+}
+
+button.danger, .btn.danger {
+    background: var(--bad);
+    border-color: var(--bad);
+    color: #2a0506;
+}
+
+button.danger:hover, .btn.danger:hover {
+    filter: brightness(1.08);
+}
+
+.dashboard-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 48px 20px;
+}
+
+.status-badge {
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.status-badge .icon {
+    width: 52px;
+    height: 52px;
+    /* badge icons sit on a colored fill, so they stay black */
+    filter: none;
+}
+
+.dashboard-status.disarmed .status-badge { background: var(--surface-2); }
+.dashboard-status.armed .status-badge { background: var(--good); }
+.dashboard-status.alarm .status-badge { background: var(--bad); }
+.dashboard-status.other .status-badge { background: var(--warn); }
+
+.dashboard-status.disarmed .status-badge .icon { filter: invert(1); }
+
+.dashboard-status .headline {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 6px;
+}
+
+.dashboard-status .sub {
+    color: var(--text-dim);
+    font-size: 13.5px;
+    margin: 0 0 22px;
+}
+
+
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+

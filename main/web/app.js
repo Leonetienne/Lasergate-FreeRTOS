@@ -14,6 +14,15 @@ const App = (() => {
         SHUTTING_DOWN: 'Shutting down',
     };
 
+    // exclusive task states, other states are enterable once one finishes or faults
+    const TASK_STATE_PAGES = {
+        USER_ADJUSTING_BEAMS: '/emitters',
+        CALIBRATION_LDR_THRESH: '/calibrate/ldr',
+        CALIBRATION_MODULATION_FREQUENCY: '/calibrate/frequency',
+        DIAGNOSTIC_SIGNAL_NOISE_SELF_TEST: '/self-test',
+        DIAGNOSTIC_GPIO_DISCOVERY: '/gpio-discovery',
+    };
+
     let latest = null;
     let connected = false;
     const listeners = [];
@@ -66,6 +75,15 @@ const App = (() => {
         el.innerHTML = await res.text();
     }
 
+    async function requestState(stateName) {
+        const res = await fetch('/api/state', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `state=${encodeURIComponent(stateName)}`,
+        });
+        return res.ok;
+    }
+
     async function init() {
         await Promise.all([
             injectPartial('sidebar', '/sidebar.html'),
@@ -76,5 +94,5 @@ const App = (() => {
 
     document.addEventListener('DOMContentLoaded', init);
 
-    return { onUpdate, STATE_LABELS };
+    return { onUpdate, requestState, STATE_LABELS, TASK_STATE_PAGES };
 })();

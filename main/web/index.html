@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard | Lasergate</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+    <nav class="sidebar" id="sidebar"></nav>
+    <div class="main">
+        <header class="headbar" id="headbar"></header>
+        <div class="content">
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Live system status</p>
+
+            <div class="card">
+                <div class="dashboard-status other" id="status">
+                    <div class="status-badge">
+                        <img class="icon" id="status-icon" src="/icons/headbar-state.png" alt="">
+                    </div>
+                    <div class="headline" id="status-headline">--</div>
+                    <div class="sub" id="status-sub">--</div>
+                    <div class="actions">
+                        <button class="primary" id="arm-btn" hidden>Arm</button>
+                        <button id="disarm-btn" hidden>Disarm</button>
+                        <button class="danger" id="stop-alarm-btn" hidden>
+                            <img class="icon btn-icon" src="/icons/action-stop.png" alt="">
+                            Stop alarm
+                        </button>
+                        <a class="btn primary" id="status-goto-btn" href="/" hidden>Go to page</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/app.js"></script>
+<script src="/page.dashboard.js"></script>
+</body>
+</html>
