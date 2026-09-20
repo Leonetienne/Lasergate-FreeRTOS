@@ -662,3 +662,29 @@ button.danger:hover, .btn.danger:hover {
 .swatch.low { background: rgb(45, 120, 235); }
 .swatch.high { background: rgb(225, 60, 60); }
 
+@media (max-width: 900px) {
+    :root {
+        --sidebar-w: 64px;
+    }
+
+    .sidebar .brand span, .nav-item span {
+        display: none;
+    }
+
+    .sidebar .brand {
+        justify-content: center;
+        padding: 8px 0 20px;
+    }
+
+    .nav-item {
+        justify-content: center;
+    }
+
+    .module-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .field-row {
+        grid-template-columns: 1fr;
+    }
+}
