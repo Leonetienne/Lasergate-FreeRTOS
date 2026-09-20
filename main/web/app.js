@@ -32,6 +32,7 @@ const App = (() => {
     function notify() {
         if (!latest) return;
         for (const cb of listeners) cb(latest, connected);
+        renderHeadbar();
     }
 
     function onUpdate(cb) {
@@ -61,6 +62,29 @@ const App = (() => {
         };
     }
 
+    function formatUptime(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+        return `${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+    }
+
+    function renderHeadbar() {
+        const bar = document.getElementById('headbar');
+        if (!bar || !latest) return;
+
+        bar.querySelector('.hb-uptime').textContent = formatUptime(latest.uptime_ms);
+        bar.querySelector('.hb-state').textContent = STATE_LABELS[latest.state] || latest.state;
+
+        const configured = latest.modules.filter(m => m.configured).length;
+        bar.querySelector('.hb-modules').textContent = `${configured} / ${latest.modules.length}`;
+
+        const dot = bar.querySelector('.conn-dot');
+        dot.classList.toggle('live', connected);
+        dot.title = connected ? 'Live' : 'Reconnecting…';
+    }
+
     function renderSidebarActive() {
         const path = location.pathname;
         document.querySelectorAll('.nav-item').forEach(a => {
@@ -87,6 +111,7 @@ const App = (() => {
     async function init() {
         await Promise.all([
             injectPartial('sidebar', '/sidebar.html'),
+            injectPartial('headbar', '/headbar.html'),
         ]);
         renderSidebarActive();
         connectWs();
@@ -94,5 +119,5 @@ const App = (() => {
 
     document.addEventListener('DOMContentLoaded', init);
 
-    return { onUpdate, requestState, STATE_LABELS, TASK_STATE_PAGES };
+    return { onUpdate, requestState, STATE_LABELS, TASK_STATE_PAGES, formatUptime };
 })();

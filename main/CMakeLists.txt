@@ -36,6 +36,7 @@ idf_component_register(SRCS
                        EMBED_FILES "web/index.html"
                                    "web/style.css"
                                    "web/sidebar.html"
+                                   "web/headbar.html"
                                    "web/app.js"
                                    "web/page.dashboard.js"
                                    "web/icons/brand.png"
@@ -44,6 +45,8 @@ idf_component_register(SRCS
                                    "web/icons/status-disarmed.png"
                                    "web/icons/status-alarm.png"
                                    "web/icons/action-stop.png"
-                                   "web/icons/headbar-state.png")
+                                   "web/icons/headbar-uptime.png"
+                                   "web/icons/headbar-state.png"
+                                   "web/icons/headbar-modules.png")
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -std=gnu++23)

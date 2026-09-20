@@ -130,6 +130,54 @@ button, input, select {
 }
 
 
+.headbar {
+    height: var(--headbar-h);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 0 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.headbar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-size: 13px;
+}
+
+.headbar-item .icon {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    opacity: .6;
+}
+
+.headbar-item strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.headbar .spacer {
+    flex: 1;
+}
+
+.conn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bad);
+    flex-shrink: 0;
+}
+
+.conn-dot.live {
+    background: var(--good);
+}
+
+
 .content {
     padding: 28px 32px;
     max-width: 960px;

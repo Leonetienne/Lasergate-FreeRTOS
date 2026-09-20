@@ -55,6 +55,8 @@ extern const uint8_t style_css_start[] asm("_binary_style_css_start");
 extern const uint8_t style_css_end[] asm("_binary_style_css_end");
 extern const uint8_t sidebar_html_start[] asm("_binary_sidebar_html_start");
 extern const uint8_t sidebar_html_end[] asm("_binary_sidebar_html_end");
+extern const uint8_t headbar_html_start[] asm("_binary_headbar_html_start");
+extern const uint8_t headbar_html_end[] asm("_binary_headbar_html_end");
 extern const uint8_t app_js_start[] asm("_binary_app_js_start");
 extern const uint8_t app_js_end[] asm("_binary_app_js_end");
 extern const uint8_t page_dashboard_js_start[] asm("_binary_page_dashboard_js_start");
@@ -71,8 +73,12 @@ extern const uint8_t status_alarm_png_start[] asm("_binary_status_alarm_png_star
 extern const uint8_t status_alarm_png_end[] asm("_binary_status_alarm_png_end");
 extern const uint8_t action_stop_png_start[] asm("_binary_action_stop_png_start");
 extern const uint8_t action_stop_png_end[] asm("_binary_action_stop_png_end");
+extern const uint8_t headbar_uptime_png_start[] asm("_binary_headbar_uptime_png_start");
+extern const uint8_t headbar_uptime_png_end[] asm("_binary_headbar_uptime_png_end");
 extern const uint8_t headbar_state_png_start[] asm("_binary_headbar_state_png_start");
 extern const uint8_t headbar_state_png_end[] asm("_binary_headbar_state_png_end");
+extern const uint8_t headbar_modules_png_start[] asm("_binary_headbar_modules_png_start");
+extern const uint8_t headbar_modules_png_end[] asm("_binary_headbar_modules_png_end");
 
 namespace {
 
@@ -83,10 +89,11 @@ struct StaticAsset {
     const char* contentType;
 };
 
-constexpr std::array<StaticAsset, 12> STATIC_ASSETS {{
+constexpr std::array<StaticAsset, 15> STATIC_ASSETS {{
     {"/", index_html_start, index_html_end, "text/html"},
     {"/style.css", style_css_start, style_css_end, "text/css"},
     {"/sidebar.html", sidebar_html_start, sidebar_html_end, "text/html"},
+    {"/headbar.html", headbar_html_start, headbar_html_end, "text/html"},
     {"/app.js", app_js_start, app_js_end, "text/javascript"},
     {"/page.dashboard.js", page_dashboard_js_start, page_dashboard_js_end, "text/javascript"},
     {"/icons/brand.png", brand_png_start, brand_png_end, "image/png"},
@@ -95,7 +102,9 @@ constexpr std::array<StaticAsset, 12> STATIC_ASSETS {{
     {"/icons/status-disarmed.png", status_disarmed_png_start, status_disarmed_png_end, "image/png"},
     {"/icons/status-alarm.png", status_alarm_png_start, status_alarm_png_end, "image/png"},
     {"/icons/action-stop.png", action_stop_png_start, action_stop_png_end, "image/png"},
+    {"/icons/headbar-uptime.png", headbar_uptime_png_start, headbar_uptime_png_end, "image/png"},
     {"/icons/headbar-state.png", headbar_state_png_start, headbar_state_png_end, "image/png"},
+    {"/icons/headbar-modules.png", headbar_modules_png_start, headbar_modules_png_end, "image/png"},
 }};
 
 }
