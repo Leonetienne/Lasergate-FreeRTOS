@@ -178,6 +178,48 @@ button, input, select {
 }
 
 
+.fault-banner {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 14px 24px;
+    background: var(--bad-dim);
+    border-bottom: 1px solid var(--bad);
+    color: var(--text);
+    font-size: 13.5px;
+}
+
+.fault-banner[hidden] {
+    display: none;
+}
+
+.fault-banner .fault-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.fault-banner strong {
+    color: var(--bad);
+}
+
+.fault-banner a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.fault-banner .fault-reason {
+    font-family: ui-monospace, monospace;
+    overflow-wrap: anywhere;
+}
+
+.fault-banner button {
+    flex-shrink: 0;
+}
+
+
 .content {
     padding: 28px 32px;
     max-width: 960px;

@@ -33,6 +33,7 @@ const App = (() => {
         if (!latest) return;
         for (const cb of listeners) cb(latest, connected);
         renderHeadbar();
+        renderFaultBanner();
     }
 
     function onUpdate(cb) {
@@ -83,6 +84,47 @@ const App = (() => {
         const dot = bar.querySelector('.conn-dot');
         dot.classList.toggle('live', connected);
         dot.title = connected ? 'Live' : 'Reconnecting…';
+    }
+
+    // FAULT persists until a reboot
+    function renderFaultBanner() {
+        const headbar = document.getElementById('headbar');
+        if (!headbar || !latest) return;
+
+        let banner = document.getElementById('fault-banner');
+        if (latest.state !== 'FAULT') {
+            if (banner) banner.hidden = true;
+            return;
+        }
+
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'fault-banner';
+            banner.className = 'fault-banner';
+            banner.innerHTML = `
+                <div class="fault-text">
+                    <strong>System fault</strong>
+                    <span>Reboot to recover. Settings can be reset under <a href="/config">Configuration</a>.</span>
+                    <span class="fault-reason"></span>
+                </div>
+                <button class="danger" type="button">Reboot</button>
+            `;
+            banner.querySelector('button').addEventListener('click', async (e) => {
+                const button = e.currentTarget;
+                button.disabled = true;
+                button.textContent = 'Rebooting…';
+                if (!(await requestState('SHUTTING_DOWN'))) {
+                    button.disabled = false;
+                    button.textContent = 'Reboot';
+                }
+            });
+            headbar.insertAdjacentElement('afterend', banner);
+        }
+
+        banner.hidden = false;
+        banner.querySelector('.fault-reason').textContent = latest.fault_reason
+            ? `Reason: ${latest.fault_reason}`
+            : 'No reason recorded';
     }
 
     function renderSidebarActive() {
