@@ -67,6 +67,8 @@ extern const uint8_t modules_html_start[] asm("_binary_modules_html_start");
 extern const uint8_t modules_html_end[] asm("_binary_modules_html_end");
 extern const uint8_t self_test_html_start[] asm("_binary_self_test_html_start");
 extern const uint8_t self_test_html_end[] asm("_binary_self_test_html_end");
+extern const uint8_t gpio_discovery_html_start[] asm("_binary_gpio_discovery_html_start");
+extern const uint8_t gpio_discovery_html_end[] asm("_binary_gpio_discovery_html_end");
 extern const uint8_t config_html_start[] asm("_binary_config_html_start");
 extern const uint8_t config_html_end[] asm("_binary_config_html_end");
 extern const uint8_t app_js_start[] asm("_binary_app_js_start");
@@ -83,6 +85,8 @@ extern const uint8_t page_modules_js_start[] asm("_binary_page_modules_js_start"
 extern const uint8_t page_modules_js_end[] asm("_binary_page_modules_js_end");
 extern const uint8_t page_self_test_js_start[] asm("_binary_page_self_test_js_start");
 extern const uint8_t page_self_test_js_end[] asm("_binary_page_self_test_js_end");
+extern const uint8_t page_gpio_discovery_js_start[] asm("_binary_page_gpio_discovery_js_start");
+extern const uint8_t page_gpio_discovery_js_end[] asm("_binary_page_gpio_discovery_js_end");
 extern const uint8_t page_config_js_start[] asm("_binary_page_config_js_start");
 extern const uint8_t page_config_js_end[] asm("_binary_page_config_js_end");
 extern const uint8_t brand_png_start[] asm("_binary_brand_png_start");
@@ -125,7 +129,7 @@ struct StaticAsset {
     const char* contentType;
 };
 
-constexpr std::array<StaticAsset, 33> STATIC_ASSETS {{
+constexpr std::array<StaticAsset, 35> STATIC_ASSETS {{
     {"/", index_html_start, index_html_end, "text/html"},
     {"/style.css", style_css_start, style_css_end, "text/css"},
     {"/sidebar.html", sidebar_html_start, sidebar_html_end, "text/html"},
@@ -135,6 +139,7 @@ constexpr std::array<StaticAsset, 33> STATIC_ASSETS {{
     {"/calibrate/frequency", calibrate_freq_html_start, calibrate_freq_html_end, "text/html"},
     {"/modules", modules_html_start, modules_html_end, "text/html"},
     {"/self-test", self_test_html_start, self_test_html_end, "text/html"},
+    {"/gpio-discovery", gpio_discovery_html_start, gpio_discovery_html_end, "text/html"},
     {"/config", config_html_start, config_html_end, "text/html"},
     {"/app.js", app_js_start, app_js_end, "text/javascript"},
     {"/page.dashboard.js", page_dashboard_js_start, page_dashboard_js_end, "text/javascript"},
@@ -143,6 +148,7 @@ constexpr std::array<StaticAsset, 33> STATIC_ASSETS {{
     {"/page.calibrate-freq.js", page_calibrate_freq_js_start, page_calibrate_freq_js_end, "text/javascript"},
     {"/page.modules.js", page_modules_js_start, page_modules_js_end, "text/javascript"},
     {"/page.self-test.js", page_self_test_js_start, page_self_test_js_end, "text/javascript"},
+    {"/page.gpio-discovery.js", page_gpio_discovery_js_start, page_gpio_discovery_js_end, "text/javascript"},
     {"/page.config.js", page_config_js_start, page_config_js_end, "text/javascript"},
     {"/icons/brand.png", brand_png_start, brand_png_end, "image/png"},
     {"/icons/sidebar-dashboard.png", sidebar_dashboard_png_start, sidebar_dashboard_png_end, "image/png"},

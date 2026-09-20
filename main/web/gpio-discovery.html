@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPIO discovery | Lasergate</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+    <nav class="sidebar" id="sidebar"></nav>
+    <div class="main">
+        <header class="headbar" id="headbar"></header>
+        <div class="content content-wide">
+            <h1 class="page-title">GPIO discovery</h1>
+            <p class="page-subtitle">Read ADC pins and drive other GPIO pins high or low to identify wiring. Grey pins are reserved by the board.</p>
+
+            <div class="gated" id="gate">
+                <div class="state-gate">
+                    <div class="label"></div>
+                    <button class="primary">Start GPIO discovery</button>
+                </div>
+
+                <div class="gated-content">
+                    <div class="card board-card">
+                        <div id="board"></div>
+                        <div class="board-legend">
+                            <span><i class="swatch reserved"></i> Reserved</span>
+                            <span><i class="swatch adc"></i> ADC raw value</span>
+                            <span><i class="swatch low"></i> Low</span>
+                            <span><i class="swatch high"></i> High</span>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button class="primary" id="done-btn">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/app.js"></script>
+<script src="/page.gpio-discovery.js"></script>
+</body>
+</html>
