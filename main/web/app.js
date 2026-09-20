@@ -150,6 +150,40 @@ const App = (() => {
         return res.ok;
     }
 
+    // gated-content is live in targetState. elsewhere it links the running task's page,
+    // or offers an enter button while the transition is allowed
+    function gateOnState(el, targetState, waitingText) {
+        const gate = el.querySelector('.state-gate');
+        const button = gate.querySelector('button');
+        const label = gate.querySelector('.label');
+
+        onUpdate((data) => {
+            const active = data.state === targetState;
+            el.dataset.active = String(active);
+
+            if (active) {
+                label.innerHTML = waitingText;
+                button.hidden = true;
+                return;
+            }
+
+            const busyPage = TASK_STATE_PAGES[data.state];
+            if (busyPage && data.state !== targetState) {
+                label.innerHTML = `System busy: <strong>${STATE_LABELS[data.state]}</strong>. ` +
+                    `<a href="${busyPage}">View progress</a>`;
+                button.hidden = true;
+                return;
+            }
+
+            label.innerHTML = `State: <strong>${STATE_LABELS[data.state]}</strong>`;
+            button.hidden = false;
+            button.disabled = !data.allowed_transitions.includes(targetState);
+            button.title = button.disabled ? `Not available from ${STATE_LABELS[data.state]}` : '';
+        });
+
+        button.addEventListener('click', () => requestState(targetState));
+    }
+
     async function init() {
         await Promise.all([
             injectPartial('sidebar', '/sidebar.html'),
@@ -161,5 +195,5 @@ const App = (() => {
 
     document.addEventListener('DOMContentLoaded', init);
 
-    return { onUpdate, requestState, STATE_LABELS, TASK_STATE_PAGES, formatUptime };
+    return { onUpdate, requestState, gateOnState, STATE_LABELS, TASK_STATE_PAGES, formatUptime };
 })();
