@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LDR calibration | Lasergate</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+    <nav class="sidebar" id="sidebar"></nav>
+    <div class="main">
+        <header class="headbar" id="headbar"></header>
+        <div class="content">
+            <h1 class="page-title">LDR calibration</h1>
+            <p class="page-subtitle">Find the light threshold that separates laser on from off.</p>
+
+            <div class="gated" id="gate">
+                <div class="state-gate">
+                    <div class="label"></div>
+                    <button class="primary">Start LDR calibration</button>
+                </div>
+
+                <div class="gated-content">
+                    <div class="card">
+                        <h2>What happens</h2>
+                        <p>Every ready module searches its own threshold. Returns to Disarmed when all finish, or faults if one fails.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/app.js"></script>
+<script src="/page.calibrate-ldr.js"></script>
+</body>
+</html>
