@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Configuration | Lasergate</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+    <nav class="sidebar" id="sidebar"></nav>
+    <div class="main">
+        <header class="headbar" id="headbar"></header>
+        <div class="content">
+            <h1 class="page-title">Configuration</h1>
+            <p class="page-subtitle">Device name, MQTT and status LEDs.</p>
+
+            <div class="gated" id="gate">
+                <div class="state-gate">
+                    <div class="label"></div>
+                    <button class="primary">Disarm</button>
+                </div>
+
+                <div class="gated-content">
+                    <div id="status" class="status-msg"></div>
+
+                    <form class="card" id="settings-form">
+                        <h2>Device</h2>
+                        <label for="device_name">Device name</label>
+                        <input type="text" id="device_name" name="device_name" maxlength="31" required>
+
+                        <h2 style="margin-top:1.4rem">MQTT</h2>
+                        <p class="hint">Leave blank to disable MQTT.</p>
+                        <label for="mqtt_uri">Broker URI</label>
+                        <input type="text" id="mqtt_uri" name="mqtt_uri" placeholder="mqtt://192.168.0.10:1883" maxlength="63">
+
+                        <label for="mqtt_user">Username</label>
+                        <input type="text" id="mqtt_user" name="mqtt_user" maxlength="31">
+
+                        <label for="mqtt_pass">Password</label>
+                        <input type="password" id="mqtt_pass" name="mqtt_pass" placeholder="Blank keeps current">
+
+                        <label for="node_id">Discovery node ID</label>
+                        <input type="text" id="node_id" name="node_id" maxlength="31" placeholder="defaults to device name">
+
+                        <div class="actions"><button type="submit" class="primary">Save &amp; restart</button></div>
+                    </form>
+
+                    <form class="card" id="advanced-form">
+                        <h2>Status LEDs</h2>
+                        <div class="check-row">
+                            <input type="checkbox" id="enable_conn_leds" name="enable_conn_leds" value="1" checked>
+                            <label for="enable_conn_leds" style="margin:0">Enable status LEDs</label>
+                        </div>
+
+                        <div class="field-row">
+                            <div>
+                                <label for="ethernet_led_gpio">Ethernet LED GPIO</label>
+                                <input type="number" id="ethernet_led_gpio" name="ethernet_led_gpio" min="0" max="48" placeholder="Unset">
+                            </div>
+                            <div>
+                                <label for="mqtt_led_gpio">MQTT LED GPIO</label>
+                                <input type="number" id="mqtt_led_gpio" name="mqtt_led_gpio" min="0" max="48" placeholder="Unset">
+                            </div>
+                        </div>
+
+                        <div class="actions"><button type="submit" class="primary">Save &amp; restart</button></div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card" id="reset-card">
+                <h2>Reset settings</h2>
+                <p>Erases all settings and restarts the device. Requires Disarmed or Fault.</p>
+                <div id="reset-status" class="status-msg"></div>
+                <div class="actions"><button type="button" class="danger" id="reset-btn">Reset to defaults</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/app.js"></script>
+<script src="/page.config.js"></script>
+</body>
+</html>
