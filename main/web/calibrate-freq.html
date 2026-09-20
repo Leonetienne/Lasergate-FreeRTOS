@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency calibration | Lasergate</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+    <nav class="sidebar" id="sidebar"></nav>
+    <div class="main">
+        <header class="headbar" id="headbar"></header>
+        <div class="content">
+            <h1 class="page-title">Frequency calibration</h1>
+            <p class="page-subtitle">Find the fastest pulse frequency each module sustains.</p>
+
+            <div class="gated" id="gate">
+                <div class="state-gate">
+                    <div class="label"></div>
+                    <button class="primary">Start frequency calibration</button>
+                </div>
+
+                <div class="gated-content">
+                    <div class="card">
+                        <h2>What happens</h2>
+                        <p>Every ready module searches its own frequency. Returns to Disarmed when all finish, or faults if one fails.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/app.js"></script>
+<script src="/page.calibrate-freq.js"></script>
+</body>
+</html>
