@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emitters | Lasergate</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+    <nav class="sidebar" id="sidebar"></nav>
+    <div class="main">
+        <header class="headbar" id="headbar"></header>
+        <div class="content">
+            <h1 class="page-title">Emitters</h1>
+            <p class="page-subtitle">Aim each laser at its receiver.</p>
+
+            <div class="gated" id="gate">
+                <div class="state-gate">
+                    <div class="label"></div>
+                    <button class="primary">Adjust emitters</button>
+                </div>
+
+                <div class="gated-content">
+                    <div class="card">
+                        <h2>What to do</h2>
+                        <p>Lasers fire continuously. Adjust each emitter until its status LED lights.</p>
+                    </div>
+                    <div class="actions">
+                        <button class="primary" id="done-btn">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/app.js"></script>
+<script src="/page.emitters.js"></script>
+</body>
+</html>

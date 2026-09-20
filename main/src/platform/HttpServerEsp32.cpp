@@ -57,18 +57,24 @@ extern const uint8_t sidebar_html_start[] asm("_binary_sidebar_html_start");
 extern const uint8_t sidebar_html_end[] asm("_binary_sidebar_html_end");
 extern const uint8_t headbar_html_start[] asm("_binary_headbar_html_start");
 extern const uint8_t headbar_html_end[] asm("_binary_headbar_html_end");
+extern const uint8_t emitters_html_start[] asm("_binary_emitters_html_start");
+extern const uint8_t emitters_html_end[] asm("_binary_emitters_html_end");
 extern const uint8_t config_html_start[] asm("_binary_config_html_start");
 extern const uint8_t config_html_end[] asm("_binary_config_html_end");
 extern const uint8_t app_js_start[] asm("_binary_app_js_start");
 extern const uint8_t app_js_end[] asm("_binary_app_js_end");
 extern const uint8_t page_dashboard_js_start[] asm("_binary_page_dashboard_js_start");
 extern const uint8_t page_dashboard_js_end[] asm("_binary_page_dashboard_js_end");
+extern const uint8_t page_emitters_js_start[] asm("_binary_page_emitters_js_start");
+extern const uint8_t page_emitters_js_end[] asm("_binary_page_emitters_js_end");
 extern const uint8_t page_config_js_start[] asm("_binary_page_config_js_start");
 extern const uint8_t page_config_js_end[] asm("_binary_page_config_js_end");
 extern const uint8_t brand_png_start[] asm("_binary_brand_png_start");
 extern const uint8_t brand_png_end[] asm("_binary_brand_png_end");
 extern const uint8_t sidebar_dashboard_png_start[] asm("_binary_sidebar_dashboard_png_start");
 extern const uint8_t sidebar_dashboard_png_end[] asm("_binary_sidebar_dashboard_png_end");
+extern const uint8_t sidebar_emitters_png_start[] asm("_binary_sidebar_emitters_png_start");
+extern const uint8_t sidebar_emitters_png_end[] asm("_binary_sidebar_emitters_png_end");
 extern const uint8_t sidebar_config_png_start[] asm("_binary_sidebar_config_png_start");
 extern const uint8_t sidebar_config_png_end[] asm("_binary_sidebar_config_png_end");
 extern const uint8_t status_armed_png_start[] asm("_binary_status_armed_png_start");
@@ -95,17 +101,20 @@ struct StaticAsset {
     const char* contentType;
 };
 
-constexpr std::array<StaticAsset, 18> STATIC_ASSETS {{
+constexpr std::array<StaticAsset, 21> STATIC_ASSETS {{
     {"/", index_html_start, index_html_end, "text/html"},
     {"/style.css", style_css_start, style_css_end, "text/css"},
     {"/sidebar.html", sidebar_html_start, sidebar_html_end, "text/html"},
     {"/headbar.html", headbar_html_start, headbar_html_end, "text/html"},
+    {"/emitters", emitters_html_start, emitters_html_end, "text/html"},
     {"/config", config_html_start, config_html_end, "text/html"},
     {"/app.js", app_js_start, app_js_end, "text/javascript"},
     {"/page.dashboard.js", page_dashboard_js_start, page_dashboard_js_end, "text/javascript"},
+    {"/page.emitters.js", page_emitters_js_start, page_emitters_js_end, "text/javascript"},
     {"/page.config.js", page_config_js_start, page_config_js_end, "text/javascript"},
     {"/icons/brand.png", brand_png_start, brand_png_end, "image/png"},
     {"/icons/sidebar-dashboard.png", sidebar_dashboard_png_start, sidebar_dashboard_png_end, "image/png"},
+    {"/icons/sidebar-emitters.png", sidebar_emitters_png_start, sidebar_emitters_png_end, "image/png"},
     {"/icons/sidebar-config.png", sidebar_config_png_start, sidebar_config_png_end, "image/png"},
     {"/icons/status-armed.png", status_armed_png_start, status_armed_png_end, "image/png"},
     {"/icons/status-disarmed.png", status_disarmed_png_start, status_disarmed_png_end, "image/png"},
