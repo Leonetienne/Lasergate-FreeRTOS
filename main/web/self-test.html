@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Self-test | Lasergate</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+    <nav class="sidebar" id="sidebar"></nav>
+    <div class="main">
+        <header class="headbar" id="headbar"></header>
+        <div class="content">
+            <h1 class="page-title">Self-test</h1>
+            <p class="page-subtitle">Measure how noisy each module's pulse channel is.</p>
+
+            <div class="gated" id="gate">
+                <div class="state-gate">
+                    <div class="label"></div>
+                    <button class="primary">Start self-test</button>
+                </div>
+
+                <div class="gated-content">
+                    <div class="card">
+                        <h2>Module results</h2>
+                        <table class="table">
+                            <thead>
+                                <tr><th>Module</th><th>Status</th><th>Misreads</th></tr>
+                            </thead>
+                            <tbody id="results-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="/app.js"></script>
+<script src="/page.self-test.js"></script>
+</body>
+</html>

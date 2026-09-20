@@ -63,6 +63,8 @@ extern const uint8_t calibrate_ldr_html_start[] asm("_binary_calibrate_ldr_html_
 extern const uint8_t calibrate_ldr_html_end[] asm("_binary_calibrate_ldr_html_end");
 extern const uint8_t calibrate_freq_html_start[] asm("_binary_calibrate_freq_html_start");
 extern const uint8_t calibrate_freq_html_end[] asm("_binary_calibrate_freq_html_end");
+extern const uint8_t self_test_html_start[] asm("_binary_self_test_html_start");
+extern const uint8_t self_test_html_end[] asm("_binary_self_test_html_end");
 extern const uint8_t config_html_start[] asm("_binary_config_html_start");
 extern const uint8_t config_html_end[] asm("_binary_config_html_end");
 extern const uint8_t app_js_start[] asm("_binary_app_js_start");
@@ -75,6 +77,8 @@ extern const uint8_t page_calibrate_ldr_js_start[] asm("_binary_page_calibrate_l
 extern const uint8_t page_calibrate_ldr_js_end[] asm("_binary_page_calibrate_ldr_js_end");
 extern const uint8_t page_calibrate_freq_js_start[] asm("_binary_page_calibrate_freq_js_start");
 extern const uint8_t page_calibrate_freq_js_end[] asm("_binary_page_calibrate_freq_js_end");
+extern const uint8_t page_self_test_js_start[] asm("_binary_page_self_test_js_start");
+extern const uint8_t page_self_test_js_end[] asm("_binary_page_self_test_js_end");
 extern const uint8_t page_config_js_start[] asm("_binary_page_config_js_start");
 extern const uint8_t page_config_js_end[] asm("_binary_page_config_js_end");
 extern const uint8_t brand_png_start[] asm("_binary_brand_png_start");
@@ -87,6 +91,8 @@ extern const uint8_t sidebar_calibrate_ldr_png_start[] asm("_binary_sidebar_cali
 extern const uint8_t sidebar_calibrate_ldr_png_end[] asm("_binary_sidebar_calibrate_ldr_png_end");
 extern const uint8_t sidebar_calibrate_freq_png_start[] asm("_binary_sidebar_calibrate_freq_png_start");
 extern const uint8_t sidebar_calibrate_freq_png_end[] asm("_binary_sidebar_calibrate_freq_png_end");
+extern const uint8_t sidebar_self_test_png_start[] asm("_binary_sidebar_self_test_png_start");
+extern const uint8_t sidebar_self_test_png_end[] asm("_binary_sidebar_self_test_png_end");
 extern const uint8_t sidebar_config_png_start[] asm("_binary_sidebar_config_png_start");
 extern const uint8_t sidebar_config_png_end[] asm("_binary_sidebar_config_png_end");
 extern const uint8_t status_armed_png_start[] asm("_binary_status_armed_png_start");
@@ -113,7 +119,7 @@ struct StaticAsset {
     const char* contentType;
 };
 
-constexpr std::array<StaticAsset, 27> STATIC_ASSETS {{
+constexpr std::array<StaticAsset, 30> STATIC_ASSETS {{
     {"/", index_html_start, index_html_end, "text/html"},
     {"/style.css", style_css_start, style_css_end, "text/css"},
     {"/sidebar.html", sidebar_html_start, sidebar_html_end, "text/html"},
@@ -121,18 +127,21 @@ constexpr std::array<StaticAsset, 27> STATIC_ASSETS {{
     {"/emitters", emitters_html_start, emitters_html_end, "text/html"},
     {"/calibrate/ldr", calibrate_ldr_html_start, calibrate_ldr_html_end, "text/html"},
     {"/calibrate/frequency", calibrate_freq_html_start, calibrate_freq_html_end, "text/html"},
+    {"/self-test", self_test_html_start, self_test_html_end, "text/html"},
     {"/config", config_html_start, config_html_end, "text/html"},
     {"/app.js", app_js_start, app_js_end, "text/javascript"},
     {"/page.dashboard.js", page_dashboard_js_start, page_dashboard_js_end, "text/javascript"},
     {"/page.emitters.js", page_emitters_js_start, page_emitters_js_end, "text/javascript"},
     {"/page.calibrate-ldr.js", page_calibrate_ldr_js_start, page_calibrate_ldr_js_end, "text/javascript"},
     {"/page.calibrate-freq.js", page_calibrate_freq_js_start, page_calibrate_freq_js_end, "text/javascript"},
+    {"/page.self-test.js", page_self_test_js_start, page_self_test_js_end, "text/javascript"},
     {"/page.config.js", page_config_js_start, page_config_js_end, "text/javascript"},
     {"/icons/brand.png", brand_png_start, brand_png_end, "image/png"},
     {"/icons/sidebar-dashboard.png", sidebar_dashboard_png_start, sidebar_dashboard_png_end, "image/png"},
     {"/icons/sidebar-emitters.png", sidebar_emitters_png_start, sidebar_emitters_png_end, "image/png"},
     {"/icons/sidebar-calibrate-ldr.png", sidebar_calibrate_ldr_png_start, sidebar_calibrate_ldr_png_end, "image/png"},
     {"/icons/sidebar-calibrate-freq.png", sidebar_calibrate_freq_png_start, sidebar_calibrate_freq_png_end, "image/png"},
+    {"/icons/sidebar-self-test.png", sidebar_self_test_png_start, sidebar_self_test_png_end, "image/png"},
     {"/icons/sidebar-config.png", sidebar_config_png_start, sidebar_config_png_end, "image/png"},
     {"/icons/status-armed.png", status_armed_png_start, status_armed_png_end, "image/png"},
     {"/icons/status-disarmed.png", status_disarmed_png_start, status_disarmed_png_end, "image/png"},
