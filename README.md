@@ -9,14 +9,35 @@ This is a hobby project I'm building in my spare time, not a finished product. F
 
 **Work in progress.** What exists right now:
 
-- Firmware scaffolding on ESP-IDF/FreeRTOS, targeting the ESP32-S3
-- Application architecture in place: state machine, settings storage, HTTP API/web UI, HAL layers for GPIO, ADC, Ethernet, MQTT
-- The actual module logic: laser pulsing, pattern verification on the LDR side, and a gate class that ties several modules together
-- Modules calibrate themselves against ambient light rather than needing manual tuning.
-- Both self-calibration routines (LDR threshold, pulse frequency) persist their results to NVS, so a module doesn't have to recalibrate after every reboot
-- Decent unit test coverage by now, not just the low-level hardware wrappers, the module/gate/calibration logic gets exercised too, all running on a dev machine with no hardware attached
+**Firmware**
+- ESP-IDF/FreeRTOS firmware for the ESP32-S3, split into a hardware abstraction layer (GPIO, ADC, NVS, Ethernet, HTTP server, MQTT, time, random) and the application logic on top of it
+- A state machine covering the whole device lifecycle: initializing, beam adjustment, LDR threshold calibration, pulse frequency calibration, observing, self-test, GPIO discovery, disarmed, alarm, fault and shutdown
+- Modules: laser pulsing with a pseudo-random pattern, pattern verification on the LDR side, and a gate class that ties up to four modules together and raises the alarm
+- Modules calibrate themselves against ambient light rather than needing manual tuning. Both routines (LDR threshold, pulse frequency) persist their results to NVS, so a module doesn't have to recalibrate after every reboot
+- A signal/noise self-test that reports how many pulse batches each module misread
+- GPIO discovery mode for freshly assembled hardware, with raw ADC readings and manual pin toggling
+- Pin validation against the board's reserved pins, and each LDR is routed to the ADC unit its pin belongs to
+- Settings reset to defaults, and per-module and device configuration stored in NVS
+
+**Web UI**
+- A single-page web UI served straight from the device, with pages for the dashboard, emitters, LDR calibration, frequency calibration, modules, self-test, GPIO discovery and configuration
+- Live state pushed over a websocket, plus a header bar with state, uptime and module count, and a fault banner
+- Each task page is live only in its own state. In any other state it links to the running task or offers an enter button when the transition is allowed
+- Narrow screen layout for phones
+- A stdlib-only preview server (`tools/webui-dev-server.py`) fakes the firmware API, so the UI can be worked on without a device
+
+**Tests**
+- 31 Catch2 test suites running on a dev machine with no hardware attached, against stubs for GPIO, ADC, NVS, time, MQTT, Ethernet and the HTTP server
+- Coverage spans the low-level wrappers, module/gate/calibration logic, the state machine, settings, the API controller and JSON output. An LDR physics simulation feeds the calibration tests
+
+**Hardware**
 - Mechanical prototypes for the sensor modules
 - A first electronics prototype: ESP32-S3 with a PoE HAT, breadboarded laser/LDR module
+
+**Not done yet**
+- Alarm outputs: MQTT connects and publishes availability, but alarm events aren't published yet. No webhook.
+- The alarm trigger condition is a set of compile-time tunables, not yet exposed in the web UI
+- Final electronics, enclosure and mounting
 
 ## How it's meant to work
 
@@ -29,9 +50,10 @@ The alarm trigger condition (how many modules need to be blocked at once, and fo
 
 ## Interfaces
 
-Planned: an HTTP API/webhook and CAN bus for linking multiple units together.
+Working: a web UI and JSON API served over HTTP on the Ethernet connection, with live state pushed over a websocket. The UI covers status, calibration, self-test, GPIO discovery and settings.
+MQTT support is implemented and connects to a configured broker, but the application only publishes its availability so far.
 
-Currently working: a small HTTP-served web UI for basic and advanced settings, backed by a status/settings API. MQTT support is implemented but not yet used by the application.
+Planned: an HTTP webhook for alarms and alarm events over MQTT.
 
 ## Hardware / build photos
 
