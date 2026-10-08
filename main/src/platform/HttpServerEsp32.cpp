@@ -7,7 +7,7 @@
 
 namespace {
 
-constexpr uint16_t MAX_OPEN_SOCKETS = 7; // LWIP_MAX_SOCKETS(10) - 3 reserved internally by httpd
+constexpr uint16_t MAX_OPEN_SOCKETS = 12; // LWIP_MAX_SOCKETS(16) - (3 reserved by httpd and 1 for mqtt)
 constexpr uint16_t MAX_URI_HANDLERS = 10;
 constexpr uint64_t BROADCAST_INTERVAL_US = 500 * 1000; // how often the /ws snapshot is pushed
 
