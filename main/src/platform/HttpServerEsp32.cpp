@@ -196,6 +196,9 @@ bool HttpServerEsp32::begin() noexcept {
     config.uri_match_fn = httpd_uri_match_wildcard;
     config.max_open_sockets = MAX_OPEN_SOCKETS;
     config.max_uri_handlers = MAX_URI_HANDLERS;
+    // browsers hold idle keep-alive sockets for minutes, so evict the oldest when slots run out
+    config.lru_purge_enable = true;
+    config.keep_alive_enable = true;
 
     if (httpd_start(&server, &config) != ESP_OK) {
         return false;

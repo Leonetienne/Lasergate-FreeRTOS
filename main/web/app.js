@@ -28,6 +28,8 @@ const App = (() => {
     const listeners = [];
     let ws = null;
     let reconnectDelay = 1000;
+    let heartbeatTimer = null;
+    const HEARTBEAT_INTERVAL_MS = 5000;
 
     function notify() {
         if (!latest) return;
@@ -48,6 +50,8 @@ const App = (() => {
         ws.onopen = () => {
             connected = true;
             reconnectDelay = 1000;
+            // server evicts the least recently used socket, a push-only ws would always be first
+            heartbeatTimer = setInterval(() => ws.send('ping'), HEARTBEAT_INTERVAL_MS);
             notify();
         };
         ws.onmessage = (event) => {
@@ -57,6 +61,7 @@ const App = (() => {
         // onclose fires after errors too, so reconnect only here
         ws.onclose = () => {
             connected = false;
+            clearInterval(heartbeatTimer);
             notify();
             setTimeout(connectWs, reconnectDelay);
             reconnectDelay = Math.min(reconnectDelay * 2, 15000);
